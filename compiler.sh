@@ -1,6 +1,7 @@
 #!/bin/bash -l
 
-cd "/home/localadmin/Documents/Sim_Growth/src/"
+cd "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/src/"
+
 search_dir=''
 src_files=''
 for entry in *.cpp
