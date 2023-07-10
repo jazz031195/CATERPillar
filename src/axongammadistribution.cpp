@@ -171,6 +171,7 @@ void initializeGLUT(int argc, char** argv) {
     glutInitWindowSize(1000, 1000);
 
 }
+
 void drawSphere(float x, float y, float z, float radius, GLfloat colour)
 {
     glPushMatrix();
@@ -193,12 +194,10 @@ void drawSphere(float x, float y, float z, float radius, GLfloat colour)
     glPopMatrix();
 }
 
-
 // Function to initialize the OpenGL settings
 void initializeOpenGL()
 {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);  // Set clear color to white
-
 
     glEnable(GL_DEPTH_TEST); // Enable depth testing
     glMatrixMode(GL_PROJECTION);
@@ -295,12 +294,18 @@ void AxonGammaDistribution::generate_radii(std::vector<double>& radiis){
         return a > b;
     });
 }
+
+
+
+
+
 void AxonGammaDistribution::createGammaSubstrate()
 {
     /*
         Generates the gamma distribution of axons.
     */
     // generate radii from gamma distribution 
+
     std::vector<double> radii(num_obstacles, 0);
     generate_radii(radii);
     max_radius = radii[0];
@@ -311,13 +316,13 @@ void AxonGammaDistribution::createGammaSubstrate()
     int start_overs = 0;
     bool stop = false;
     
+    // Initialize SFML window
+    sf::Window window(sf::VideoMode(800, 600), "3D Visualization");
+    window.setActive();
 
     initializeGLUT(0, nullptr);
     // Initialize OpenGL
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Set clear color to black
-    // Initialize SFML window
-    sf::Window window(sf::VideoMode(800, 600), "3D Visualization");
-    window.setActive();
 
     // Initialize OpenGL settings
     initializeOpenGL();
@@ -340,178 +345,203 @@ void AxonGammaDistribution::createGammaSubstrate()
     prevousDisplacement.x = 0;
     prevousDisplacement.y = 0;
 
-    while (!stop)
-    {
-        axons.clear();
-        // grow all axons
-        for (unsigned i = 0; i < num_obstacles; i++)
-        {
 
-        
-            std::cout << "Growing Axon number: " << i << std::endl;
-            
-            stuck = 0;
-            bool can_grow = false;
-            // generate random coordinates for begin and end
-            Vector3d Q;
-            Vector3d D;
-            get_begin_end_point(Q, D);
-             // initialise axon
-            Axon* ax = new Axon(i, Q, D, radii[i]);
-            bool finished = false;
-            bool grow_straight = true;
-            int straight_growths= 0;
-            //std::cout << "Axon initialised at: " << Q << std::endl;
-            
-
-            GLfloat new_colour = generateRandomColor();
-            // grow all spheres
-            while (!finished && stuck < stuck_thr && window.isOpen())
-            {
-                //cout << "stuck :" << stuck <<" , Axon : " << i<< endl;
-                
-                //cout << "Number of spheres :" << ax->spheres.size() << endl;
-                sf::Event event;
-                while (window.pollEvent(event)) {
-                    // Clear the color and depth buffers
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                
-                    if (event.type == sf::Event::Closed) {
-                        window.close();
-                    }
-                    else if (event.type == sf::Event::MouseWheelScrolled) {
-                        // Zoom in/out based on mouse scroll
-                        if (event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel) {
-                            if (event.mouseWheelScroll.delta > 0) {
-                                zoomLevel *= 1.1f; // Increase zoom level
-                            } else {
-                                zoomLevel *= 0.9f; // Decrease zoom level
-                            }
-                        }
-                    }
-                    else if (event.type == sf::Event::MouseButtonPressed) {
-                        if (event.mouseButton.button == sf::Mouse::Left) {
-                            // Start dragging
-                            isDragging = true;
-                            lastMousePos = sf::Mouse::getPosition(window);
-                        }
-                        else if (event.mouseButton.button == sf::Mouse::Right) {
-                            // Start right dragging
-                            isRightDragging = true;
-                            lastRightMousePos = sf::Mouse::getPosition(window);
-                        }
-                    }
-                    else if (event.type == sf::Event::MouseButtonReleased) {
-                        if (event.mouseButton.button == sf::Mouse::Left) {
-                            // Stop dragging
-                            isDragging = false;
-                        }
-                        else if (event.mouseButton.button == sf::Mouse::Right) {
-                            // Stop right dragging
-                            isRightDragging = false;
-                        }
-                    }
-                    else if (event.type == sf::Event::MouseMoved) {
-                        if (isDragging) {
-                            // Calculate mouse displacement
-                            currentMousePos = sf::Mouse::getPosition(window);
-                            mouseDelta = currentMousePos - lastMousePos;
-                            prevousDisplacement.x -= mouseDelta.x;
-                            prevousDisplacement.y += mouseDelta.y;
-
-                            // Update last mouse position
-                            lastMousePos = currentMousePos;
-                        }
-                        else if (isRightDragging) {
-                            // Handle right mouse drag
-                            sf::Vector2i currentRightMousePos = sf::Mouse::getPosition(window);
-                            rightMouseDelta = currentRightMousePos - lastRightMousePos;
-                            prevousRotation.x += rightMouseDelta.x;
-                            prevousRotation.y += rightMouseDelta.y;
-                            lastRightMousePos = currentRightMousePos;
-
-                        }
-                    }
-                }
-                // we cannot go straight if there are no first spheres as reference
-                if (ax->spheres.size()<=1){
-                    grow_straight = false;
-                }
-                //std::cout << "Straight : " << grow_straight << std::endl;
-                // initialise growth
-                //std::cout << "ax->spheres.size() :" << ax->spheres.size() << std::endl;
-                
-                Growth* growth = new Growth(ax, axons, max_limits, tortuous, max_radius, grow_straight);
-                // grow next sphere
-                can_grow = growth->GrowAxon();
-                //cout << "can grow :" << can_grow << endl;
-                // is growth of axon finished
-                finished= growth->finished;
-                if (!can_grow)
-                {
-                    stuck += 1;
-                    // if when growing straight it collides with environment
-                    if (grow_straight){
-                        // set to false so that next step doesn't go straight
-                        grow_straight = false;
-                        straight_growths = 0;
-                    }
-                }
-                else
-                {
-                    if (grow_straight){
-                        // if axon has been growing straight for 4 spheres in a row
-                        if (straight_growths>= 4){
-                            // set to false so that next step doesn't go straight
-                            grow_straight = false;
-                            straight_growths = 0;
-                        }
-                        straight_growths += 1;
-                    }
-                    else{
-                        // if the sphere hadn't grown straight previously -> set to straight for next 4 spheres
-                        grow_straight = true;
-                    }
-                    
-                    // draw sphere
-                     ax = growth->axon_to_grow;
-
-
-                    // Set up the camera position and orientation
-                    glLoadIdentity();
-                    gluLookAt(120.0f, 120.0f, 120.0f, // Camera position
-                                    50.0f, 50.0f, 50.0f, // Target position
-                                    0.0f, 0.0f, 100.0f); // Up vector
-                    // Apply rotation
-                    glRotatef(prevousRotation.x * rotationFactor, 1.0f, 0.0f, 0.0f);
-                    glRotatef(prevousRotation.y * rotationFactor, 0.0f, 1.0f, 0.0f);
-                    //cout << "mouseDelta.x : " << mouseDelta.x << endl;
-                    // Update camera position based on mouse displacement
-                    glTranslatef(prevousDisplacement.x * displacementFactor ,prevousDisplacement.y * displacementFactor, 0.0f);
-
-                    glScalef(zoomLevel, zoomLevel, zoomLevel); // Apply zoom transformation
-
-                    // Clear the window
-                    drawWorld(ax, window, new_colour);
-                    window.display(); // Display the updated window
-                    
-            
-                }
-            }
-            if (finished)
-            {
-                axons.push_back(*ax);
-                colours.push_back(new_colour);
-            }
-            else
-            {
-                start_overs += 1;
-                // start again
-                i--;
-            }
-        } // end for axons
-        stop = true;
+    cout << "about to create lists" << endl;
+    // Creat list for beginning and end of axons
+    vector<Vector3d> Q_list, D_list;
+    for (unsigned i = 0; i < num_obstacles; i++) {
+        Vector3d Q,D;
+        get_begin_end_point(Q, D);
+        Q_list.push_back(Q);
+        D_list.push_back(D);
     }
+
+        axons.clear();
+        //grow all axons simultaneously
+
+        Axon* ax0 = new Axon(0, Q_list[0], D_list[0], radii[0]);       
+        Axon* ax1 = new Axon(1, Q_list[1], D_list[1], radii[1]);
+        vector<Axon*> ax;
+
+        vector<thread> threads;
+        for (unsigned i; i<2; ++i ) {
+            threads.push_back(thread(&Axon::threadGrowth, ax0))
+        }
+        thread myThread0(&Axon::threadGrowth, ax0);
+        thread myThread1(&Axon::threadGrowth, ax1);
+        myThread0.join();
+        myThread1.join();
+
+
+    // while (!stop)
+    // {
+    //     axons.clear();
+    //     // grow all axons
+
+
+    //     for (unsigned i = 0; i < num_obstacles; i++)
+    //     {
+    //         std::cout << "Growing Axon number: " << i << std::endl;
+    //         stuck = 0;
+    //         bool can_grow = false;
+    //         // generate random coordinates for begin and end
+    //         Vector3d Q;
+    //         Vector3d D;
+    //         get_begin_end_point(Q, D);
+    //          // initialise axon
+    //         Axon* ax = new Axon(i, Q, D, radii[i]);
+    //         bool finished = false;
+    //         bool grow_straight = true;
+    //         int straight_growths= 0;
+    //         //std::cout << "Axon initialised at: " << Q << std::endl;
+            
+    //         GLfloat new_colour = generateRandomColor();
+    //         // grow all spheres
+    //         while (!finished && stuck < stuck_thr && window.isOpen())
+    //         {
+    //             //cout << "stuck :" << stuck <<" , Axon : " << i<< endl;
+    //             //cout << "Number of spheres :" << ax->spheres.size() << endl;
+    //             sf::Event event;
+    //             while (window.pollEvent(event)) {
+    //                 // Clear the color and depth buffers
+    //                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                
+    //                 if (event.type == sf::Event::Closed) {
+    //                     window.close();
+    //                 }
+    //                 else if (event.type == sf::Event::MouseWheelScrolled) {
+    //                     // Zoom in/out based on mouse scroll
+    //                     if (event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel) {
+    //                         if (event.mouseWheelScroll.delta > 0) {
+    //                             zoomLevel *= 1.1f; // Increase zoom level
+    //                         } else {
+    //                             zoomLevel *= 0.9f; // Decrease zoom level
+    //                         }
+    //                     }
+    //                 }
+    //                 else if (event.type == sf::Event::MouseButtonPressed) {
+    //                     if (event.mouseButton.button == sf::Mouse::Left) {
+    //                         // Start dragging
+    //                         isDragging = true;
+    //                         lastMousePos = sf::Mouse::getPosition(window);
+    //                     }
+    //                     else if (event.mouseButton.button == sf::Mouse::Right) {
+    //                         // Start right dragging
+    //                         isRightDragging = true;
+    //                         lastRightMousePos = sf::Mouse::getPosition(window);
+    //                     }
+    //                 }
+    //                 else if (event.type == sf::Event::MouseButtonReleased) {
+    //                     if (event.mouseButton.button == sf::Mouse::Left) {
+    //                         // Stop dragging
+    //                         isDragging = false;
+    //                     }
+    //                     else if (event.mouseButton.button == sf::Mouse::Right) {
+    //                         // Stop right dragging
+    //                         isRightDragging = false;
+    //                     }
+    //                 }
+    //                 else if (event.type == sf::Event::MouseMoved) {
+    //                     if (isDragging) {
+    //                         // Calculate mouse displacement
+    //                         currentMousePos = sf::Mouse::getPosition(window);
+    //                         mouseDelta = currentMousePos - lastMousePos;
+    //                         prevousDisplacement.x -= mouseDelta.x;
+    //                         prevousDisplacement.y += mouseDelta.y;
+
+    //                         // Update last mouse position
+    //                         lastMousePos = currentMousePos;
+    //                     }
+    //                     else if (isRightDragging) {
+    //                         // Handle right mouse drag
+    //                         sf::Vector2i currentRightMousePos = sf::Mouse::getPosition(window);
+    //                         rightMouseDelta = currentRightMousePos - lastRightMousePos;
+    //                         prevousRotation.x += rightMouseDelta.x;
+    //                         prevousRotation.y += rightMouseDelta.y;
+    //                         lastRightMousePos = currentRightMousePos;
+
+    //                     }
+    //                 }
+    //             }
+    //             // we cannot go straight if there are no first spheres as reference
+    //             if (ax->spheres.size()<=1){
+    //                 grow_straight = false;
+    //             }
+    //             //std::cout << "Straight : " << grow_straight << std::endl;
+    //             // initialise growth
+    //             //std::cout << "ax->spheres.size() :" << ax->spheres.size() << std::endl;
+                
+    //             Growth* growth = new Growth(ax, axons, max_limits, tortuous, max_radius, grow_straight);
+    //             // grow next sphere
+    //             can_grow = growth->GrowAxon();
+    //             //cout << "can grow :" << can_grow << endl;
+    //             // is growth of axon finished
+    //             finished= growth->finished;
+    //             if (!can_grow)
+    //             {
+    //                 stuck += 1;
+    //                 // if when growing straight it collides with environment
+    //                 if (grow_straight){
+    //                     // set to false so that next step doesn't go straight
+    //                     grow_straight = false;
+    //                     straight_growths = 0;
+    //                 }
+    //             }
+    //             else
+    //             {
+    //                 if (grow_straight){
+    //                     // if axon has been growing straight for 4 spheres in a row
+    //                     if (straight_growths>= 4){
+    //                         // set to false so that next step doesn't go straight
+    //                         grow_straight = false;
+    //                         straight_growths = 0;
+    //                     }
+    //                     straight_growths += 1;
+    //                 }
+    //                 else{
+    //                     // if the sphere hadn't grown straight previously -> set to straight for next 4 spheres
+    //                     grow_straight = true;
+    //                 }
+                    
+    //                 // draw sphere
+    //                  ax = growth->axon_to_grow;
+
+
+    //                 // Set up the camera position and orientation
+    //                 glLoadIdentity();
+    //                 gluLookAt(120.0f, 120.0f, 120.0f, // Camera position
+    //                                 50.0f, 50.0f, 50.0f, // Target position
+    //                                 0.0f, 0.0f, 100.0f); // Up vector
+    //                 // Apply rotation
+    //                 glRotatef(prevousRotation.x * rotationFactor, 1.0f, 0.0f, 0.0f);
+    //                 glRotatef(prevousRotation.y * rotationFactor, 0.0f, 1.0f, 0.0f);
+    //                 //cout << "mouseDelta.x : " << mouseDelta.x << endl;
+    //                 // Update camera position based on mouse displacement
+    //                 glTranslatef(prevousDisplacement.x * displacementFactor ,prevousDisplacement.y * displacementFactor, 0.0f);
+
+    //                 glScalef(zoomLevel, zoomLevel, zoomLevel); // Apply zoom transformation
+
+    //                 // Clear the window
+    //                 drawWorld(ax, window, new_colour);
+    //                 window.display(); // Display the updated window
+                    
+            
+    //             }
+    //         }
+    //         if (finished)
+    //         {
+    //             axons.push_back(*ax);
+    //             colours.push_back(new_colour);
+    //         }
+    //         else
+    //         {
+    //             start_overs += 1;
+    //             // start again
+    //             i--;
+    //         }
+    //     } // end for axons
+    //     stop = true;
+    // }
 
     std::sort(axons.begin(), axons.end(), [](const Axon a, Axon b) -> bool
     {
@@ -557,7 +587,6 @@ double AxonGammaDistribution::computeICVF()
 
     for (uint i = 0; i < axons.size(); i++)
     {
-
         double ax_length = 0;
         double mean_rad= 0;
         int num_spheres = 0;

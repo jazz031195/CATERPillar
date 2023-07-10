@@ -6,7 +6,6 @@
 #include "swipeprune.h"
 
 
-
 using namespace std;
 using namespace Eigen;
 using namespace std::chrono;
@@ -30,9 +29,7 @@ Growth::Growth (Axon* axon_to_grow_, std::vector<Axon> env_axons_, Eigen::Vector
 
 Growth::~Growth() { 
     delete axon_to_grow;
-
 }
-
 
 void Growth::add_next_sphere(Dynamic_Sphere added_sphere, std::vector<Eigen::Vector3d>& centers, std::vector<double>& sph_radii){
     
@@ -40,7 +37,6 @@ void Growth::add_next_sphere(Dynamic_Sphere added_sphere, std::vector<Eigen::Vec
     sph_radii.push_back(added_sphere.radius);
         
 }
-
 
 bool Growth::check_borders(Eigen::Vector3d pos, double distance_to_border, Eigen::Vector2d& twin_delta_pos) {
     
@@ -307,7 +303,7 @@ bool Growth::GrowAxon(){
         }
     }
     else{
-        cout << "Axon :"<<axon_to_grow->id<<" already grown" << endl;
+        cout << "Axon "<<axon_to_grow->id<<" : already grown" << endl;
         finished = true;
         return true;
     }

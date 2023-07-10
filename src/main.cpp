@@ -27,5 +27,6 @@ int main() {
     AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(number_axons, alpha, beta, min_l, max_l, min_radius, tortuous);
     cout << "AxonDistribution created" << endl;
     AxonDistribution->createGammaSubstrate();
+    cout << "done" << endl;
     //delete AxonDistribution;
 }

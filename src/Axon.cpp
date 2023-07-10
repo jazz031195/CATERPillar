@@ -221,3 +221,8 @@ bool Axon::isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_ins
 
     return false;
 } 
+
+
+void Axon::threadGrowth() {
+    std::cout << "Growing Axon number: \n " << id << std::endl;
+}

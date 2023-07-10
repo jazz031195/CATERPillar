@@ -1,4 +1,5 @@
 #!/bin/bash -l
 chmod u+x compiler.sh
 ./compiler.sh
-./src/Growth-Animation.exe
+chmod u+x src/Growth-Animation
+./src/Growth-Animation
