@@ -483,8 +483,8 @@ void AxonGammaDistribution::createGammaSubstrate()
                                     50.0f, 50.0f, 50.0f, // Target position
                                     0.0f, 0.0f, 100.0f); // Up vector
                     // Apply rotation
-                    glRotatef(prevousRotation.x * rotationFactor, 0.0f, 1.0f, 0.0f);
-                    glRotatef(prevousRotation.y * rotationFactor, 1.0f, 0.0f, 0.0f);
+                    glRotatef(prevousRotation.x * rotationFactor, 1.0f, 0.0f, 0.0f);
+                    glRotatef(prevousRotation.y * rotationFactor, 0.0f, 1.0f, 0.0f);
                     //cout << "mouseDelta.x : " << mouseDelta.x << endl;
                     // Update camera position based on mouse displacement
                     glTranslatef(prevousDisplacement.x * displacementFactor ,prevousDisplacement.y * displacementFactor, 0.0f);
