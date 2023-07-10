@@ -22,7 +22,7 @@ int main() {
     // minimum radius
     double min_radius = 0.15; // um
     // whether the substrate has tortuous axons 
-    bool tortuous = true;
+    bool tortuous = false;
     // create distribution of axons
     AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(number_axons, alpha, beta, min_l, max_l, min_radius, tortuous);
     cout << "AxonDistribution created" << endl;
