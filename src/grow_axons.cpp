@@ -123,18 +123,18 @@ bool Growth::isSphereColliding(Dynamic_Sphere sph){
     
     Vector3d position = sph.center;
 
-    std::vector<int> col_sphere_ids;
-
     //std::cout << "env_axons.size():" << env_axons.size() << endl;
 
     for (unsigned i = 0; i < env_axons.size() ; i++){
+
         double distance_to_be_inside = sph.radius;
-        bool isinside = env_axons[i].isPosInsideAxon(position, distance_to_be_inside, col_sphere_ids, max_radius);
-        
+        bool isinside = env_axons[i].isPosInsideAxon(position, distance_to_be_inside, max_radius);
+            
         if (isinside){
             return true;
             break;
         }
+        
     }
     return false;
 }
@@ -201,7 +201,7 @@ void Growth::find_next_center(Dynamic_Sphere& s, vector<Eigen::Vector3d> centers
     new_pos[2] +=  delta_z;
 
     // sphere to return
-    s  = Dynamic_Sphere (axon_to_grow->spheres.size(), axon_to_grow->id, new_pos,  rad);
+    s  = Dynamic_Sphere (axon_to_grow->spheres.size()-1, axon_to_grow->id, new_pos,  rad);
         
 }
 
@@ -233,7 +233,7 @@ void Growth::find_next_center_straight(vector<Eigen::Vector3d> centers, double d
     Eigen::Vector3d straight_vector = (last_center-before_last_center).normalized();
     straight_vector *= distance;
     Eigen::Vector3d new_center = last_center+straight_vector;
-    s  = Dynamic_Sphere (axon_to_grow->spheres.size(), axon_to_grow->id, new_center,  axon_to_grow->radius);
+    s  = Dynamic_Sphere (axon_to_grow->spheres.size()-1, axon_to_grow->id, new_center,  axon_to_grow->radius);
 
 }
 
@@ -265,7 +265,7 @@ bool Growth::GrowAxon(){
         else{
             collides = true;
             int tries = 0;
-            Dynamic_Sphere s(axon_to_grow->spheres.size(), axon_to_grow->id, axon_to_grow->begin, axon_to_grow->radius);
+            Dynamic_Sphere s(axon_to_grow->spheres.size()-1, axon_to_grow->id, axon_to_grow->begin, axon_to_grow->radius);
             while (collides and tries < 1000){
                 // find the center of next sphere by taking a random position
                 if (!tortuous){
@@ -297,6 +297,7 @@ bool Growth::GrowAxon(){
                 return true;
             }
             else{
+                cout <<"sphere collides " << endl;
                 return false;
             }
 

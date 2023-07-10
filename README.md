@@ -17,5 +17,6 @@ The parameters are all defined in the main.cpp.
 
 # Run the program
 - In the compiler.sh, modify the following line : cd "/home/localadmin/Documents/Sim_Growth/src/", to the path that leads to the src folder on your local machine.
+- If you are using a MacOs, change in compiler.sh the command line to : command="g++ -I/usr/include -O3 -std=c++11 -std=c++0x -o Growth-Animation.exe $src_files -I. -L/usr/local/lib -lsfml-graphics -lsfml-window -lsfml-system -lGL -lglut -lGLU"
 - In the terminal, use "cd" to go to the Sim_Growth folder.
 - Type : "./run.sh"

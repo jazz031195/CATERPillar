@@ -131,57 +131,34 @@ bool Axon::isNearAxon(Eigen::Vector3d position, double distance_to_be_inside){
     Eigen::Vector2d x_limits = Box[0];
     Eigen::Vector2d y_limits = Box[1];
 
-    if(check_with_edge(position, x_limits- Eigen::Vector2d{distance_to_be_inside,distance_to_be_inside}, y_limits+ Eigen::Vector2d{distance_to_be_inside,distance_to_be_inside})){
+    if(check_with_edge(position, x_limits+ Eigen::Vector2d{-distance_to_be_inside,distance_to_be_inside}, y_limits+ Eigen::Vector2d{-distance_to_be_inside,distance_to_be_inside})){
 
         return true;
     }  
-    // if the axon touches the border of the voxel, we must take into account the translation
-    // of the axon at the opposite plane
-    if (x_limits[0]<0){
-        if(check_with_edge(position,{x_limits[0]+ end[2] - distance_to_be_inside, x_limits[1] + end[2]+distance_to_be_inside} , y_limits)){
-            return true;
-        } 
+    else{
+        return false;
     }
-    else if (x_limits[0]>end[2]){
-        if(check_with_edge(position,{x_limits[0] - end[2]- distance_to_be_inside, x_limits[1] - end[2]+distance_to_be_inside} , y_limits)){
-            return true;
-        } 
-    } 
 
-    if (y_limits[0]<0){
-        if(check_with_edge(position,x_limits,{y_limits[0]+ end[2]- distance_to_be_inside, y_limits[1] + end[2]+distance_to_be_inside} )){
-            return true;
-        } 
-    }
-    else if (y_limits[0]>end[2]){
-        if(check_with_edge(position,x_limits, {y_limits[0] - end[2]- distance_to_be_inside, y_limits[1] - end[2]+distance_to_be_inside})){
-            return true;
-        } 
-    } 
-
-    return false;
 }
 
 
 
-bool Axon::isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_inside, std::vector<int>& sphere_ids, double max_radius){
+bool Axon::isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_inside, double max_radius){
     // when checking collision with walker -> check with normal radius
     // when checking with collisions of other axons -> check with max_radius so there is room for swelling
     std::vector<std::vector<Projections::projection_pt>> coliding_projs;
     bool colliding_all_axes;
     Dynamic_Sphere sphere_ ;
     double rad;
-    sphere_ids.clear();
 
     // if position is in box with axon inside
     if(isNearAxon(position, distance_to_be_inside)){
         // find all projections in between the two projections of the edges
-
         
-        coliding_projs = projections.find_collisions_all_axes(position, max_radius + 1000* barrier_tickness, id, distance_to_be_inside);
+        coliding_projs = projections.find_collisions_all_axes(position, max_radius + barrier_tickness, id, distance_to_be_inside);
 
         if (coliding_projs.size() == 3){ 
-
+          
             // for all coliding objects in x 
             for(unsigned j = 0; j < coliding_projs[0].size() ; j++){ 
 
@@ -191,11 +168,12 @@ bool Axon::isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_ins
                 colliding_all_axes = (projections.isProjInside(coliding_projs[1], coliding_proj) && projections.isProjInside(coliding_projs[2], coliding_proj));
 
                 if (colliding_all_axes){
+
                     sphere_ = spheres[coliding_proj.sph_id];
                     
-                    if (sphere_.minDistance(position) < distance_to_be_inside){ 
+                    if (sphere_.minDistance(position) <= distance_to_be_inside){ 
 
-                        sphere_ids.push_back(coliding_proj.sph_id);
+                        return true;
                         
                         /*
                         cout << " Axon : "<< id <<"Position : [" << position[0] << ", "<< position[1] << ", " << position[2] << "]" << endl; 
@@ -203,22 +181,16 @@ bool Axon::isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_ins
                         cout << ", Sphere position : [" << sphere_.center[0] << ", "<< sphere_.center[1] << ", " << sphere_.center[2] << "]" << endl;  
                         */
                     }  
-                } 
+                }
             }
         }
-        if (sphere_ids.size() > 0){
-            // sort by value
-            sort(sphere_ids.begin(), sphere_ids.end());
-            return true;
-        }
-        else{
-            //cout << " Not inside axon :" << id << endl;
-            return false;
-        }
+
+        return false;
         
-
     }
-
+    else{
+        return false;
+    }
     return false;
 } 
 
