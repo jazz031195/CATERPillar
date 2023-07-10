@@ -18,7 +18,7 @@ int main() {
     double beta = 0.1;
     // min and max limits of voxel
     Eigen::Vector3d min_l = {0,0,0};
-    Eigen::Vector3d max_l = {50, 50, 50}; //um
+    Eigen::Vector3d max_l = {10, 10, 30}; //um
     // minimum radius
     double min_radius = 0.15; // um
     // whether the substrate has tortuous axons 

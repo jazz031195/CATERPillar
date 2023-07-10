@@ -185,12 +185,15 @@ void drawSphere(float x, float y, float z, float radius, GLfloat colour)
     glMaterialfv(GL_FRONT, GL_DIFFUSE, matDiffuse);
     glMaterialfv(GL_FRONT, GL_SPECULAR, matSpecular);
     glMaterialf(GL_FRONT, GL_SHININESS, shininess);
+    glEnable(GL_DEPTH_TEST); // Enable depth testing
 
     // Draw the wireframe sphere with a white outline
-    //glColor3f(1.0f, 1.0f, 1.0f);
+    glColor3f(colour, colour, colour);
     glutWireSphere(radius, 20, 20);
 
     glPopMatrix();
+
+    
 }
 
 
@@ -206,6 +209,7 @@ void initializeOpenGL()
     gluPerspective(45.0f, 1.0f, 0.1f, 1000.0f); // Set perspective projection parameters
 
     glMatrixMode(GL_MODELVIEW);
+
 
     // Enable lighting
     glEnable(GL_LIGHTING);
@@ -307,20 +311,25 @@ void AxonGammaDistribution::createGammaSubstrate()
 
     int stuck;
     // threshold of tries to find a position of a sphere in axon
-    int stuck_thr = 100;
+    int stuck_thr = 1;
     int start_overs = 0;
     bool stop = false;
     
 
     initializeGLUT(0, nullptr);
     // Initialize OpenGL
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Set clear color to black
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);  // Set clear color to white
+    sf::ContextSettings settings;
+    settings.depthBits = 24; // Request a 24-bit depth buffer
     // Initialize SFML window
     sf::Window window(sf::VideoMode(800, 600), "3D Visualization");
     window.setActive();
 
     // Initialize OpenGL settings
     initializeOpenGL();
+
+    // Set a custom depth range
+    glDepthRange(0.0f, 1000.0f);
 
     // Initialize zoom level and displacement
     float zoomLevel = 1.0f;
@@ -416,7 +425,7 @@ void AxonGammaDistribution::createGammaSubstrate()
                             // Calculate mouse displacement
                             currentMousePos = sf::Mouse::getPosition(window);
                             mouseDelta = currentMousePos - lastMousePos;
-                            prevousDisplacement.x -= mouseDelta.x;
+                            prevousDisplacement.x += mouseDelta.x;
                             prevousDisplacement.y += mouseDelta.y;
 
                             // Update last mouse position
@@ -449,6 +458,7 @@ void AxonGammaDistribution::createGammaSubstrate()
                 finished= growth->finished;
                 if (!can_grow)
                 {
+                    cout << "cannot grow" << endl;
                     stuck += 1;
                     // if when growing straight it collides with environment
                     if (grow_straight){
@@ -487,7 +497,7 @@ void AxonGammaDistribution::createGammaSubstrate()
                     glRotatef(prevousRotation.y * rotationFactor, 0.0f, 1.0f, 0.0f);
                     //cout << "mouseDelta.x : " << mouseDelta.x << endl;
                     // Update camera position based on mouse displacement
-                    glTranslatef(prevousDisplacement.x * displacementFactor ,prevousDisplacement.y * displacementFactor, 0.0f);
+                    glTranslatef(-prevousDisplacement.x * displacementFactor ,prevousDisplacement.y * displacementFactor, 0.0f);
 
                     glScalef(zoomLevel, zoomLevel, zoomLevel); // Apply zoom transformation
 
@@ -501,6 +511,7 @@ void AxonGammaDistribution::createGammaSubstrate()
             if (finished)
             {
                 axons.push_back(*ax);
+                //cout << "colour added : "<< new_colour << endl;
                 colours.push_back(new_colour);
             }
             else
@@ -508,6 +519,7 @@ void AxonGammaDistribution::createGammaSubstrate()
                 start_overs += 1;
                 // start again
                 i--;
+                //cout << "start over, previous  location : "<< ax->begin << endl;
             }
         } // end for axons
         stop = true;
