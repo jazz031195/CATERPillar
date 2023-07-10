@@ -273,18 +273,23 @@ bool Growth::GrowAxon(){
             Dynamic_Sphere s(axon_to_grow->spheres.size(), axon_to_grow->id, axon_to_grow->begin, axon_to_grow->radius);
             while (collides and tries < 1000){
                 // find the center of next sphere by taking a random position
-                if(grow_straight){
-                    find_next_center_straight(centers, distance, s);
+                if (!tortuous){
+                    if(grow_straight){
+                        find_next_center_straight(centers, distance, s);
+                    }
+                    else{
+                        find_next_center(s, centers, distance, axon_to_grow->radius);
+
+                    }
+                    collides = isSphereColliding(s);
+                    if (grow_straight && collides){
+                        grow_straight = false;
+                    }
+                    tries +=1;
                 }
                 else{
                     find_next_center(s, centers, distance, axon_to_grow->radius);
-
                 }
-                collides = isSphereColliding(s);
-                if (grow_straight && collides){
-                    grow_straight = false;
-                }
-                tries +=1;
             }
             if (!collides){
                 sphere_to_add = s;
