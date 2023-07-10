@@ -53,7 +53,7 @@ public:
 
     void add_sphere(Dynamic_Sphere sphere_to_add);
     bool isNearAxon(Eigen::Vector3d position,  double distance_to_be_inside);
-    bool isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_inside, std::vector<int>& sphere_ids,double max_radius );
+    bool isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_inside, double max_radius );
     void add_projection(Dynamic_Sphere sphere_to_add);
 };
 

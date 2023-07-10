@@ -32,7 +32,7 @@ public:
     
     Projections();
     void clear_projections();
-    std::vector<projection_pt> find_collisions(projection_pt proj_on_axis_min, projection_pt proj_on_axis_max,std::vector<projection_pt> projections_on_axis, double distance_to_be_inside);
+    std::vector<projection_pt> find_collisions(projection_pt proj_on_axis_min, projection_pt proj_on_axis_max,std::vector<projection_pt> projections_on_axis);
     std::vector<std::vector<projection_pt>> find_collisions_all_axes(Eigen::Vector3d &position, double rad, int ax_id, double distance_to_be_inside);
     bool isProjInside(std::vector<projection_pt> projs, projection_pt p);
     void append_right_place(projection_pt p1, projection_pt p2, int axis);
