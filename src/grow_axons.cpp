@@ -246,9 +246,7 @@ bool Growth::GrowAxon(){
     // distance between spheres
     double distance = axon_to_grow->radius/4;
 
-
-    if (centers.size()== 0 or centers[centers.size()-1][2] < voxel_size[2]){
-        
+    if (centers.size()== 0 or centers[centers.size()-1][2] < voxel_size[2]){ 
         if (axon_to_grow->spheres.size()==0){
             //cout << "grow first sphere" << endl;
             bool first_sphere_grown = GrowFirstSphere();
@@ -290,7 +288,7 @@ bool Growth::GrowAxon(){
                 sphere_to_add = s;
                 axon_to_grow->add_sphere(sphere_to_add);
                 // if we reach edge of voxel
-                if (centers[centers.size()-1][2] >= voxel_size[2]){
+                if (centers[centers.size()-1][2] >= voxel_size[2]){ 
                     //cout << "finished! centers[centers.size()-1][2] :" << centers[centers.size()-1][2] << "voxel_size[2] : " <<voxel_size[2]<< endl; 
                     finished = true;
                 }

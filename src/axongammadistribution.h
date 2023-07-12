@@ -70,6 +70,15 @@ public:
     */
     void createGammaSubstrate();
 
+    void parallelGrowth();
+    void testThreads(Axon* ax);
+    void testSubstrate();
+    void createSubstrate();
+    void testGrowth(Axon *ax, bool grow_straight, bool can_grow, bool finished, int stuck, int straight_growths);
+    void setAxonList(std::vector<double> radii, std::vector<Axon*> &ax_list);
+    void testSphere();
+    void testAxons();
+
     void drawWorld(Axon* ax, sf::Window& window, GLfloat colour);
 
     void generate_radii(std::vector<double>& radiis);

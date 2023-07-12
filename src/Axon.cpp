@@ -54,7 +54,6 @@ void Axon::add_sphere(Dynamic_Sphere sphere_to_add){
 
         this->begin = sphere_to_add.center;
 
-        this->end = sphere_to_add.center;
     }
     else{
 
@@ -83,7 +82,6 @@ void Axon::add_sphere(Dynamic_Sphere sphere_to_add){
         // modify box in z direction
         Box[2][1] =  sphere_to_add.center[2] + sphere_to_add.radius;
 
-        this->end = sphere_to_add.center;
     }
 
 
@@ -195,6 +193,3 @@ bool Axon::isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_ins
 } 
 
 
-void Axon::threadGrowth() {
-    std::cout << "Growing Axon number: \n " << id << std::endl;
-}

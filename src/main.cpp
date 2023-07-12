@@ -18,7 +18,7 @@ int main() {
     double beta = 0.1;
     // min and max limits of voxel
     Eigen::Vector3d min_l = {0,0,0};
-    Eigen::Vector3d max_l = {10, 10, 30}; //um
+    Eigen::Vector3d max_l = {50, 50, 50}; //um
     // minimum radius
     double min_radius = 0.15; // um
     // whether the substrate has tortuous axons 
@@ -26,7 +26,10 @@ int main() {
     // create distribution of axons
     AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(number_axons, alpha, beta, min_l, max_l, min_radius, tortuous);
     cout << "AxonDistribution created" << endl;
-    AxonDistribution->createGammaSubstrate();
+    // AxonDistribution->parallelGrowth();
+    // AxonDistribution->createGammaSubstrate();
+    // AxonDistribution->testAxons();
+    AxonDistribution->testSphere();
     cout << "done" << endl;
     //delete AxonDistribution;
 }
