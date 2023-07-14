@@ -15,6 +15,7 @@
 #include "constants.h"
 #include <iostream>
 #include "Axon.h"
+#include "grow_axons.h"
 #include "dynamic_sphere.h"
 #include <thread>
 #include <GL/gl.h>
@@ -70,16 +71,24 @@ public:
     */
     void createGammaSubstrate();
 
-    void parallelGrowth();
-    void testThreads(Axon* ax);
-    void testSubstrate();
-    void createSubstrate();
-    void testGrowth(Axon *ax, bool grow_straight, bool can_grow, bool finished, int stuck, int straight_growths);
-    void setAxonList(std::vector<double> radii, std::vector<Axon*> &ax_list);
-    void testSphere();
-    void testAxons();
+    
+    void parallelGrowth1(); // not useful anymore
+    void testThreads(Axon* ax); // not useful anymore
+    void testSubstrate(); // wrong indentation
+    void testGrowth(Axon *ax, bool grow_straight, bool can_grow, bool finished, int stuck, int straight_growths); // not useful anymore
 
-    void drawWorld(Axon* ax, sf::Window& window, GLfloat colour);
+
+
+    void setAxonList(std::vector<double> radii, std::vector<Axon> &ax_list);
+    void testSphere(); // Test first sphere ..WORKS..
+    void testAxons(); // Testing that setAxon works properly ..WORKS..
+    void threadSphere(Axon*& ax, bool& grow_straight, bool& can_grow); // Test first sphere with threads
+    void allSpheres(); // Simultaneous spheres ..WORKS..
+
+    void parallelGrowth(); // Simultaneous growth
+    void threadsParallel(Axon &ax, Growth *&growth, bool &can_grow, int &stuck, sf::Window& window, GLfloat &new_colour, bool &finished);
+
+    void drawWorld(sf::Window& window, GLfloat colour);
 
     void generate_radii(std::vector<double>& radiis);
     /*!
