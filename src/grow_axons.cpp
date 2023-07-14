@@ -273,7 +273,7 @@ bool Growth::GrowAxon()
     // distance between spheres
     double distance = axon_to_grow->radius / 4;
 
-    if (centers[centers.size() - 1][2] > voxel_size[2])
+    if (centers[centers.size() - 1][2] > voxel_size[2]) // reached top limit
     {
         finished = true;
         return true;

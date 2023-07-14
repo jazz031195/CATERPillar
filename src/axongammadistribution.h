@@ -25,18 +25,18 @@
 class AxonGammaDistribution
 {
 public:
-    std::vector<Axon> axons; /*!< Axon vector                                                            */
-    unsigned num_obstacles;  /*!< number of cylnders fit inside the substrate                                */
-    double alpha;            /*!< alpha coefficient of the Gamma distribution                                */
-    double beta;             /*!< beta coefficient of the gamma distribution                                 */
+    std::vector<Axon> axons; /*!< Axon vector                                                           */
+    unsigned num_obstacles;  /*!< number of cylnders fit inside the substrate                           */
+    double alpha;            /*!< alpha coefficient of the Gamma distribution                           */
+    double beta;             /*!< beta coefficient of the gamma distribution                            */
     double icvf;
 
-    Eigen::Vector3d min_limits; /*!< voxel min limits (if any) (bottom left corner)                             */
-    Eigen::Vector3d max_limits; /*!< voxel max limits (if any)                                                  */
+    Eigen::Vector3d min_limits; /*!< voxel min limits (if any) (bottom left corner)                     */
+    Eigen::Vector3d max_limits; /*!< voxel max limits (if any)                                          */
 
     bool tortuous;
 
-    std::vector<double> tortuosities; /*!< ODF                                               */
+    std::vector<double> tortuosities; /*!< ODF                                                          */
     double min_radius;
     std::vector<GLfloat> colours;
 
@@ -87,9 +87,9 @@ public:
      *  \param finished assesses if growth finished
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(Axon &ax, bool &can_grow, bool &finished);
+    void growthThread(Axon &ax, bool &can_grow, int &finished);
 
-    void drawWorld(sf::Window &window, GLfloat colour);
+    void drawWorld(sf::Window &window);
 
     void generate_radii(std::vector<double> &radiis);
     /*!

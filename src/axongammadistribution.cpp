@@ -241,7 +241,7 @@ GLfloat generateRandomColor()
     return color;
 }
 
-void AxonGammaDistribution::drawWorld(sf::Window &window, GLfloat colour)
+void AxonGammaDistribution::drawWorld(sf::Window &window)
 {
     // Draw already created axons
     for (unsigned j = 0; j < axons.size(); j++)
@@ -254,7 +254,7 @@ void AxonGammaDistribution::drawWorld(sf::Window &window, GLfloat colour)
             float radius = axons[j].spheres[i].radius;
             drawSphere(x, y, z, radius, colours[j]);
         }
-    } 
+    }
 }
 
 void AxonGammaDistribution::generate_radii(std::vector<double> &radiis)
@@ -330,6 +330,7 @@ void AxonGammaDistribution::createAxons(std::vector<double> radii)
                     else
                     {
                         // cout << "colliding" << endl;
+                        next = false;
                     }
                 }
             }
@@ -337,12 +338,14 @@ void AxonGammaDistribution::createAxons(std::vector<double> radii)
     }
 }
 
-void AxonGammaDistribution::growthThread(Axon &ax, bool &can_grow, bool &finished)
+void AxonGammaDistribution::growthThread(Axon &ax, bool &can_grow, int &finished)
 {
     Growth *growth = new Growth(new Axon(ax), axons, max_limits, tortuous, max_radius);
-
     can_grow = growth->GrowAxon(); // grows a single sphere
-    finished = growth->finished;   // is the growth finished
+    if (growth->finished) 
+    {
+        finished = 1; // 1 for true, if the growth finished
+    }
     ax = *(growth->axon_to_grow);  // adds a sphere to axon
 }
 
@@ -353,7 +356,7 @@ void AxonGammaDistribution::parallelGrowth()
     std::vector<double> radii(num_obstacles, 0);
     generate_radii(radii);
     max_radius = radii[0];
-    cout << "creating gamma substrate" << endl;
+    cout << "Parallel growth simulation" << endl;
     int stuck;
     // threshold of tries to find a position of a sphere in axon
     int stuck_thr = 1;
@@ -403,11 +406,13 @@ void AxonGammaDistribution::parallelGrowth()
         createAxons(radii); // set the axons
 
         bool can_grow = false;
-        bool finished = false;
+        // bool finished = false;
         stuck = 0;
         int num_sphere = 0;
+        vector<int> finished(num_obstacles, 0); // 0 for false
+        bool all_finished = false;
 
-        while (!finished && stuck < stuck_thr && window.isOpen()) // for each sphere
+        while (!all_finished && stuck < stuck_thr && window.isOpen()) // for each sphere
         {
             for (unsigned i = 0; i < num_obstacles; i++) // for each axon
             {
@@ -491,8 +496,7 @@ void AxonGammaDistribution::parallelGrowth()
 
                 // add sphere at same time for all axons
                 threads.push_back(std::thread([this, i, &can_grow, &finished]()
-                                              { this->growthThread(axons[i], can_grow, finished); }));
-
+                                              { this->growthThread(axons[i], can_grow, finished[i]); }));
 
             } // end for axons
 
@@ -511,10 +515,14 @@ void AxonGammaDistribution::parallelGrowth()
 
             // Clear the window
             ++num_sphere;
-            drawWorld(window, colours[0]); // draw one sphere at a time
-            window.display(); // Display the updated window
-            // std::this_thread::sleep_for(std::chrono::seconds(2));
-        }
+            drawWorld(window); // draw one sphere at a time
+            window.display();  // Display the updated window
+                               // std::this_thread::sleep_for(std::chrono::seconds(2));
+
+            all_finished = std::all_of(finished.begin(), finished.end(), [](bool value)
+                                       { return value == 1; }); // if all true, then all axons are finished growing
+
+        } // end for spheres
 
         for (auto &thread : threads)
         {
