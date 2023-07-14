@@ -299,7 +299,7 @@ bool Growth::GrowAxon()
         }
         if (!collides)
         {
-            cout << "sphere added" << endl;
+            // cout << "sphere added" << endl;
             sphere_to_add = s;
             axon_to_grow->add_sphere(sphere_to_add);
             // if we reach edge of voxel
