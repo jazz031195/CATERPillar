@@ -158,6 +158,8 @@ bool Axon::isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_ins
         if (coliding_projs.size() == 3){ 
           
             // for all coliding objects in x 
+            // cout << "debug " << coliding_projs[0].size() << endl;
+
             for(unsigned j = 0; j < coliding_projs[0].size() ; j++){ 
 
                 const Projections::projection_pt coliding_proj = coliding_projs[0][j];
@@ -166,18 +168,13 @@ bool Axon::isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_ins
                 colliding_all_axes = (projections.isProjInside(coliding_projs[1], coliding_proj) && projections.isProjInside(coliding_projs[2], coliding_proj));
 
                 if (colliding_all_axes){
-
+   
                     sphere_ = spheres[coliding_proj.sph_id];
-                    
+              
                     if (sphere_.minDistance(position) <= distance_to_be_inside){ 
 
                         return true;
-                        
-                        /*
-                        cout << " Axon : "<< id <<"Position : [" << position[0] << ", "<< position[1] << ", " << position[2] << "]" << endl; 
-                        cout << "           distance to sphere :" << coliding_proj.sph_id << " : " <<  sphere_.minDistance(position) ;
-                        cout << ", Sphere position : [" << sphere_.center[0] << ", "<< sphere_.center[1] << ", " << sphere_.center[2] << "]" << endl;  
-                        */
+                    
                     }  
                 }
             }

@@ -9,7 +9,7 @@ using namespace std;
 using namespace Eigen;
 using namespace std::chrono;
 
-Growth::Growth(Axon *axon_to_grow_, std::vector<Axon> env_axons_, Eigen::Vector3d voxel_size_, bool tortuous_, double max_radius_)
+Growth::Growth(Axon *axon_to_grow_, std::vector<Axon> env_axons_, Eigen::Vector3d voxel_size_, bool tortuous_, double max_radius_, bool grow_straight_)
 {
 
     env_axons = env_axons_;
@@ -18,7 +18,7 @@ Growth::Growth(Axon *axon_to_grow_, std::vector<Axon> env_axons_, Eigen::Vector3
     tortuous = tortuous_;
     finished = false;
     max_radius = max_radius_;
-    // grow_straight = grow_straight_;
+    grow_straight = grow_straight_;
 
     // initialise centers
     for (unsigned i = 0; i < axon_to_grow->spheres.size(); i++)
@@ -275,16 +275,19 @@ bool Growth::GrowAxon()
 
     if (centers[centers.size() - 1][2] > voxel_size[2]) // reached top limit
     {
+
         finished = true;
         return true;
     }
     else
     {
+
         collides = true;
         int tries = 0;
         Dynamic_Sphere s(axon_to_grow->spheres.size() - 1, axon_to_grow->id, axon_to_grow->begin, axon_to_grow->radius);
         while (collides and tries < 1000)
         {
+
             // find the center of next sphere by taking a random position
             if (!tortuous)
             {

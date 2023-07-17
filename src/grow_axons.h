@@ -25,13 +25,13 @@ public:
     std::vector<Eigen::Vector3d> centers;
     bool finished;
     double max_radius;
-    // bool grow_straight;                     /*Sometimes, you want the axon to grow staright and sometimes you want it to grow in a different random direction*/
+    bool grow_straight;                     /*Sometimes, you want the axon to grow staright and sometimes you want it to grow in a different random direction*/
 
 
     Growth(){};
     ~Growth();
 
-    Growth (Axon*,  std::vector<Axon>, Eigen::Vector3d, bool, double);
+    Growth (Axon*,  std::vector<Axon>, Eigen::Vector3d, bool, double, bool);
     
     bool GrowAxon();
     bool GrowFirstSphere();

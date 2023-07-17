@@ -26,9 +26,11 @@ class AxonGammaDistribution
 {
 public:
     std::vector<Axon> axons; /*!< Axon vector                                                           */
-    unsigned num_obstacles;  /*!< number of cylnders fit inside the substrate                           */
-    double alpha;            /*!< alpha coefficient of the Gamma distribution                           */
-    double beta;             /*!< beta coefficient of the gamma distribution                            */
+    unsigned num_obstacles;  /*!< number of cylnders fit inside the substrate */
+    int num_batches = 5;
+    std::mutex axonsMutex;
+    double alpha; /*!< alpha coefficient of the Gamma distribution                           */
+    double beta;  /*!< beta coefficient of the gamma distribution                            */
     double icvf;
 
     Eigen::Vector3d min_limits; /*!< voxel min limits (if any) (bottom left corner)                     */
@@ -58,7 +60,7 @@ public:
      *  \param scale scale factor for the values passed. Useful when reading a file.
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(unsigned &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool);
+    AxonGammaDistribution(unsigned &, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool);
 
     /*!
      *  \brief Shows a small histogram of the gamma distribution
@@ -77,9 +79,11 @@ public:
     void createAxons(std::vector<double> radii);
 
     /*!
-     *  \brief Creates and displays a parallel growth of all axons 
+     *  \brief Creates and displays a parallel growth of all axons
      */
-    void parallelGrowth(); 
+    void parallelGrowth();
+
+    vector<vector<Axon>> formatAxons(int num_row, int num_col); // pass from 1d to 2d vectorx
 
     /*!
      *  \param ax axon to grow
@@ -87,9 +91,9 @@ public:
      *  \param finished assesses if growth finished
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(Axon &ax, bool &can_grow, int &finished);
+    void growthThread(int index, bool &can_grow, int &finished, bool &grow_straight);
 
-    void drawWorld(sf::Window &window);
+    void drawWorld(unsigned int row, sf::Window &window);
 
     void generate_radii(std::vector<double> &radiis);
     /*!

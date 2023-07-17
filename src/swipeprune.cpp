@@ -100,7 +100,7 @@ bool Projections::isProjInside(std::vector<Projections::projection_pt> projs, Pr
     for (unsigned i = 0; i < projs.size(); i++){
         if (projs[i].axon_id == p.axon_id && projs[i].sph_id == p.sph_id){
             return true;
-            break;
+
         }  
     } 
     return false;
