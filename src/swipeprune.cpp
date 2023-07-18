@@ -82,7 +82,7 @@ std::vector<Projections::projection_pt> Projections::find_collisions(projection_
         return closest_spheres; 
     } 
 
-    for (unsigned i = index_min ; i <= index_max; i++){
+    for (unsigned i = index_min ; i < index_max; i++){
         
         projection_pt s{projections_on_axis[i].position, projections_on_axis[i].axon_id, projections_on_axis[i].sph_id};  
         closest_spheres.push_back(s);
@@ -110,7 +110,7 @@ bool Projections::isProjInside(std::vector<Projections::projection_pt> projs, Pr
 std::vector<std::vector<Projections::projection_pt>> Projections::find_collisions_all_axes(Vector3d &position, double rad, int ax_id, double distance_to_be_inside){
     std::vector<std::vector<projection_pt>> coliding_projs;
     std::vector<projection_pt> colisions_axis_projs;
-    coliding_projs.clear();
+
     // on all axes
     for (unsigned x = 0; x < 3; x++){
 
@@ -136,7 +136,7 @@ std::vector<std::vector<Projections::projection_pt>> Projections::find_collision
         } 
         if (colisions_axis_projs.size()== 0){
             return coliding_projs;
-            break;
+
         } 
         else{ 
             coliding_projs.push_back(colisions_axis_projs);

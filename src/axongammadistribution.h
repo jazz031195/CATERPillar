@@ -37,6 +37,7 @@ public:
     Eigen::Vector3d max_limits; /*!< voxel max limits (if any)                                          */
 
     bool tortuous;
+    bool draw;
 
     std::vector<double> tortuosities; /*!< ODF                                                          */
     double min_radius;
@@ -45,22 +46,19 @@ public:
     double max_radius;
 
     /*!
-     *  \param P_ Cylinder origin
-     *  \param Q_ cylinder direction.
-     *  \param radius_ cylinder's radius
-     *  \param scale scale factor for the values passed. Useful when reading a file.
      *  \brief Initialize everything.
      */
     AxonGammaDistribution() {}
 
     /*!
-     *  \param P_ Cylinder origin
-     *  \param Q_ cylinder direction.
-     *  \param radius_ cylinder's radius
-     *  \param scale scale factor for the values passed. Useful when reading a file.
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(unsigned &, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool);
+    AxonGammaDistribution(unsigned &, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool);
+
+    /*!
+     *  \brief Sets icvf and overwrites num_obstacles and num_batches
+     */
+    void set_icvf(double icvf_, double x, double y);
 
     /*!
      *  \brief Shows a small histogram of the gamma distribution
@@ -82,12 +80,14 @@ public:
      *  \param index position in the 2d form of the axons vector
      *  \param can_grow assesses if growth possible
      *  \param finished assesses if growth finished, true = 1 and false = 0
-     *  \param grow_straight determines growth direction, true = 1 and false = 0 
+     *  \param grow_straight determines growth direction, true = 1 and false = 0
      *  \param stuck number of times growth was not possible
      *  \param stuck number of straight growths
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &stuck, int &straight_growths);
+    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &stuck, int &straight_growths, int time, double radius);
+
+    void radiusVariation(Axon &axon, int time, double radius);
 
     /*!
      *  \brief Creates and displays a parallel growth of all axons
@@ -98,14 +98,14 @@ public:
      *  \param ax axon to draw
      *  \param window drawing window
      *  \param colour axon colour
-     *  \brief draws sequential axon growth 
+     *  \brief draws sequential axon growth
      */
-    void drawWorld_seq(Axon* ax, sf::Window& window, GLfloat colour);
+    void drawWorld_seq(Axon *ax, sf::Window &window, GLfloat colour);
 
     /*!
-     *  \param row row of the current batch's axon vector  
+     *  \param row row of the current batch's axon vector
      *  \param window drawing window
-     *  \brief draws sequential axon growth 
+     *  \brief draws sequential axon growth
      */
     void drawWorld(unsigned int row, sf::Window &window);
 

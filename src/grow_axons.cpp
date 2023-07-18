@@ -243,7 +243,7 @@ bool Growth::GrowFirstSphere()
     // check if first sphere collides
 
     collides = isSphereColliding(s1);
-    
+
     if (!collides)
     {
 
@@ -274,10 +274,12 @@ bool Growth::GrowAxon()
     // if sphere collides with environment
     bool collides;
     // distance between spheres
+
     double distance = axon_to_grow->radius / 4;
 
-    if (centers.size() == 0 or centers[centers.size() - 1][2] < voxel_size[2])
+    if (centers.size() == 0 or centers[centers.size() - 1][2] < voxel_size[2]) // still growing
     {
+
         if (axon_to_grow->spheres.size() == 0)
         {
             // cout << "grow first sphere" << endl;
@@ -302,6 +304,7 @@ bool Growth::GrowAxon()
             while (collides and tries < 1000)
             {
                 // find the center of next sphere by taking a random position
+
                 if (tortuous)
                 {
                     if (grow_straight)
@@ -317,36 +320,39 @@ bool Growth::GrowAxon()
                     {
                         grow_straight = false;
                     }
-                    tries += 1;
                 }
                 else
                 {
                     find_next_center(s, centers, distance, axon_to_grow->radius);
                     collides = isSphereColliding(s);
                 }
+                tries += 1;
             }
+
             if (!collides)
             {
                 sphere_to_add = s;
-                axon_to_grow->add_sphere(sphere_to_add);
+                axon_to_grow->add_sphere(sphere_to_add); // we want to change the radius of the sphere
                 // if we reach edge of voxel
                 if (centers[centers.size() - 1][2] >= voxel_size[2])
                 {
-                    // cout << "finished! centers[centers.size()-1][2] :" << centers[centers.size()-1][2] << "voxel_size[2] : " <<voxel_size[2]<< endl;
                     finished = true;
                 }
                 return true;
             }
-            else
+            else // collides and >1000 tries
             {
-                cout << "sphere collides " << endl;
-                return false;
+                // cout << "sphere collides " << endl;
+                // return false;
+                cout << "Axon " << axon_to_grow->id << " stuck: stop growing" << endl;
+                finished = true;
+                return true;
             }
         }
     }
-    else
+    else // axon is fully grown
     {
-        cout << "Axon :" << axon_to_grow->id << " already grown" << endl;
+        cout << "Axon " << axon_to_grow->id << " done!" << endl;
         finished = true;
         return true;
     }

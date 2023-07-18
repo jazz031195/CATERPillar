@@ -11,6 +11,7 @@ using namespace std;
 using namespace Eigen;
 
 int main() {
+
     // number of axons
     unsigned int number_axons = 50;
     int num_batches = 5;
@@ -18,18 +19,26 @@ int main() {
     // constants for gamma distribution, mean = 0.5 um 
     double alpha = 5.0;
     double beta = 0.1;
+
     // min and max limits of voxel
     Eigen::Vector3d min_l = {0,0,0};
-    Eigen::Vector3d max_l = {50, 50, 50}; //um
+    Eigen::Vector3d max_l = {20, 20, 20}; //um
+
     // minimum radius
     double min_radius = 0.15; // um
-    // whether the substrate has tortuous axons 
+
+    // simulation parameters
     bool tortuous = true;
+    bool draw = true;
+
+    // density parameters
+    double icvf = 0.3; 
+
     // create distribution of axons
-    AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(number_axons, num_batches, alpha, beta, min_l, max_l, min_radius, tortuous);
+    AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(number_axons, num_batches, alpha, beta, min_l, max_l, min_radius, tortuous, draw);
+    AxonDistribution->set_icvf(icvf, max_l[0], max_l[1]);
     cout << "AxonDistribution created" << endl;
-    // AxonDistribution->createGammaSubstrate();
     AxonDistribution->parallelGrowth();
     cout << "End of simulation!" << endl;
-    //delete AxonDistribution;
+    // delete AxonDistribution;
 }
