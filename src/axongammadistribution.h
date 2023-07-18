@@ -68,7 +68,7 @@ public:
     void displayGammaDistribution();
 
     /*!
-     *  \brief Samples and constructs a Gamma distribution
+     *  \brief Creates and displays sequential axonal growth
      */
     void createGammaSubstrate();
 
@@ -79,29 +79,46 @@ public:
     void createAxons(std::vector<double> radii);
 
     /*!
+     *  \param index position in the 2d form of the axons vector
+     *  \param can_grow assesses if growth possible
+     *  \param finished assesses if growth finished, true = 1 and false = 0
+     *  \param grow_straight determines growth direction, true = 1 and false = 0 
+     *  \param stuck number of times growth was not possible
+     *  \param stuck number of straight growths
+     *  \brief Grows a single sphere for each axon
+     */
+    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &stuck, int &straight_growths);
+
+    /*!
      *  \brief Creates and displays a parallel growth of all axons
      */
     void parallelGrowth();
 
-    vector<vector<Axon>> formatAxons(int num_row, int num_col); // pass from 1d to 2d vectorx
+    /*!
+     *  \param ax axon to draw
+     *  \param window drawing window
+     *  \param colour axon colour
+     *  \brief draws sequential axon growth 
+     */
+    void drawWorld_seq(Axon* ax, sf::Window& window, GLfloat colour);
 
     /*!
-     *  \param ax axon to grow
-     *  \param can_grow assesses if growth possible
-     *  \param finished assesses if growth finished
-     *  \brief Grows a single sphere for each axon
+     *  \param row row of the current batch's axon vector  
+     *  \param window drawing window
+     *  \brief draws sequential axon growth 
      */
-    void growthThread(int index, bool &can_grow, int &finished, bool &grow_straight);
-
     void drawWorld(unsigned int row, sf::Window &window);
 
     void generate_radii(std::vector<double> &radiis);
+
     /*!
      *  \brief Prints the cylinders positions in a file or output stream.
      *  \param out ostream where to write the info.
      */
     void printSubstrate(std::ostream &out);
+
     bool check_borders(Eigen::Vector3d pos, double distance_to_border, Eigen::Vector2d &twin_delta_pos);
+
     void get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D);
 
 private:
