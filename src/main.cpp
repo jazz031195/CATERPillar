@@ -32,7 +32,7 @@ int main() {
     bool draw = true;
 
     // density parameters
-    double icvf = 0.3; 
+    double icvf = 0.1; 
 
     // create distribution of axons
     AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(number_axons, num_batches, alpha, beta, min_l, max_l, min_radius, tortuous, draw);

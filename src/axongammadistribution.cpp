@@ -53,21 +53,30 @@ AxonGammaDistribution::AxonGammaDistribution(unsigned &num_ax, int &num_batches_
     draw = draw_;
 }
 
-void AxonGammaDistribution::set_icvf(double icvf_, double x, double y) // must overwrite num_obstacles 
+void AxonGammaDistribution::set_icvf(double icvf_, double x, double y) // must overwrite num_obstacles
 {
     icvf = icvf_;
-    double av_radius = 0.5; 
+    double av_radius = 0.5;
     num_obstacles = (x * y * icvf) / (M_PI * av_radius * av_radius);
     num_batches = 1;
-    for (int i = static_cast<int>(std::sqrt(num_obstacles)); i > 0; i--) {
-        if (num_obstacles % i == 0) {
-            num_batches = num_obstacles / i; // biggest divisor
-            break;
+    for (int i = static_cast<int>(std::sqrt(num_obstacles)); i > 0; i--)
+    {
+        if (num_obstacles % i == 0)
+        {
+            if ((num_obstacles / i) < 21) // number of axons per batch
+            {
+                num_batches = i;
+                break;
+            }
+            if ((i < 21)) // number of axons per batch
+            {
+                num_batches = num_obstacles / i; // biggest divisor
+                break;
+            }
         }
     }
     cout << "num obstacles " << num_obstacles << endl;
     cout << "num batches " << num_batches << endl;
-
 }
 
 void AxonGammaDistribution::computeMinimalSize(std::vector<double> radiis, double icvf_, Eigen::Vector3d &l)
@@ -335,7 +344,7 @@ void AxonGammaDistribution::generate_radii(std::vector<double> &radiis)
         double jkr = distribution(generator);
 
         // generates the radii in a list
-        if (jkr < min_radius)
+        if (jkr < min_radius && jkr > 5) // max_radius = 5um
         {
             i--;
             tried++;
@@ -409,12 +418,14 @@ void AxonGammaDistribution::createAxons(std::vector<double> radii)
 
 void AxonGammaDistribution::radiusVariation(Axon &axon, int time, double radius)
 {
+    double p = 0.75;
     double frequency = 1. / radius;
     double phase_shift = 0.;
-    double amplitude = radius - (0.75 * radius); // set the range of the fluctuation from radius/2.0 to radius
+    // double amplitude = radius - (0.75 * radius); // set the range of the fluctuation from radius/2.0 to radius
+    double amplitude = (1-p) * radius;
     double fluctuation = amplitude * sin(2.0 * M_PI * frequency * time + phase_shift);
 
-    axon.radius = radius - fluctuation;
+    axon.radius = radius * (1+p)/2 + fluctuation;
     if (axon.radius < min_radius)
     {
         axon.radius = min_radius;
@@ -700,8 +711,12 @@ void AxonGammaDistribution::parallelGrowth()
 
     // messages
     std::cout << "icvf: " << icvf << " voxel size: " << max_limits[0] << std::endl;
-    std::string message = "ICVF achieved: " + std::to_string(icvf * 100) + "\n";
+    std::string message = "ICVF achieved: " + std::to_string(icvf * 100);
     std::cout << message << std::endl;
+    std::cout << "Number axons: " << num_obstacles << std::endl;
+    std::cout << "Number batches: " << num_batches << std::endl;
+    std::cout << "compute icvf " << computeICVF() << "\n"
+              << std::endl;
 }
 
 void AxonGammaDistribution::createGammaSubstrate()
@@ -965,31 +980,25 @@ double AxonGammaDistribution::computeICVF()
 
     if (axons.size() == 0)
         return 0;
-    double AreaV = (max_limits[0] - min_limits[0]) * (max_limits[1] - min_limits[1]) * (max_limits[2] - min_limits[2]);
+    double AreaV = (max_limits[0] - min_limits[0]) * (max_limits[1] - min_limits[1]) * (max_limits[2] - min_limits[2]); // total volume
 
     double AreaC = 0;
 
     double tortuosity;
 
-    for (uint i = 0; i < axons.size(); i++)
+    for (uint i = 0; i < axons.size(); i++) // for all axons
     {
 
         double ax_length = 0;
         double mean_rad = 0;
         int num_spheres = 0;
 
-        // if twin
-        if (i > 0 && axons[i].radius == axons[i - 1].radius)
-        {
-            tortuosities.push_back(tortuosities[tortuosities.size() - 1]);
-            continue;
-        }
-        else if (axons[i].spheres.size() > 1)
+        if (axons[i].spheres.size() > 1)
         {
 
             for (uint j = 1; j < axons[i].spheres.size(); j++)
             {
-                double l = (axons[i].spheres[j - 1].center - axons[i].spheres[j].center).norm();
+                double l = (axons[i].spheres[j - 1].center - axons[i].spheres[j].center).norm(); // distance between centers
                 ax_length += l;
                 mean_rad += axons[i].spheres[j].radius;
                 num_spheres += 1;
@@ -1003,13 +1012,13 @@ double AxonGammaDistribution::computeICVF()
                 mean_rad = 0;
             }
 
-            tortuosity = ax_length / ((axons[i].begin - axons[i].end).norm());
+            tortuosity = ax_length / ((axons[i].begin - axons[i].end).norm()); // ( total distance between all centers / distance between first and last )
 
             tortuosities.push_back(tortuosity);
 
-            AreaC += M_PI * mean_rad * mean_rad * ax_length;
+            AreaC += M_PI * mean_rad * mean_rad * ax_length; // volume of axon cylinder
         }
     }
 
-    return AreaC / AreaV;
+    return AreaC / AreaV; // ( total axons volume / total volume )
 }
