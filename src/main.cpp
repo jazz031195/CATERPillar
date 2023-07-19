@@ -14,7 +14,7 @@ int main() {
 
     // number of axons
     unsigned int number_axons = 100;
-    int num_batches = 5;
+    int axon_capacity = 20; 
 
     // constants for gamma distribution, mean = 0.5 um 
     double alpha = 5.0;
@@ -29,16 +29,17 @@ int main() {
 
     // simulation parameters
     bool tortuous = true;
-    bool draw = true;
+    bool draw = false;
 
     // density parameters
-    double icvf = 0.1; 
+    double icvf = 0.4; 
 
     // create distribution of axons
-    AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(number_axons, num_batches, alpha, beta, min_l, max_l, min_radius, tortuous, draw);
-    AxonDistribution->set_icvf(icvf, max_l[0], max_l[1]);
+    AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw);
+    // AxonDistribution->set_icvf(icvf, max_l[0], max_l[1]);
     cout << "AxonDistribution created" << endl;
-    AxonDistribution->parallelGrowth();
+    AxonDistribution->growthVisualisation();
+    // AxonDistribution->parallelGrowth(); // without visualisation (not working)
     cout << "End of simulation!" << endl;
     delete AxonDistribution;
 }

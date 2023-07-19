@@ -29,6 +29,7 @@ public:
     std::vector<Axon> axons; /*!< Axon vector                                                           */
     unsigned num_obstacles;  /*!< number of cylnders fit inside the substrate */
     int num_batches = 5;
+    int axon_capacity; /* Safe number of axon per batch to avoid crash */
     std::mutex axonsMutex;
     double alpha; /*!< alpha coefficient of the Gamma distribution                           */
     double beta;  /*!< beta coefficient of the gamma distribution                            */
@@ -67,11 +68,6 @@ public:
     void displayGammaDistribution();
 
     /*!
-     *  \brief Creates and displays sequential axonal growth
-     */
-    void createGammaSubstrate();
-
-    /*!
      *  \param radii list of radii associated to axons
      *  \brief Creates a list with all the axons to grow
      */
@@ -88,15 +84,30 @@ public:
      */
     void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &stuck, int &straight_growths, int time, double radius, int &shrink_tries);
 
+    /*!
+     *  \brief Causes sinusoidal fluctuation of the radii
+     */
     void radiusVariation(Axon &axon, int time, double radius);
+
+    /*!
+     *  \brief Creates a parallel growth of all axons
+     */
+    void parallelGrowth();
 
     /*!
      *  \brief Creates and displays a parallel growth of all axons
      */
-    void parallelGrowth();
+    void growthVisualisation();
 
-    bool shrinkRadius(Growth growth, Axon &axon, int radius);
-    void dichotomy(Growth growth, Axon &axon, double &min_rad, double &max_rad, int radius, int& tries, double &rad);
+        /*!
+         *  \brief Shrinks the radius to allow passage between axons
+         */
+        bool shrinkRadius(Growth growth, Axon &axon, int radius);
+
+    /*!
+     *  \brief Finds a radius for which shrinkage allows passage
+     */
+    void dichotomy(Growth growth, Axon &axon, double &min_rad, double &max_rad, int radius, int &tries, double &rad);
 
     /*!
      *  \param row row of the current batch's axon vector

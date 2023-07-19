@@ -31,7 +31,6 @@ public:
     bool GrowFirstSphere();
     void add_next_sphere(Dynamic_Sphere added_sphere, std::vector<Eigen::Vector3d> &centers, std::vector<double> &sph_radii);
     void find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers, double dist_, double rad);
-    double calculateRadius(double &radius, double time, double amplitude, double frequency, double phase_shift);
     bool isSphereColliding(Dynamic_Sphere sph);
     bool check_borders(Eigen::Vector3d pos, double distance_to_border, Eigen::Vector2d &twin_delta_pos);
     void find_next_center_straight(vector<Eigen::Vector3d> centers, double distance, Dynamic_Sphere &s);
