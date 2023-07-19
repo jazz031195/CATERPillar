@@ -13,19 +13,19 @@ class Growth
 {
 public:
     std::vector<Axon> env_axons;
-    Axon *axon_to_grow; /*!< Axon vector                                                            */
+    Axon axon_to_grow; /* Axon vector */
     Eigen::Vector3d voxel_size;
     bool tortuous;
     Dynamic_Sphere sphere_to_add;
     std::vector<Eigen::Vector3d> centers;
     bool finished;
-    double max_radius;
-    bool grow_straight; /*Sometimes, you want the axon to grow staright and sometimes you want it to grow in a different random direction*/
+    double max_radius; /* initial radius */ 
+    bool grow_straight; /* Sometimes, you want the axon to grow staright and sometimes you want it to grow in a different random direction */
 
     Growth(){};
-    ~Growth();
+    ~Growth(){};
 
-    Growth(Axon *, std::vector<Axon>, Eigen::Vector3d, bool, double, bool);
+    Growth(Axon, std::vector<Axon>, Eigen::Vector3d, bool, double, bool);
 
     bool GrowAxon();
     bool GrowFirstSphere();

@@ -21,6 +21,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SFML/Graphics.hpp>
+#include <mutex>
 
 class AxonGammaDistribution
 {
@@ -43,7 +44,7 @@ public:
     double min_radius;
     std::vector<GLfloat> colours;
 
-    double max_radius;
+    double max_radius; // between all axons in env
 
     /*!
      *  \brief Initialize everything.
@@ -85,7 +86,7 @@ public:
      *  \param stuck number of straight growths
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &stuck, int &straight_growths, int time, double radius);
+    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &stuck, int &straight_growths, int time, double radius, int &shrink_tries);
 
     void radiusVariation(Axon &axon, int time, double radius);
 
@@ -94,13 +95,8 @@ public:
      */
     void parallelGrowth();
 
-    /*!
-     *  \param ax axon to draw
-     *  \param window drawing window
-     *  \param colour axon colour
-     *  \brief draws sequential axon growth
-     */
-    void drawWorld_seq(Axon *ax, sf::Window &window, GLfloat colour);
+    bool shrinkRadius(Growth growth, Axon &axon, int radius);
+    void dichotomy(Growth growth, Axon &axon, double &min_rad, double &max_rad, int radius, int& tries, double &rad);
 
     /*!
      *  \param row row of the current batch's axon vector

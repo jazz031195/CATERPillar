@@ -9,9 +9,8 @@ using namespace std;
 using namespace Eigen;
 using namespace std::chrono;
 
-Growth::Growth(Axon *axon_to_grow_, std::vector<Axon> env_axons_, Eigen::Vector3d voxel_size_, bool tortuous_, double max_radius_, bool grow_straight_)
+Growth::Growth(Axon axon_to_grow_, std::vector<Axon> env_axons_, Eigen::Vector3d voxel_size_, bool tortuous_, double max_radius_, bool grow_straight_)
 {
-
     env_axons = env_axons_;
     axon_to_grow = axon_to_grow_;
     voxel_size = voxel_size_;
@@ -25,15 +24,10 @@ Growth::Growth(Axon *axon_to_grow_, std::vector<Axon> env_axons_, Eigen::Vector3
     }
 
     // initialise centers
-    for (unsigned i = 0; i < axon_to_grow->spheres.size(); i++)
+    for (unsigned i = 0; i < axon_to_grow.spheres.size(); i++)
     {
-        centers.push_back(axon_to_grow->spheres[i].center);
+        centers.push_back(axon_to_grow.spheres[i].center);
     }
-}
-
-Growth::~Growth()
-{
-    delete axon_to_grow;
 }
 
 void Growth::add_next_sphere(Dynamic_Sphere added_sphere, std::vector<Eigen::Vector3d> &centers, std::vector<double> &sph_radii)
@@ -143,8 +137,6 @@ bool Growth::isSphereColliding(Dynamic_Sphere sph)
 
     Vector3d position = sph.center;
 
-    // std::cout << "env_axons.size():" << env_axons.size() << endl;
-
     for (unsigned i = 0; i < env_axons.size(); i++)
     {
         if (sph.ax_id != env_axons[i].id)
@@ -201,7 +193,7 @@ void Growth::find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers
         prev_pos = {centers[centers.size() - 1][0], centers[centers.size() - 1][1], centers[centers.size() - 1][2] - dist_};
     }
 
-    tie(phi_to_target, theta_to_target) = phi_theta_to_target(curr_pos, axon_to_grow->end + Eigen::Vector3d{0, 0, barrier_tickness});
+    tie(phi_to_target, theta_to_target) = phi_theta_to_target(curr_pos, axon_to_grow.end + Eigen::Vector3d{0, 0, barrier_tickness});
 
     // if not tortuous, phi and theta are those that lead to target
     if (!tortuous)
@@ -230,7 +222,7 @@ void Growth::find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers
     new_pos[2] += delta_z;
 
     // sphere to return
-    s = Dynamic_Sphere(axon_to_grow->spheres.size() - 1, axon_to_grow->id, new_pos, rad);
+    s = Dynamic_Sphere(axon_to_grow.spheres.size() - 1, axon_to_grow.id, new_pos, rad);
 }
 
 bool Growth::GrowFirstSphere()
@@ -239,7 +231,7 @@ bool Growth::GrowFirstSphere()
     // if sphere collides with environment
     bool collides;
     // first sphere to add
-    Dynamic_Sphere s1(0, axon_to_grow->id, axon_to_grow->begin, axon_to_grow->radius);
+    Dynamic_Sphere s1(0, axon_to_grow.id, axon_to_grow.begin, axon_to_grow.radius);
     // check if first sphere collides
 
     collides = isSphereColliding(s1);
@@ -264,7 +256,7 @@ void Growth::find_next_center_straight(vector<Eigen::Vector3d> centers, double d
     Eigen::Vector3d straight_vector = (last_center - before_last_center).normalized();
     straight_vector *= distance;
     Eigen::Vector3d new_center = last_center + straight_vector;
-    s = Dynamic_Sphere(axon_to_grow->spheres.size() - 1, axon_to_grow->id, new_center, axon_to_grow->radius);
+    s = Dynamic_Sphere(axon_to_grow.spheres.size() - 1, axon_to_grow.id, new_center, axon_to_grow.radius);
 }
 
 bool Growth::GrowAxon()
@@ -275,19 +267,18 @@ bool Growth::GrowAxon()
     bool collides;
     // distance between spheres
 
-    double distance = axon_to_grow->radius / 4;
+    double distance = axon_to_grow.radius / 4;
 
     if (centers.size() == 0 or centers[centers.size() - 1][2] < voxel_size[2]) // still growing
     {
 
-        if (axon_to_grow->spheres.size() == 0)
+        if (axon_to_grow.spheres.size() == 0)
         {
-            // cout << "grow first sphere" << endl;
             bool first_sphere_grown = GrowFirstSphere();
 
             if (first_sphere_grown)
             {
-                axon_to_grow->add_sphere(sphere_to_add);
+                axon_to_grow.add_sphere(sphere_to_add);
                 return true;
             }
             else
@@ -300,7 +291,7 @@ bool Growth::GrowAxon()
         {
             collides = true;
             int tries = 0;
-            Dynamic_Sphere s(axon_to_grow->spheres.size() - 1, axon_to_grow->id, axon_to_grow->begin, axon_to_grow->radius);
+            Dynamic_Sphere s(axon_to_grow.spheres.size() - 1, axon_to_grow.id, axon_to_grow.begin, axon_to_grow.radius);
             while (collides and tries < 1000)
             {
                 // find the center of next sphere by taking a random position
@@ -313,26 +304,27 @@ bool Growth::GrowAxon()
                     }
                     else
                     {
-                        find_next_center(s, centers, distance, axon_to_grow->radius);
+                        find_next_center(s, centers, distance, axon_to_grow.radius);
                     }
                     collides = isSphereColliding(s);
                     if (grow_straight && collides)
                     {
                         grow_straight = false;
                     }
+                    tries += 1;
                 }
                 else
                 {
-                    find_next_center(s, centers, distance, axon_to_grow->radius);
+                    find_next_center(s, centers, distance, axon_to_grow.radius);
                     collides = isSphereColliding(s);
                 }
-                tries += 1;
+                
             }
 
             if (!collides)
             {
                 sphere_to_add = s;
-                axon_to_grow->add_sphere(sphere_to_add); // we want to change the radius of the sphere
+                axon_to_grow.add_sphere(sphere_to_add); // we want to change the radius of the sphere
                 // if we reach edge of voxel
                 if (centers[centers.size() - 1][2] >= voxel_size[2])
                 {
@@ -340,20 +332,21 @@ bool Growth::GrowAxon()
                 }
                 return true;
             }
-            else // collides and >1000 tries
+            else  // collides and >1000 tries
             {
-                // cout << "sphere collides " << endl;
-                // return false;
-                cout << "Axon " << axon_to_grow->id << " stuck: stop growing" << endl;
-                finished = true;
-                return true;
+                cout << "sphere collides " << endl;
+                return false;
+                // cout << "Axon " << axon_to_grow.id << " stuck: stop growing" << endl;
+                // finished = true;
+                // return true;
             }
         }
     }
     else // axon is fully grown
     {
-        cout << "Axon " << axon_to_grow->id << " done!" << endl;
+        cout << "Axon " << axon_to_grow.id << " done!" << endl;
         finished = true;
         return true;
     }
 }
+

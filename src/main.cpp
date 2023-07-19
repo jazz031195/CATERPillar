@@ -13,7 +13,7 @@ using namespace Eigen;
 int main() {
 
     // number of axons
-    unsigned int number_axons = 50;
+    unsigned int number_axons = 100;
     int num_batches = 5;
 
     // constants for gamma distribution, mean = 0.5 um 
@@ -40,5 +40,5 @@ int main() {
     cout << "AxonDistribution created" << endl;
     AxonDistribution->parallelGrowth();
     cout << "End of simulation!" << endl;
-    // delete AxonDistribution;
+    delete AxonDistribution;
 }
