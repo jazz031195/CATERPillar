@@ -463,7 +463,7 @@ void AxonGammaDistribution::growthThread(int index, bool &can_grow, int &finishe
         {
             if (!can_grow)
             {
-                if (shrink_tries < 20)
+                if (shrink_tries < 1000)
                 {
                     cout << "Shrinking axon " << axons[index].id << ", sphere " << axons[index].spheres.size();
                     {
@@ -586,6 +586,7 @@ void AxonGammaDistribution::growthVisualisation()
         createAxons(radii);           // set the axons
         std::vector<int> num_subsets; // depending on which batch
 
+        // Set number of batches:
         if (num_obstacles < axon_capacity)
         {
             num_batches = 1;
@@ -600,6 +601,7 @@ void AxonGammaDistribution::growthVisualisation()
             num_subsets.push_back(left);                                    // last batch has the extra axons left
         }
 
+        // Start growth:
         for (unsigned j = 0; j < num_batches; j++) // batches of axon growth
         {
             cout << "---   Batch " << j << "   --- " << endl;
@@ -908,4 +910,51 @@ double AxonGammaDistribution::computeICVF()
     }
 
     return AreaC / AreaV; // ( total axons volume / total volume )
+}
+
+void AxonGammaDistribution::axonDensityMap()
+{
+    // Create an SFML window
+    sf::RenderWindow window(sf::VideoMode(20, 20), "2D Visualization");
+
+    // Define a list of axons, with predetermined radii and positions
+    std::vector<double> radii(num_obstacles, 0);
+    generate_radii(radii);
+    createAxons(radii);
+
+    bool finished = false;
+    while (window.isOpen() && finished)
+    {
+        sf::Event event;
+        while (window.pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+            {
+                window.close();
+            }
+        }
+
+        // Clear the window
+        window.clear(sf::Color(200, 200, 200));
+        // Create and draw the circles at the fixed position
+        for (size_t i = 0; i < num_obstacles; ++i)
+        {
+            double radius = radii[i];
+            Eigen::Vector3d position = axons[i].begin;
+            cout << i << endl;
+            sf::CircleShape circle(radius);
+            circle.setPosition(position[0] - radius, position[1] - radius);
+            circle.setFillColor(sf::Color(0, 0, 255, 128)); // Slightly more transparent blue (alpha value 64)
+            circle.setOutlineColor(sf::Color(50, 50, 50));  // Darker gray outline
+            circle.setOutlineThickness(0.03f);              // Set the outline thickness
+
+            window.draw(circle);
+        }
+
+        // Display the drawn circles
+        window.display();
+        std::this_thread::sleep_for(std::chrono::seconds(30));
+
+        finished = true;
+    }
 }

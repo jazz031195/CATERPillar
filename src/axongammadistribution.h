@@ -99,10 +99,10 @@ public:
      */
     void growthVisualisation();
 
-        /*!
-         *  \brief Shrinks the radius to allow passage between axons
-         */
-        bool shrinkRadius(Growth growth, Axon &axon, int radius);
+    /*!
+     *  \brief Shrinks the radius to allow passage between axons
+     */
+    bool shrinkRadius(Growth growth, Axon &axon, int radius);
 
     /*!
      *  \brief Finds a radius for which shrinkage allows passage
@@ -116,7 +116,15 @@ public:
      */
     void drawWorld(unsigned int row, sf::Window &window);
 
+    /*!
+     *  \brief Generates list of radii following gamma distribution
+     */
     void generate_radii(std::vector<double> &radiis);
+
+    /*!
+     *  \brief Draw 2d map of axon's initial placement
+     */
+    void axonDensityMap();
 
     /*!
      *  \brief Prints the cylinders positions in a file or output stream.

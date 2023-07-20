@@ -193,7 +193,7 @@ void Growth::find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers
         prev_pos = {centers[centers.size() - 1][0], centers[centers.size() - 1][1], centers[centers.size() - 1][2] - dist_};
     }
 
-    tie(phi_to_target, theta_to_target) = phi_theta_to_target(curr_pos, axon_to_grow.end + Eigen::Vector3d{0, 0, barrier_tickness});
+    tie(phi_to_target, theta_to_target) = phi_theta_to_target(curr_pos, axon_to_grow.end + Eigen::Vector3d{0, 0, 10});
 
     // if not tortuous, phi and theta are those that lead to target
     if (!tortuous)
