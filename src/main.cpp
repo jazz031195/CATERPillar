@@ -10,19 +10,20 @@ typedef unsigned int uint;
 using namespace std;
 using namespace Eigen;
 
-int main() {
+int main()
+{
 
     // number of axons
     unsigned int number_axons = 100;
-    int axon_capacity = 10; 
+    int axon_capacity = 10;
 
-    // constants for gamma distribution, mean = 0.5 um 
+    // constants for gamma distribution, mean = 0.5 um
     double alpha = 5.0;
     double beta = 0.1;
 
     // min and max limits of voxel
-    Eigen::Vector3d min_l = {0,0,0};
-    Eigen::Vector3d max_l = {20, 20, 20}; //um
+    Eigen::Vector3d min_l = {0, 0, 0};
+    Eigen::Vector3d max_l = {20, 20, 20}; // um
 
     // minimum radius
     double min_radius = 0.15; // um
@@ -32,15 +33,29 @@ int main() {
     bool draw = false;
 
     // density parameters
-    double icvf = 0.2; 
+    double icvf = 0.1;
 
     // create distribution of axons
-    AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw);
+    AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw);
     AxonDistribution->set_icvf(icvf, max_l[0], max_l[1]);
     cout << "AxonDistribution created" << endl;
     AxonDistribution->growthVisualisation();
 
-    // AxonDistribution->parallelGrowth(); // without visualisation (not working)
+    // Open the output file stream to the desired file path
+    std::ofstream outFile("/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/axon_simulation.swc");
+    std::ofstream outFile2("/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/radius.swc");
+
+
+    // Check if the file was opened successfully
+    if (!outFile)
+    {
+        std::cerr << "Error opening output file!" << std::endl;
+        return 1;
+    }
+
+    AxonDistribution->create_SWC_file(outFile);
+    outFile.close();
+
     cout << "End of simulation!" << endl;
     delete AxonDistribution;
 }

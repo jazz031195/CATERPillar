@@ -122,9 +122,13 @@ public:
     void generate_radii(std::vector<double> &radiis);
 
     /*!
-     *  \brief Draw 2d map of axon's initial placement
+     *  \brief Draws 2d map of axon's initial placement
      */
     void axonDensityMap();
+
+    void create_SWC_file(std::ostream &out);
+
+    void radius_file(std::ostream &out);
 
     /*!
      *  \brief Prints the cylinders positions in a file or output stream.

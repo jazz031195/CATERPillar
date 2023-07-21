@@ -204,8 +204,8 @@ void Growth::find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers
     // if tortuous, phi and theta comme from distribution
     else
     {
-        std::normal_distribution<float> phi_dist(phi_to_target / M_PI, 0.08);
-        std::normal_distribution<float> theta_dist(theta_to_target / M_PI, 0.08);
+        std::normal_distribution<float> phi_dist(phi_to_target / M_PI, 0.2);
+        std::normal_distribution<float> theta_dist(theta_to_target / M_PI, 0.2);
         phi = phi_dist(gen) * M_PI;
         theta = theta_dist(gen) * M_PI;
     }
@@ -334,7 +334,7 @@ bool Growth::GrowAxon()
             }
             else  // collides and >1000 tries
             {
-                cout << "sphere collides " << endl;
+                // cout << "sphere collides " << endl;
                 return false;
                 // cout << "Axon " << axon_to_grow.id << " stuck: stop growing" << endl;
                 // finished = true;
@@ -344,7 +344,7 @@ bool Growth::GrowAxon()
     }
     else // axon is fully grown
     {
-        cout << "Axon " << axon_to_grow.id << " done!" << endl;
+        // cout << "Axon " << axon_to_grow.id << " done!" << endl;
         finished = true;
         return true;
     }

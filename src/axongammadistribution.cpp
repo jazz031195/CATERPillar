@@ -327,7 +327,7 @@ void AxonGammaDistribution::createAxons(std::vector<double> radii)
     for (unsigned i = 0; i < num_obstacles; ++i) // create axon for each radius
     {
         bool next = false;
-        while (!next && tries < 100)
+        while (!next && tries < 1000000)
         {
             GLfloat new_colour = generateRandomColor();
             Vector3d Q, D;
@@ -364,11 +364,15 @@ void AxonGammaDistribution::createAxons(std::vector<double> radii)
                 }
             }
         }
-        if (tries >= 10000)
+        if (tries >= 1000000)
         {
             cout << "No more space for more axons" << endl;
             num_obstacles = axons.size();
-            num_batches = 1;
+            if (num_obstacles < radii.size())
+            {
+                // Erase elements from 'num_obstacles' index to the end of the vector
+                radii.erase(radii.begin() + num_obstacles, radii.end());
+            }
             cout << "New num_obstacles = " << num_obstacles << endl;
             cout << "By default, new num_batches = " << num_batches << endl;
             break; // no more axons added due to lack of space
@@ -395,9 +399,9 @@ void AxonGammaDistribution::dichotomy(Growth growth, Axon &axon, double &min_rad
     ++tries;
 
     double current_rad = (max_rad + min_rad) / 2;
-    Dynamic_Sphere s(axon.spheres.size() - 1, axon.id, axon.begin, current_rad);
-
-    if (!growth.isSphereColliding(s)) // solution is in greater half
+    // Dynamic_Sphere s(axon.spheres.size() - 1, axon.id, axon.begin, current_rad);
+    bool can_grow = growth.GrowAxon();
+    if (can_grow) // solution is in greater half
     {
         rad = current_rad; // update the last successful radius
         min_rad = current_rad;
@@ -418,10 +422,11 @@ void AxonGammaDistribution::dichotomy(Growth growth, Axon &axon, double &min_rad
 
 bool AxonGammaDistribution::shrinkRadius(Growth growth, Axon &axon, int radius)
 {
-    double current_rad = 0.75 * radius;
-    Dynamic_Sphere s(axon.spheres.size() - 1, axon.id, axon.begin, current_rad);
+    double current_rad = min_radius;
+    // Dynamic_Sphere s(axon.spheres.size() - 1, axon.id, axon.spheres[-1].center, current_rad);
+    double can_grow = growth.GrowAxon();
     int tries = 0;
-    if (!growth.isSphereColliding(s)) // shrinking is useful
+    if (can_grow) // shrinking is useful
     {
         double rad = current_rad; // last successful radius
         double max_rad = radius;
@@ -592,11 +597,15 @@ void AxonGammaDistribution::growthVisualisation()
             num_batches = 1;
             num_subsets = std::vector<int>(1, num_obstacles);
         }
+        if (num_obstacles % axon_capacity == 0) 
+        {
+            num_batches = num_obstacles / axon_capacity;
+            num_subsets = std::vector<int>(num_batches, axon_capacity);
+        }
         else
         {
             int left = num_obstacles % axon_capacity;
             num_batches = static_cast<int>(num_obstacles / axon_capacity) + 1;
-            cout << num_batches << endl;
             num_subsets = std::vector<int>(num_batches - 1, axon_capacity); // max capacity axons in all batches except last
             num_subsets.push_back(left);                                    // last batch has the extra axons left
         }
@@ -915,7 +924,7 @@ double AxonGammaDistribution::computeICVF()
 void AxonGammaDistribution::axonDensityMap()
 {
     // Create an SFML window
-    sf::RenderWindow window(sf::VideoMode(20, 20), "2D Visualization");
+    sf::RenderWindow window(sf::VideoMode(1000, 1000), "2D Visualization");
 
     // Define a list of axons, with predetermined radii and positions
     std::vector<double> radii(num_obstacles, 0);
@@ -923,7 +932,7 @@ void AxonGammaDistribution::axonDensityMap()
     createAxons(radii);
 
     bool finished = false;
-    while (window.isOpen() && finished)
+    while (window.isOpen() && !finished)
     {
         sf::Event event;
         while (window.pollEvent(event))
@@ -939,9 +948,9 @@ void AxonGammaDistribution::axonDensityMap()
         // Create and draw the circles at the fixed position
         for (size_t i = 0; i < num_obstacles; ++i)
         {
-            double radius = radii[i];
-            Eigen::Vector3d position = axons[i].begin;
-            cout << i << endl;
+            double radius = radii[i] * 50;
+            Eigen::Vector3d position = {axons[i].begin[0] * 50, axons[i].begin[1] * 50, axons[i].begin[2] * 50};
+            cout << position << endl;
             sf::CircleShape circle(radius);
             circle.setPosition(position[0] - radius, position[1] - radius);
             circle.setFillColor(sf::Color(0, 0, 255, 128)); // Slightly more transparent blue (alpha value 64)
@@ -956,5 +965,34 @@ void AxonGammaDistribution::axonDensityMap()
         std::this_thread::sleep_for(std::chrono::seconds(30));
 
         finished = true;
+    }
+}
+
+void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
+{
+    out << "id Type X Y Z R P" << endl;
+    int previous_id;
+    for (uint i = 0; i < axons.size(); i++)
+    {
+        previous_id = -1; // parent for first sphere of each axon
+        for (uint j = 0; j < axons[i].spheres.size(); j++)
+        {
+            out << (i + 1) * j << " axon " << axons[i].spheres[j].center[0] << " " << axons[i].spheres[j].center[1] << " " << axons[i].spheres[j].center[2] << " " << axons[i].spheres[j].radius << " " << previous_id << endl;
+            previous_id = (i + 1) * j;
+        }
+    }
+}
+
+void AxonGammaDistribution ::radius_file(std::ostream &out)
+{
+    out << "ax_id   Type   sph_id   Type2   R  " << endl;
+    out << endl;
+
+    for (uint i = 0; i < axons.size(); i++) // for each axon
+    {
+        for (uint j = 0; j < axons[i].spheres.size(); j++) // for each sphere
+        {
+            out << i << "     axon    " <<  axons[i].spheres[j].center - axons[i].begin  << "  " << "     sphere    " << axons[i].spheres[j].radius << endl;
+        }
     }
 }
