@@ -47,14 +47,15 @@ int main()
 
 
     // Check if the file was opened successfully
-    if (!outFile)
+    if (!outFile2)
     {
         std::cerr << "Error opening output file!" << std::endl;
         return 1;
     }
 
-    AxonDistribution->create_SWC_file(outFile);
-    outFile.close();
+    // AxonDistribution->create_SWC_file(outFile);
+    AxonDistribution->radius_file(outFile2);
+    outFile2.close();
 
     cout << "End of simulation!" << endl;
     delete AxonDistribution;

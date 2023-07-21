@@ -480,15 +480,17 @@ void AxonGammaDistribution::growthThread(int index, bool &can_grow, int &finishe
                             if (restart_tries < 5)
                             {
                                 cout << "Axon " << axons[index].id << " is stuck : restart growth !" << endl;
-                                // axons[index].spheres.clear();
-                                axons[index].spheres.erase(axons[index].spheres.begin() + 1, axons[index].spheres.end());
-                                cout << "restart size : " << axons[index].spheres.size() << endl;
-                                ++restart_tries;
+                                Dynamic_Sphere sphere = axons[index].spheres[0];
+                                axons[index].spheres.clear();
+                                axons[index].projections.clear_projections();
+                                axons[index].add_sphere(sphere);
+                                ++ restart_tries;
                             }
                             else
                             {
                                 cout << "Axon " << axons[index].id << " failed to regrow !" << endl;
                                 axons[index].spheres.clear();
+                                axons[index].projections.clear_projections();
                                 finished = 1;
                             }
                         }
@@ -1367,15 +1369,14 @@ void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
 
 void AxonGammaDistribution ::radius_file(std::ostream &out)
 {
-    out << "ax_id   Type   sph_id   Type2   R  " << endl;
-    out << endl;
+    out << "ax_id Type sph_id Type2 R  " << endl;
 
     for (uint i = 0; i < axons.size(); i++) // for each axon
     {
         for (uint j = 0; j < axons[i].spheres.size(); j++) // for each sphere
         {
-            out << i << "     axon    " << axons[i].spheres[j].center - axons[i].begin << "  "
-                << "     sphere    " << axons[i].spheres[j].radius << endl;
+            out << i << " axon " << axons[i].spheres[j].center - axons[i].begin << " "
+                << " sphere " << axons[i].spheres[j].radius << endl;
         }
     }
 }
