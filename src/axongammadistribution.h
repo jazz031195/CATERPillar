@@ -82,7 +82,7 @@ public:
      *  \param stuck number of straight growths
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &stuck, int &straight_growths, int time, double radius, int &shrink_tries);
+    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &straight_growths, int time, double radius, int &shrink_tries, int&restart_tries);
 
     /*!
      *  \brief Causes sinusoidal fluctuation of the radii

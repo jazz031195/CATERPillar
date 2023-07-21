@@ -345,7 +345,7 @@ bool Growth::GrowAxon()
     }
     else // axon is fully grown
     {
-        // cout << "Axon " << axon_to_grow.id << " done!" << endl;
+        cout << "Axon " << axon_to_grow.id << " done!" << endl;
         finished = true;
         return true;
     }
