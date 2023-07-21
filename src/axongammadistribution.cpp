@@ -380,14 +380,14 @@ void AxonGammaDistribution::createAxons(std::vector<double> radii)
     }
 }
 
-void AxonGammaDistribution::radiusVariation(Axon &axon, int time, double radius)
+void AxonGammaDistribution::radiusVariation(Axon &axon, int time, double radius_)
 {
     double p = 0.75;
-    double frequency = 1. / radius;
+    double frequency = 1. / radius_;
     double phase_shift = 0.;
-    double amplitude = (1 - p) * radius;
+    double amplitude = (1 - p) * radius_;
     double fluctuation = amplitude * sin(2.0 * M_PI * frequency * time + phase_shift);
-    axon.radius = radius * (1 + p) / 2 + fluctuation;
+    axon.radius = radius_ * (1 + p) / 2 + fluctuation;
     if (axon.radius < min_radius)
     {
         axon.radius = min_radius;
@@ -457,6 +457,7 @@ void AxonGammaDistribution::growthThread(int index, bool &can_grow, int &finishe
         grow_straight_ = false;
     }
 
+    radiusVariation(axons[index], time, radius);  // radius fluctuation
     Growth growth = Growth(axons[index], axons, max_limits, tortuous, axons[index].radius, max_radius, grow_straight_);
 
     try
@@ -523,10 +524,7 @@ void AxonGammaDistribution::growthThread(int index, bool &can_grow, int &finishe
                     std::lock_guard<std::mutex> lock(axonsMutex); // avoid concurrent modifications and data races
                     axons[index] = growth.axon_to_grow;           // updates axon list
                 }
-                {
-                    std::lock_guard<std::mutex> lock(axonsMutex); // lock the radius mutex to protect radius access
-                    radiusVariation(axons[index], time, radius);  // radius fluctuation
-                }
+
             }
         }
     }
