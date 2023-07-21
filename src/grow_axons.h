@@ -21,11 +21,11 @@ public:
     bool finished;
     double max_radius; /* initial radius */ 
     bool grow_straight; /* Sometimes, you want the axon to grow staright and sometimes you want it to grow in a different random direction */
-
+    double radius;
     Growth(){};
     ~Growth(){};
 
-    Growth(Axon, std::vector<Axon>, Eigen::Vector3d, bool, double, bool);
+    Growth(Axon, std::vector<Axon>, Eigen::Vector3d, bool, double,double, bool);
 
     bool GrowAxon();
     bool GrowFirstSphere();

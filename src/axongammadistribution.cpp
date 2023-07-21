@@ -400,6 +400,7 @@ void AxonGammaDistribution::dichotomy(Growth growth, Axon &axon, double &min_rad
 
     double current_rad = (max_rad + min_rad) / 2;
     // Dynamic_Sphere s(axon.spheres.size() - 1, axon.id, axon.begin, current_rad);
+    growth = Growth(axon, axons, max_limits, tortuous, current_rad, max_radius,false);
     bool can_grow = growth.GrowAxon();
     if (can_grow) // solution is in greater half
     {
@@ -424,6 +425,8 @@ bool AxonGammaDistribution::shrinkRadius(Growth growth, Axon &axon, int radius)
 {
     double current_rad = min_radius;
     // Dynamic_Sphere s(axon.spheres.size() - 1, axon.id, axon.spheres[-1].center, current_rad);
+    growth = Growth(axon, axons, max_limits, tortuous, current_rad, max_radius,false);
+
     double can_grow = growth.GrowAxon();
     int tries = 0;
     if (can_grow) // shrinking is useful
@@ -454,7 +457,7 @@ void AxonGammaDistribution::growthThread(int index, bool &can_grow, int &finishe
         grow_straight_ = false;
     }
 
-    Growth growth = Growth(axons[index], axons, max_limits, tortuous, radius, grow_straight_);
+    Growth growth = Growth(axons[index], axons, max_limits, tortuous, axons[index].radius, max_radius, grow_straight_);
 
     try
     {
@@ -560,6 +563,7 @@ void AxonGammaDistribution::growthVisualisation()
     settings.depthBits = 24; // Request a 24-bit depth buffer
 
     // Initialize OpenGL settings
+    initializeGLUT(0, nullptr);
     initializeOpenGL();
 
     // Set a custom depth range
