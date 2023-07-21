@@ -471,9 +471,9 @@ void AxonGammaDistribution::growthThread(int index, bool &can_grow, int &finishe
         {
             if (!can_grow)
             {
-                if (shrink_tries < 1000)
+                if (shrink_tries < 50)
                 {
-                    cout << "Shrinking axon " << axons[index].id << ", sphere " << axons[index].spheres.size();
+                    // cout << "Shrinking axon " << axons[index].id << ", sphere " << axons[index].spheres.size();
                     {
                         std::lock_guard<std::mutex> lock(axonsMutex); // lock the radius mutex to protect radius access
                         bool shrink = shrinkRadius(growth, axons[index], radius);
@@ -563,7 +563,7 @@ void AxonGammaDistribution::growthVisualisation()
     settings.depthBits = 24; // Request a 24-bit depth buffer
 
     // Initialize OpenGL settings
-    initializeGLUT(0, nullptr);
+    // initializeGLUT(0, nullptr);
     initializeOpenGL();
 
     // Set a custom depth range
