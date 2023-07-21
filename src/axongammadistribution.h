@@ -93,6 +93,7 @@ public:
      *  \brief Creates a parallel growth of all axons
      */
     void parallelGrowth();
+    void parallelGrowth_();
 
     /*!
      *  \brief Creates and displays a parallel growth of all axons
