@@ -480,7 +480,9 @@ void AxonGammaDistribution::growthThread(int index, bool &can_grow, int &finishe
                             if (restart_tries < 5)
                             {
                                 cout << "Axon " << axons[index].id << " is stuck : restart growth !" << endl;
-                                axons[index].spheres.clear();
+                                // axons[index].spheres.clear();
+                                axons[index].spheres.erase(axons[index].spheres.begin() + 1, axons[index].spheres.end());
+                                cout << "restart size : " << axons[index].spheres.size() << endl;
                                 ++restart_tries;
                             }
                             else
