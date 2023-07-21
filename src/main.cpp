@@ -15,7 +15,7 @@ int main()
 
     // number of axons
     unsigned int number_axons = 100;
-    int axon_capacity = 10;
+    int axon_capacity = 2;
 
     // constants for gamma distribution, mean = 0.5 um
     double alpha = 5.0;
@@ -33,7 +33,11 @@ int main()
     bool draw = false;
 
     // density parameters
+<<<<<<< HEAD
     double icvf = 0.01;
+=======
+    double icvf = 0.5;
+>>>>>>> 07190cf774c4d2ca0888b24bccea5cd001616ac5
 
     // create distribution of axons
     AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw);
