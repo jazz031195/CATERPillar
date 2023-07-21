@@ -99,6 +99,7 @@ public:
      *  \brief Creates and displays a parallel growth of all axons
      */
     void growthVisualisation();
+    void growthVisualisation_();
 
     /*!
      *  \brief Shrinks the radius to allow passage between axons

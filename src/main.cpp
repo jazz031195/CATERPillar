@@ -32,18 +32,14 @@ int main()
     bool tortuous = true;
     bool draw = false;
 
-    // density parameters
-<<<<<<< HEAD
-    double icvf = 0.01;
-=======
-    double icvf = 0.5;
->>>>>>> 07190cf774c4d2ca0888b24bccea5cd001616ac5
+   // density parameters
+    double icvf = 0.1;
 
     // create distribution of axons
     AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw);
     AxonDistribution->set_icvf(icvf, max_l[0], max_l[1]);
     cout << "AxonDistribution created" << endl;
-    AxonDistribution->parallelGrowth_();
+    AxonDistribution->growthVisualisation_();
 
     // Open the output file stream to the desired file path
     std::ofstream outFile("/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/axon_simulation.swc");
