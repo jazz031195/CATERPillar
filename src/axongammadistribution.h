@@ -26,7 +26,7 @@
 class AxonGammaDistribution
 {
 public:
-    std::vector<Axon> axons; /*!< Axon vector                                                           */
+    std::vector<Axon> axons; /*!< Axon vector  */
     unsigned num_obstacles;  /*!< number of cylnders fit inside the substrate */
     int num_batches = 5;
     int axon_capacity; /* Safe number of axon per batch to avoid crash */
@@ -34,6 +34,10 @@ public:
     double alpha; /*!< alpha coefficient of the Gamma distribution                           */
     double beta;  /*!< beta coefficient of the gamma distribution                            */
     double icvf;
+    std::vector<double> radii;  
+    int regrow = 0; 
+    std::vector<double> stuck_radii;  
+
 
     Eigen::Vector3d min_limits; /*!< voxel min limits (if any) (bottom left corner)                     */
     Eigen::Vector3d max_limits; /*!< voxel max limits (if any)                                          */
@@ -82,7 +86,7 @@ public:
      *  \param stuck number of straight growths
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &straight_growths, int time, double radius, int &shrink_tries, int&restart_tries);
+    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int&restart_tries);
 
     /*!
      *  \brief Causes sinusoidal fluctuation of the radii
