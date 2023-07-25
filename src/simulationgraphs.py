@@ -11,17 +11,16 @@ def read_swc_file(file_path):
     return df
 
 def radius_file(file_path):
-    columns = ["Type1", "ax_id", "Type2", "z",  "R"]
+    columns = ["Type1", "ax_id", "Type2", "z",  "R", "R0", "Tortuosity"]
     df = pd.read_csv(file_path, sep='\s+', names=columns)
     return df
 
 def radius_histogram(df):
-    print (df)
     df['R'] = pd.to_numeric(df['R'], errors='coerce')
     sns.histplot(data=df, x="R", color='blue', bins=30, kde=True)
-    plt.xlabel('Inner radius')
+    plt.xlabel('Radius')
     plt.ylabel('Frequency')
-    plt.title('Inner radius Histogram')
+    plt.title('Radius Histogram')
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
@@ -61,7 +60,7 @@ def diameter_variation(df, num_axons=10, max_z=None):
 
 
 def create_subplots(df, num_axons=10, max_z=None):
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 6))
 
     # Diameter variation with the first subplot
     plt.sca(axes[0])
@@ -89,7 +88,7 @@ def create_subplots(df, num_axons=10, max_z=None):
 
     plt.xticks([])  # Remove the x-axis labels
 
-    # Radius histogram function with the second subplot
+    # Radius histogram with the second subplot
     plt.sca(axes[1])
 
     df['R'] = pd.to_numeric(df['R'], errors='coerce')
@@ -100,6 +99,19 @@ def create_subplots(df, num_axons=10, max_z=None):
     plt.title('Diameter Histogram')
     plt.xticks(rotation=45)
     
+    # Coeff variation for the third subplot
+    plt.sca(axes[2])
+    df['R'] = pd.to_numeric(df['R'], errors='coerce')
+    # Calculate the coefficient of variation for each 'ax_id'
+    cv_data = df.groupby('ax_id')['R'].agg(lambda x: (x.std() / x.mean()))
+
+    # Plot the histogram of coefficient of variation
+    sns.histplot(data=cv_data, color='blue', bins=30, kde=True)
+    plt.xlabel('CV of radius')
+    plt.ylabel('Frequency')
+    plt.title('CV Histogram')
+    plt.xticks(rotation=45)
+
     # Add an overall title for the entire figure
     plt.suptitle('Substrate Analysis', fontsize=16)
 
@@ -109,11 +121,36 @@ def create_subplots(df, num_axons=10, max_z=None):
     # Display the figure
     plt.show()
 
+def plot_tortuosity_(df):
+    df['Tortuosity'] = pd.to_numeric(df['Tortuosity'], errors='coerce')
+    g = sns.JointGrid(data=df, x="R0", y="Tortuosity", space=0)
+    g.plot_joint(sns.kdeplot,
+             fill=True,
+              cmap="rocket")
+    g.plot_marginals(sns.histplot, color="#03051A", alpha=1, bins=25)
+    plt.show()
+
+def tortuosity_plot(df):
+    df['radius'] = pd.to_numeric(df['R'], errors='coerce')
+    df['Tortuosity'] = pd.to_numeric(df['Tortuosity'], errors='coerce')
+
+    g = sns.JointGrid(data=df, x="radius", y="Tortuosity", space=0)
+    g.plot_joint(sns.kdeplot, fill=True, cmap="rocket")
+    g.plot_marginals(sns.histplot, color='blue', alpha=1, bins=25)
+
+    plt.xlabel('radius')
+    plt.ylabel('Tortuosity')
+    plt.title('Tortuosity plot')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+
 
 if __name__ == "__main__":
     swc_file_path = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/axon_simulation.swc"
     radius_file_path = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/radius.swc"
     # graph = read_swc_file(swc_file_path)
     graph2 = radius_file(radius_file_path)
-    create_subplots(graph2, 51 )
-    diameter_variation(graph2, 51)
+    tortuosity_plot(graph2)
+    create_subplots(graph2, 149)

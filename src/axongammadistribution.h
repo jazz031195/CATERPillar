@@ -86,7 +86,7 @@ public:
      *  \param stuck number of straight growths
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int&restart_tries);
+    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int&restart_tries, bool regrowth);
 
     /*!
      *  \brief Causes sinusoidal fluctuation of the radii
@@ -145,6 +145,8 @@ public:
     bool check_borders(Eigen::Vector3d pos, double distance_to_border, Eigen::Vector2d &twin_delta_pos);
 
     void get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D);
+
+    bool withinBounds(Eigen::Vector3d pos);
 
 private:
     /*!

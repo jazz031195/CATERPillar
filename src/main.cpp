@@ -24,7 +24,7 @@ int main()
 
     // min and max limits of voxel
     Eigen::Vector3d min_l = {0, 0, 0};
-    Eigen::Vector3d max_l = {10, 10, 10}; // um
+    Eigen::Vector3d max_l = {20, 20, 20}; // um
 
     // minimum radius
     double min_radius = 0.15; // um
@@ -34,7 +34,7 @@ int main()
     bool draw = false;
 
    // density parameters
-    double icvf = 0.4;
+    double icvf = 0.6;
 
     // create distribution of axons
     AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw);
