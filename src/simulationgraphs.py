@@ -131,7 +131,7 @@ def tortuosity_plot(df):
 
     g = sns.JointGrid(data=df, x="radius", y="Tortuosity", space=0)
     g.plot_joint(sns.kdeplot, fill=True, cmap="rocket")
-    g.plot_marginals(sns.histplot, color='blue', alpha=1, bins=25)
+    g.plot_marginals(sns.histplot, color='blue', alpha=1, bins=50)
 
     plt.xlabel('radius')
     plt.ylabel('Tortuosity')
@@ -212,8 +212,8 @@ def get_spheres_array(df):
 
 
 if __name__ == "__main__":
-    radius_file_path = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/radius.swc"
+    radius_file_path = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/axons.swc"
     file = radius_file(radius_file_path)
-    # tortuosity_plot(file)
+    tortuosity_plot(file)
     # create_subplots(file, 149)
-    draw_axons(file)
+    # draw_axons(file)

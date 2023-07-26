@@ -37,6 +37,7 @@ public:
     std::vector<double> radii;  
     int regrow = 0; 
     std::vector<double> stuck_radii;  
+    int regrow_thr; /*!< Number of regrowth batches allowed*/
 
 
     Eigen::Vector3d min_limits; /*!< voxel min limits (if any) (bottom left corner)                     */
@@ -59,7 +60,7 @@ public:
     /*!
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(unsigned &, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool);
+    AxonGammaDistribution(unsigned &, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int);
 
     /*!
      *  \brief Sets icvf and overwrites num_obstacles and num_batches
@@ -106,8 +107,9 @@ public:
     void growthVisualisation_();
     void growBatches(std::vector<Axon>& ax_list, std::vector<int>& num_subsets_);
     void setBatches(int num_axons, std::vector<int>& num_subsets);
-    void drawBatches(sf::Window &window, std::vector<Axon> ax_list, int num_batches_, std::vector<int>& num_subsets_);
+    void drawBatches(sf::Window &window, std::vector<Axon>& ax_list, std::vector<int>& num_subsets_);
 
+    void createSubstrate();
 
 
     /*!

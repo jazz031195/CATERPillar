@@ -24,7 +24,7 @@ int main()
 
     // min and max limits of voxel
     Eigen::Vector3d min_l = {0, 0, 0};
-    Eigen::Vector3d max_l = {5, 5, 5}; // um
+    Eigen::Vector3d max_l = {20, 20, 20}; // um
 
     // minimum radius
     double min_radius = 0.15; // um
@@ -33,19 +33,21 @@ int main()
     bool tortuous = true;
     bool draw = false;
 
-   // density parameters
+    // density parameters
     double icvf = 0.7;
 
+    // number of regrowth batches allowed
+    int regrow_thr = 10;
+
     // create distribution of axons
-    AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw);
+    AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr);
     AxonDistribution->set_icvf(icvf, max_l[0], max_l[1]);
 
     cout << "AxonDistribution created" << endl;
 
     auto startTime = std::chrono::high_resolution_clock::now();
 
-    AxonDistribution->parallelGrowth();
-    // AxonDistribution->axonDensityMap();
+    AxonDistribution->createSubstrate();
 
     auto endTime = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::minutes>(endTime - startTime);
