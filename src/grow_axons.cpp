@@ -205,8 +205,8 @@ void Growth::find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers
     // if tortuous, phi and theta comme from distribution
     else
     {
-        std::normal_distribution<float> phi_dist(phi_to_target / M_PI, 0.01);
-        std::normal_distribution<float> theta_dist(theta_to_target / M_PI, 0.01);
+        std::normal_distribution<float> phi_dist(phi_to_target / M_PI, 0.1);
+        std::normal_distribution<float> theta_dist(theta_to_target / M_PI, 0.1);
         phi = phi_dist(gen) * M_PI;
         theta = theta_dist(gen) * M_PI;
     }

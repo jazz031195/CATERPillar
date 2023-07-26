@@ -28,7 +28,7 @@ class AxonGammaDistribution
 public:
     std::vector<Axon> axons; /*!< Axon vector  */
     unsigned num_obstacles;  /*!< number of cylnders fit inside the substrate */
-    int num_batches = 5;
+    int num_batches;
     int axon_capacity; /* Safe number of axon per batch to avoid crash */
     std::mutex axonsMutex;
     double alpha; /*!< alpha coefficient of the Gamma distribution                           */
@@ -75,7 +75,7 @@ public:
      *  \param radii list of radii associated to axons
      *  \brief Creates a list with all the axons to grow
      */
-    void createAxons(std::vector<double> radii);
+    void createAxons(std::vector<double>& radii, std::vector<Axon> &new_axons);
 
     /*!
      *  \param index position in the 2d form of the axons vector
@@ -86,7 +86,7 @@ public:
      *  \param stuck number of straight growths
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(int index, bool &can_grow, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int&restart_tries, bool regrowth);
+    void growthThread(std::vector<Axon> &ax_list, int index, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int&restart_tries, bool regrowth);
 
     /*!
      *  \brief Causes sinusoidal fluctuation of the radii
@@ -104,6 +104,11 @@ public:
      */
     void growthVisualisation();
     void growthVisualisation_();
+    void growBatches(std::vector<Axon>& ax_list, std::vector<int>& num_subsets_);
+    void setBatches(int num_axons, std::vector<int>& num_subsets);
+    void drawBatches(sf::Window &window, std::vector<Axon> ax_list, int num_batches_, std::vector<int>& num_subsets_);
+
+
 
     /*!
      *  \brief Shrinks the radius to allow passage between axons
@@ -134,7 +139,9 @@ public:
 
     void create_SWC_file(std::ostream &out);
 
-    void radius_file(std::ostream &out);
+    void axons_file(std::ostream &out);
+    void simulation_file(std::ostream &out, std::chrono::minutes duration);
+
 
     /*!
      *  \brief Prints the cylinders positions in a file or output stream.

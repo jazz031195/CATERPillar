@@ -2,6 +2,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import plotly.graph_objects as go
+import plotly.colors as colors
 
 
 def read_swc_file(file_path):
@@ -10,8 +12,8 @@ def read_swc_file(file_path):
 
     return df
 
-def radius_file(file_path):
-    columns = ["Type1", "ax_id", "Type2", "z",  "R", "R0", "Tortuosity"]
+def radius_file(file_path): 
+    columns = ["Type1", "ax_id", "Type2", "x", "y", "z", "Distance", "R", "R0", "Tortuosity"]
     df = pd.read_csv(file_path, sep='\s+', names=columns)
     return df
 
@@ -37,16 +39,16 @@ def diameter_variation(df, num_axons=10, max_z=None):
     # Filter data until the specific 'z' value if provided
     if max_z is not None:
         max_z_str = str(max_z)
-        df_subset = df_subset[df_subset['z'] <= max_z_str]
+        df_subset = df_subset[df_subset['Distance'] <= max_z_str]
 
     # Convert 'sph_id' to categorical to ensure proper x-axis alignment
-    df_subset['z'] = pd.Categorical(df_subset['z'])
+    df_subset['Distance'] = pd.Categorical(df_subset['Distance'])
 
     # Calculate diameter from radius
     df_subset['Diameter'] = df_subset['R'] * 2
 
     # Plot smooth curves without individual data points
-    sns.lineplot(data=df_subset, x="z", y="Diameter", hue="ax_id", ci=None, legend=False)
+    sns.lineplot(data=df_subset, x="Distance", y="Diameter", hue="ax_id", ci=None, legend=False)
     
     plt.xlabel("z")
     plt.ylabel("2r")
@@ -72,13 +74,13 @@ def create_subplots(df, num_axons=10, max_z=None):
     # Filter data until the specific 'z' value if provided
     if max_z is not None:
         max_z_str = str(max_z)
-        df_subset = df_subset[df_subset['z'] <= max_z_str]
+        df_subset = df_subset[df_subset['Distance'] <= max_z_str]
 
-    df_subset['z'] = pd.Categorical(df_subset['z']) # ensures proper x-axis alignment
+    df_subset['Distance'] = pd.Categorical(df_subset['Distance']) # ensures proper x-axis alignment
 
     df_subset['Diameter'] = df_subset['R'] * 2
 
-    sns.lineplot(data=df_subset, x="z", y="Diameter", hue="ax_id", ci=None, legend=False)
+    sns.lineplot(data=df_subset, x="Distance", y="Diameter", hue="ax_id", ci=None, legend=False)
     plt.xlabel("z (µm)")
     plt.ylabel("2r (µm)")
     if max_z is not None:
@@ -102,8 +104,9 @@ def create_subplots(df, num_axons=10, max_z=None):
     # Coeff variation for the third subplot
     plt.sca(axes[2])
     df['R'] = pd.to_numeric(df['R'], errors='coerce')
+    df['Diameter'] = df['R'] * 2
     # Calculate the coefficient of variation for each 'ax_id'
-    cv_data = df.groupby('ax_id')['R'].agg(lambda x: (x.std() / x.mean()))
+    cv_data = df.groupby('ax_id')['Diameter'].agg(lambda x: (x.std() / x.mean()))
 
     # Plot the histogram of coefficient of variation
     sns.histplot(data=cv_data, color='blue', bins=30, kde=True)
@@ -121,14 +124,6 @@ def create_subplots(df, num_axons=10, max_z=None):
     # Display the figure
     plt.show()
 
-def plot_tortuosity_(df):
-    df['Tortuosity'] = pd.to_numeric(df['Tortuosity'], errors='coerce')
-    g = sns.JointGrid(data=df, x="R0", y="Tortuosity", space=0)
-    g.plot_joint(sns.kdeplot,
-             fill=True,
-              cmap="rocket")
-    g.plot_marginals(sns.histplot, color="#03051A", alpha=1, bins=25)
-    plt.show()
 
 def tortuosity_plot(df):
     df['radius'] = pd.to_numeric(df['R'], errors='coerce')
@@ -146,11 +141,79 @@ def tortuosity_plot(df):
     plt.show()
 
 
+def draw_axons(df):
+    axons = get_spheres_array(df)[1:]
+    scatters = []
+    colours = colors.qualitative.Plotly[:10]
+    for e, axon in enumerate(axons):
+        c = colours[e % 10]
+        # Create a scatter plot for the axon
+        scatter = go.Scatter3d(
+            x=[s[0]  for s in axon],
+            y=[s[1]  for s in axon],
+            z=[s[2]  for s in axon],
+            mode="markers",
+            name=f"Axon {e}",
+            marker=dict(
+                sizemode="diameter",
+                size=[s[3] * 10 for s in axon],  # Set the size of scatter points for the axon
+                color=c,  # Set the color of scatter points for the axon
+                line=dict(
+                    color="rgba(0, 0, 0, 0)",  # Set color to transparent (alpha=0)
+                    width=0  # Set width to 0 to remove the contour
+                )
+            )
+        )
+        scatters.append(scatter)
+
+    layout = go.Layout(
+        scene=dict(
+            xaxis=dict(title='X [um]'),
+            yaxis=dict(title='Y [um]'),
+            zaxis=dict(title='Z [um]')
+        )
+    )
+
+    # Create the figure
+    fig = go.Figure(data=scatters, layout=layout)
+    # Show the figure
+    fig.show()
+
+
+def get_spheres_array(df):
+    axons = []
+    current_axon_id = None
+    current_axon = []
+    
+    df['x'] = pd.to_numeric(df['x'], errors='coerce')
+    df['y'] = pd.to_numeric(df['y'], errors='coerce')
+    df['z'] = pd.to_numeric(df['z'], errors='coerce')
+    df['R'] = pd.to_numeric(df['R'], errors='coerce')
+
+    for _, row in df.iterrows(): # loops over each row of the df
+        ax_id = row["ax_id"]
+        x = row["x"]
+        y = row["y"]
+        z = row["z"]
+        r = row["R"]  
+
+        if ax_id != current_axon_id: # passing to next axon 
+            if current_axon_id is not None:
+                axons.append(current_axon) # full list
+                current_axon = [] # emptying list
+            current_axon_id = ax_id # update axon number
+
+        current_axon.append([x, y, z, r])
+
+    if current_axon: # if the list is not empty
+        axons.append(current_axon) # last axon
+
+    return axons
+
 
 if __name__ == "__main__":
-    swc_file_path = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/axon_simulation.swc"
     radius_file_path = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/radius.swc"
-    # graph = read_swc_file(swc_file_path)
-    graph2 = radius_file(radius_file_path)
-    tortuosity_plot(graph2)
-    create_subplots(graph2, 149)
+    file = radius_file(radius_file_path)
+    # tortuosity_plot(file)
+    # create_subplots(file, 149)
+    draw_axons(file)
