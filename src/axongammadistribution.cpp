@@ -311,6 +311,7 @@ void AxonGammaDistribution::generate_radii(std::vector<double> &radiis)
 void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector<Axon> &new_axons)
 {
     int tries = 0;
+    std::vector<int> stuck_axons_id;
     for (unsigned i = 0; i < radii_.size(); ++i) // create axon for each radius
     {
         bool next = false;
@@ -320,7 +321,6 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
             Vector3d Q, D;
             get_begin_end_point(Q, D);
             Axon ax;
-
             if (radii.size() == radii_.size())
             {
                 ax = Axon(i, Q, D, radii_[i]); // original axons
@@ -329,7 +329,6 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
             {
                 ax = Axon(i + radii.size(), Q, D, radii_[i]); // axons for regrow batch
             }
-
             Dynamic_Sphere sphere = Dynamic_Sphere(0, ax.id, Q, radii_[i]);
             ax.add_sphere(sphere);
             if (axons.empty())
@@ -344,14 +343,13 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
                 bool overlap = false;
                 for (auto &axon : axons)
                 {
-                    if (axon.isPosInsideAxon(Q, radii_[i], max_radius) ) // overlap
+                    if (axon.isPosInsideAxon(Q, radii_[i], max_radius)) // overlap
                     {
                         overlap = true;
                         ++tries;
                         next = false;
                         break;
                     }
-                    
                 }
                 if (overlap == false) // after comparing with all axons
                 {
@@ -375,7 +373,8 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
             else // regrowing some axons
             {
                 cout << "Not enough space, forget about axon " << i << endl;
-                radii_.erase(radii_.begin() + i);
+                //radii_.erase(radii_.begin() + i);
+                stuck_axons_id.push_back(i);
             }
         }
     }
