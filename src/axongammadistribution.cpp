@@ -29,7 +29,6 @@ void _split_(const std::string &s, char delim, Out result)
         *(result++) = item;
     }
 }
-
 std::vector<std::string> _split_line(const std::string &s, char delim)
 {
     std::vector<std::string> elems;
@@ -56,7 +55,6 @@ AxonGammaDistribution::AxonGammaDistribution(unsigned &num_ax, int &axon_capacit
     regrow_thr = regrow_thr_;
 }
 
-
 void AxonGammaDistribution::computeMinimalSize(std::vector<double> radiis, double icvf_, Eigen::Vector3d &l)
 {
     /*
@@ -78,7 +76,6 @@ void AxonGammaDistribution::computeMinimalSize(std::vector<double> radiis, doubl
 
     l = {l_, l_, l_};
 }
-
 void AxonGammaDistribution::displayGammaDistribution()
 {
     /*
@@ -113,7 +110,6 @@ void AxonGammaDistribution::displayGammaDistribution()
     message = ">10: " + std::string(p[10] * nstars / nrolls, '*') + "\n";
     std::cout << message << endl;
 }
-
 bool AxonGammaDistribution::check_borders(Eigen::Vector3d pos, double distance_to_border, Eigen::Vector2d &twin_delta_pos)
 {
 
@@ -151,7 +147,6 @@ bool AxonGammaDistribution::check_borders(Eigen::Vector3d pos, double distance_t
         return false;
     }
 }
-
 bool AxonGammaDistribution::withinBounds(Eigen::Vector3d pos)
 {
     bool within;
@@ -169,7 +164,6 @@ bool AxonGammaDistribution::withinBounds(Eigen::Vector3d pos)
     }
     return within;
 }
-
 void display_progress(double nbr_axons, double number_obstacles)
 {
     int cTotalLength = 50;
@@ -179,7 +173,6 @@ void display_progress(double nbr_axons, double number_obstacles)
         string(int(cTotalLength * (1 - lProgress)), '-') <<   // printing empty part
         "] " << nbr_axons << "/" << number_obstacles << endl; // printing percentage
 }
-
 void AxonGammaDistribution::get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D)
 {
     std::random_device rd;
@@ -373,17 +366,18 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
             else // regrowing some axons
             {
                 cout << "Not enough space, forget about axon " << i << endl;
-                //radii_.erase(radii_.begin() + i);
+                // radii_.erase(radii_.begin() + i);
                 stuck_axons_id.push_back(i);
             }
         }
     }
-    for (const auto& id : stuck_axons_id){
+    for (const auto &id : stuck_axons_id)
+    {
         radii_.erase(radii_.begin() + id);
     }
-    for (const auto& ax : new_axons)
+    for (const auto &ax : new_axons)
     {
-        if (ax.spheres.size()==0)
+        if (ax.spheres.size() == 0)
         {
             cout << "no sphere !! for ax " << ax.id << endl;
         }
@@ -910,7 +904,7 @@ void AxonGammaDistribution::growthThread(std::vector<Axon> &ax_list, int index, 
         {
             if (!can_grow)
             {
-                if (shrink_tries < 100)
+                if (shrink_tries < 10000)
                 {
                     // cout << "Shrinking axon " << axons[index].id << ", sphere " << axons[index].spheres.size();
                     {
@@ -919,7 +913,7 @@ void AxonGammaDistribution::growthThread(std::vector<Axon> &ax_list, int index, 
 
                         if (!shrink) // shrinking will not help growth
                         {
-                            if (restart_tries < 10)
+                            if (restart_tries < 25)
                             {
                                 // cout << "Axon " << axons[index].id << " is stuck : restart growth !" << endl;
                                 Dynamic_Sphere sphere = ax_list[index].spheres[0];
@@ -1042,8 +1036,9 @@ double AxonGammaDistribution::computeICVF()
             for (uint j = 1; j < axons[i].spheres.size(); j++)
             {
                 double l = (axons[i].spheres[j - 1].center - axons[i].spheres[j].center).norm(); // distance between centers
+                Vector3d r = {axons[i].spheres[j].radius, axons[i].spheres[j].radius, axons[i].spheres[j].radius};
 
-                if (withinBounds(axons[i].spheres[j].center))
+                if (withinBounds(axons[i].spheres[j].center - r))
                 {
                     ax_length_area += l;
                 }

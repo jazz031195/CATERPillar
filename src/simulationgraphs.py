@@ -27,7 +27,6 @@ def radius_histogram(df):
     plt.tight_layout()
     plt.show()
 
-
 def diameter_variation(df, num_axons=10, max_z=None):
     plt.figure(figsize=(12, 6))  # Adjust the figure size as needed
     df['R'] = pd.to_numeric(df['R'], errors='coerce')
@@ -59,7 +58,6 @@ def diameter_variation(df, num_axons=10, max_z=None):
 
     plt.xticks([])  # Remove the x-axis labels
     plt.show()
-
 
 def create_subplots(df, num_axons=10, max_z=None):
     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 6))
@@ -124,7 +122,6 @@ def create_subplots(df, num_axons=10, max_z=None):
     # Display the figure
     plt.show()
 
-
 def tortuosity_plot(df):
     df['radius'] = pd.to_numeric(df['R'], errors='coerce')
     df['Tortuosity'] = pd.to_numeric(df['Tortuosity'], errors='coerce')
@@ -140,7 +137,6 @@ def tortuosity_plot(df):
     plt.tight_layout()
     plt.show()
 
-
 def draw_axons(df):
     axons = get_spheres_array(df)[1:]
     scatters = []
@@ -149,9 +145,9 @@ def draw_axons(df):
         c = colours[e % 10]
         # Create a scatter plot for the axon
         scatter = go.Scatter3d(
-            x=[s[0]  for s in axon],
-            y=[s[1]  for s in axon],
-            z=[s[2]  for s in axon],
+            x=[s[0] for s in axon],
+            y=[s[1] for s in axon],
+            z=[s[2] for s in axon],
             mode="markers",
             name=f"Axon {e}",
             marker=dict(
@@ -178,7 +174,6 @@ def draw_axons(df):
     fig = go.Figure(data=scatters, layout=layout)
     # Show the figure
     fig.show()
-
 
 def get_spheres_array(df):
     axons = []
@@ -215,5 +210,5 @@ if __name__ == "__main__":
     radius_file_path = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/axons.swc"
     file = radius_file(radius_file_path)
     tortuosity_plot(file)
-    # create_subplots(file, 149)
+    create_subplots(file, 70)
     # draw_axons(file)
