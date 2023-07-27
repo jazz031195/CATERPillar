@@ -164,9 +164,9 @@ def draw_axons(df):
 
     layout = go.Layout(
         scene=dict(
-            xaxis=dict(title='X [um]'),
-            yaxis=dict(title='Y [um]'),
-            zaxis=dict(title='Z [um]')
+            xaxis=dict(title='X [µm]'),
+            yaxis=dict(title='Y [µm]'),
+            zaxis=dict(title='Z [µm]')
         )
     )
 
@@ -205,10 +205,46 @@ def get_spheres_array(df):
 
     return axons
 
+def read_data(filename):
+    with open(filename, 'r') as file:
+        data = {}
+        for line in file:
+            key, value = line.strip().split()
+            data[key] = float(value)
+        return data
+
+def combine_files(file_list):
+    combined_data = {}
+    for file in file_list:
+        data = read_data(file)
+        for key, value in data.items():
+            if key in combined_data:
+                combined_data[key].append(value) # adds element to key list
+            else:
+                combined_data[key] = [value] # creates new key and adds element
+    return combined_data
+
+def vox_time_plot(file_list):
+    data = combine_files(file_list)
+    sns.lineplot(x=data['Voxel'], y=data['Duration'])
+    plt.xlabel('Voxel size (µm)')
+    plt.ylabel('Time (s)')
+    plt.title('Time vs. Voxel Size')
+    plt.legend(title='icvf = ' + str(data['icvf'][0]) + '\n' + 'capacity = ' + str(data['Capacity'][0]), loc='upper left')
+    plt.show()
+
 
 if __name__ == "__main__":
-    radius_file_path = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/axons.swc"
-    file = radius_file(radius_file_path)
-    tortuosity_plot(file)
-    create_subplots(file, 70)
+    # radius_file_path = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/axons.swc"
+    file1 = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/test/simulation_icvf_0.30_cap_10_vox_10..txt"
+    file2 = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/test/simulation_icvf_0.30_cap_10_vox_20..txt"
+    file3 = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/test/simulation_icvf_0.30_cap_10_vox_30..txt"
+    file_list = [file1,file2,file3]
+    # file = radius_file(radius_file_path)
+
+    vox_time_plot(file_list)
+    print(combine_files(file_list))
+
+    # tortuosity_plot(file)
+    # create_subplots(file, 70)
     # draw_axons(file)

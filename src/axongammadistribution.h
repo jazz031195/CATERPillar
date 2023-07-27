@@ -27,6 +27,14 @@ class AxonGammaDistribution
 {
 public:
     std::vector<Axon> axons; /*!< Axon vector  */
+    std::vector<double> radii;  /*!< axons radii  */
+
+    std::vector<Axon> axons_to_regrow;
+    std::vector<double> stuck_radii;  /*!< radii of stuck axons */
+
+    std::vector<Axon> axon_env; /*!< axons and regrowing axons */
+
+
     unsigned num_obstacles;  /*!< number of cylnders fit inside the substrate */
     int num_batches;
     int axon_capacity; /* Safe number of axon per batch to avoid crash */
@@ -34,9 +42,7 @@ public:
     double alpha; /*!< alpha coefficient of the Gamma distribution                           */
     double beta;  /*!< beta coefficient of the gamma distribution                            */
     double icvf;
-    std::vector<double> radii;  
-    int regrow = 0; 
-    std::vector<double> stuck_radii;  
+    int regrow_count = 0; /*!< number of axons to regrow */
     int regrow_thr; /*!< Number of regrowth batches allowed*/
 
 
@@ -87,12 +93,12 @@ public:
      *  \param stuck number of straight growths
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(std::vector<Axon> &ax_list, int index, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int&restart_tries, bool regrowth);
+    void growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int&restart_tries);
 
     /*!
      *  \brief Causes sinusoidal fluctuation of the radii
      */
-    void radiusVariation(Axon &axon, int time, double radius);
+    void radiusVariation(Axon &axon, int time);
 
     /*!
      *  \brief Creates a parallel growth of all axons
@@ -105,9 +111,10 @@ public:
      */
     void growthVisualisation();
     void growthVisualisation_();
-    void growBatches(std::vector<Axon>& ax_list, std::vector<int>& num_subsets_);
+    void growBatches(std::vector<Axon>& ax_list, std::vector<double> &radii_, std::vector<int>& num_subsets_);
     void setBatches(int num_axons, std::vector<int>& num_subsets);
-    void drawBatches(sf::Window &window, std::vector<Axon>& ax_list, std::vector<int>& num_subsets_);
+    void drawBatches(sf::Window &window, std::vector<Axon>& ax_list, std::vector<double> &radii_, std::vector<int>& num_subsets_);
+    void updateEnv();
 
     void createSubstrate();
 
@@ -115,12 +122,12 @@ public:
     /*!
      *  \brief Shrinks the radius to allow passage between axons
      */
-    bool shrinkRadius(Growth growth, Axon &axon, int radius);
+    bool shrinkRadius(Growth growth, Axon &axon);
 
     /*!
      *  \brief Finds a radius for which shrinkage allows passage
      */
-    void dichotomy(Growth growth, Axon &axon, double &min_rad, double &max_rad, int radius, int &tries, double &rad);
+    void dichotomy(Eigen::Vector3d position_that_worked, Growth growth, Axon& axon, double &min_rad, double &max_rad, int &tries, double &last_rad);
 
     /*!
      *  \param row row of the current batch's axon vector
@@ -142,7 +149,7 @@ public:
     void create_SWC_file(std::ostream &out);
 
     void axons_file(std::ostream &out);
-    void simulation_file(std::ostream &out, std::chrono::minutes duration);
+    void simulation_file(std::ostream &out, std::chrono::seconds duration);
 
 
     /*!
@@ -155,7 +162,7 @@ public:
 
     void get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D);
 
-    bool withinBounds(Eigen::Vector3d pos);
+    bool withinBounds(Eigen::Vector3d pos, double distance);
 
 private:
     /*!

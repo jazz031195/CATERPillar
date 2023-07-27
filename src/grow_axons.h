@@ -34,6 +34,10 @@ public:
     bool isSphereColliding(Dynamic_Sphere sph);
     bool check_borders(Eigen::Vector3d pos, double distance_to_border, Eigen::Vector2d &twin_delta_pos);
     void find_next_center_straight(vector<Eigen::Vector3d> centers, double distance, Dynamic_Sphere &s);
+    bool TestGrowAxonAtPos(Eigen::Vector3d position_to_test);
+    bool TestGrowAxon(Eigen::Vector3d &position_that_worked);
+
+
 };
 
 #endif
