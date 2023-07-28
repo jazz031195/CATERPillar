@@ -314,7 +314,6 @@ bool Growth::GrowAxon()
     // distance between spheres
 
     double distance = axon_to_grow.radius / 4;
-    cout << "HERE" << endl;
 
     if (centers.size() == 0 or centers[centers.size() - 1][2] < voxel_size[2]) // still growing
     {
