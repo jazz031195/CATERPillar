@@ -817,7 +817,7 @@ double AxonGammaDistribution::radiusVariation(Axon &axon, int time)
     double p = 0.75;
     double amplitude = (initial_radius - p* initial_radius) / 2;
     double mean_radius = p * initial_radius;
-    double angular_frequency = M_PI / initial_radius; // Adjust the frequency to control the sinusoidal curve
+    double angular_frequency = M_PI *100 / initial_radius; // Adjust the frequency to control the sinusoidal curve
     double r = amplitude * sin(angular_frequency * time) + mean_radius;
 
 
@@ -914,6 +914,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
         std::lock_guard<std::mutex> lock(axonsMutex);
         updateEnv(); // takes into account axons to regrow (if any)
     }
+    //cout << "sphere id :" << axon.spheres.size() << endl;
     double varied_radius = radiusVariation(axon, time);
     //cout << "ax id : " << axon.id << ", initial " << axon.radius << " updated " << varied_radius<< endl;
     Growth growth = Growth(axon, axon_env, max_limits, tortuous, varied_radius, max_radius, grow_straight_);

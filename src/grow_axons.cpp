@@ -258,7 +258,7 @@ void Growth::find_next_center_straight(vector<Eigen::Vector3d> centers, double d
     Eigen::Vector3d straight_vector = (last_center - before_last_center).normalized();
     straight_vector *= distance;
     Eigen::Vector3d new_center = last_center + straight_vector;
-    s = Dynamic_Sphere(axon_to_grow.spheres.size() , axon_to_grow.id, new_center, axon_to_grow.radius);
+    s.center = new_center;
 }
 
 bool Growth::TestGrowAxonAtPos(Eigen::Vector3d position_to_test)
@@ -422,7 +422,7 @@ bool Growth::GrowAxon()
 
                 axon_to_grow.add_sphere(s); // we want to change the radius of the sphere
                 //cout << "radius as input : " << radius <<endl;
-                //cout << " grow axon with radius : " << s.radius <<endl;
+                cout << " grow axon with radius : " << s.radius <<endl;
                 // if we reach edge of voxel
                 if (centers[centers.size() - 1][2] >= voxel_size[2])
                 {
