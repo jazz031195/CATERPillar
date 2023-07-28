@@ -133,7 +133,7 @@ public:
      *  \param window drawing window
      *  \brief draws sequential axon growth
      */
-    void drawWorld(unsigned int row, sf::Window &window);
+    void drawWorld(std::vector<Axon> ax_list, unsigned int row, sf::Window &window, int num_ax);
 
     /*!
      *  \brief Generates list of radii following gamma distribution

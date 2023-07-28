@@ -421,8 +421,6 @@ bool Growth::GrowAxon()
             {
 
                 axon_to_grow.add_sphere(s); // we want to change the radius of the sphere
-                //cout << "radius as input : " << radius <<endl;
-                cout << " grow axon with radius : " << s.radius <<endl;
                 // if we reach edge of voxel
                 if (centers[centers.size() - 1][2] >= voxel_size[2])
                 {

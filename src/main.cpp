@@ -15,7 +15,7 @@ int main()
 {
     // number of axons
     unsigned int number_axons = 100;
-    int axon_capacity = 1;
+    int axon_capacity = 5;
 
     // constants for gamma distribution, mean = 0.5 um
     double alpha = 5.0;
@@ -32,7 +32,7 @@ int main()
 
     // simulation parameters
     bool tortuous = true;
-    bool draw = false;
+    bool draw = true;
 
     // density parameters
     double icvf = 0.3;
@@ -52,13 +52,13 @@ int main()
 
 
     // Open the output file stream to the desired file path
-    //std::ofstream axons_file("/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/axons_icvf_" + std::to_string(icvf).substr(0, 4) + " _cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(max_l[0]).substr(0, 3) + ".swc");
-    //std::ofstream simulation_file("/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/simulation_icvf_" + std::to_string(icvf).substr(0, 4) + " _cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(max_l[0]).substr(0, 3) + ".txt");
-    //std::ofstream swc_file("/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/growth_icvf_" + std::to_string(icvf).substr(0, 4) + " _cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(max_l[0]).substr(0, 3) + ".swc");
+    std::ofstream axons_file("/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/axons_icvf_" + std::to_string(icvf).substr(0, 4) + " _cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(max_l[0]).substr(0, 3) + ".swc");
+    std::ofstream simulation_file("/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/simulation_icvf_" + std::to_string(icvf).substr(0, 4) + " _cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(max_l[0]).substr(0, 3) + ".txt");
+    std::ofstream swc_file("/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/growth_icvf_" + std::to_string(icvf).substr(0, 4) + " _cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(max_l[0]).substr(0, 3) + ".swc");
 
-    std::ofstream axons_file("/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + ".swc");
-    std::ofstream simulation_file("/home/localadmin/Documents/Melina_branch/Sim_Growth/simulation_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + ".txt");
-    std::ofstream swc_file("/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + ".swc");
+    // std::ofstream axons_file("/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + ".swc");
+    // std::ofstream simulation_file("/home/localadmin/Documents/Melina_branch/Sim_Growth/simulation_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + ".txt");
+    // std::ofstream swc_file("/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + ".swc");
 
     // Check if files opened successfully
     if (!axons_file || !simulation_file || !swc_file)
