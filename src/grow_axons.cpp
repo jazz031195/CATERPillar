@@ -266,12 +266,13 @@ bool Growth::TestGrowAxonAtPos(Eigen::Vector3d position_to_test)
     bool collides = isSphereColliding(s);
     return collides;
 }
+
 bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked)
 {
     Dynamic_Sphere s(axon_to_grow.spheres.size() - 1, axon_to_grow.id, axon_to_grow.begin, radius);
     bool collides = true;
     int tries = 0;
-    double distance = radius / 4;
+    double distance = axon_to_grow.radius / 4;
     while (collides and tries < 10000)
     {
         // find the center of next sphere by taking a random position
