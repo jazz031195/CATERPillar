@@ -913,8 +913,9 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
         std::lock_guard<std::mutex> lock(axonsMutex);
         updateEnv(); // takes into account axons to regrow (if any)
     }
+    double varied_radius = radiusVariation(axon, time);
     // cout << "initial " << axon.radius << " updated " << radiusVariation(axon, time) << endl;
-    Growth growth = Growth(axon, axon_env, max_limits, tortuous, radiusVariation(axon, time), max_radius, grow_straight_);
+    Growth growth = Growth(axon, axon_env, max_limits, tortuous, varied_radius, max_radius, grow_straight_);
 
     bool can_grow = growth.GrowAxon(); // adds sphere
 

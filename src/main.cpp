@@ -15,7 +15,7 @@ int main()
 {
     // number of axons
     unsigned int number_axons = 100;
-    int axon_capacity = 5;
+    int axon_capacity = 10;
 
     // constants for gamma distribution, mean = 0.5 um
     double alpha = 5.0;

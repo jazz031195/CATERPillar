@@ -156,7 +156,7 @@ bool Growth::isSphereColliding(Dynamic_Sphere sph)
     return false;
 }
 
-void Growth::find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers, double dist_, double rad)
+void Growth::find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers, double dist_)
 {
 
     // phi and theta angles in spherical coordinates
@@ -223,7 +223,7 @@ void Growth::find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers
     new_pos[2] += delta_z;
 
     // sphere to return
-    s = Dynamic_Sphere(axon_to_grow.spheres.size(), axon_to_grow.id, new_pos, rad);
+    s.center = new_pos;
 }
 
 bool Growth::GrowFirstSphere()
@@ -275,7 +275,7 @@ bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked)
     bool collides;
     // distance between spheres
 
-    double distance = axon_to_grow.radius / 4;
+    double distance = radius / 4;
 
     if (centers.size() == 0 or centers[centers.size() - 1][2] < voxel_size[2]) // still growing
     {
@@ -312,7 +312,7 @@ bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked)
                     }
                     else
                     {
-                        find_next_center(s, centers, distance, axon_to_grow.radius);
+                        find_next_center(s, centers, distance);
                     }
                     collides = isSphereColliding(s);
                     if (grow_straight && collides)
@@ -323,7 +323,7 @@ bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked)
                 }
                 else
                 {
-                    find_next_center(s, centers, distance, axon_to_grow.radius);
+                    find_next_center(s, centers, distance);
 
                     collides = isSphereColliding(s);
                 }
@@ -362,7 +362,7 @@ bool Growth::GrowAxon()
     bool collides;
     // distance between spheres
 
-    double distance = axon_to_grow.radius / 4;
+    double distance = radius/ 4;
 
     if (centers.size() == 0 or centers[centers.size() -1][2] < voxel_size[2]) // still growing
     {
@@ -399,7 +399,7 @@ bool Growth::GrowAxon()
                     }
                     else
                     {
-                        find_next_center(s, centers, distance, axon_to_grow.radius);
+                        find_next_center(s, centers, distance);
                     }
                     collides = isSphereColliding(s);
                     if (grow_straight && collides)
@@ -410,7 +410,7 @@ bool Growth::GrowAxon()
                 }
                 else
                 {
-                    find_next_center(s, centers, distance, axon_to_grow.radius);
+                    find_next_center(s, centers, distance);
 
                     collides = isSphereColliding(s);
                 }
