@@ -25,7 +25,7 @@ public:
     Growth(){};
     ~Growth(){};
 
-    Growth(Axon, std::vector<Axon>, std::vector<Axon>, Eigen::Vector3d, bool, double, double, bool);
+    Growth(Axon, std::vector<Axon>, std::vector<Axon>, Eigen::Vector3d, bool, double, double, int);
 
     bool GrowAxon();
     bool GrowFirstSphere();

@@ -517,7 +517,7 @@ void AxonGammaDistribution::drawBatches(sf::Window &window, std::vector<Axon> &a
     settings.depthBits = 24; // Request a 24-bit depth buffer
 
     // Initialize OpenGL settings
-    // initializeGLUT(0, nullptr);
+    initializeGLUT(0, nullptr);
     initializeOpenGL();
 
     // Set a custom depth range
@@ -838,22 +838,20 @@ double AxonGammaDistribution::radiusVariation(Axon &axon, int time)
     }
     return r;
 }
-void AxonGammaDistribution::dichotomy(Eigen::Vector3d position_that_worked, Growth growth, Axon &axon, double &min_rad, double &max_rad, int &tries, double &last_rad, bool grow_straight_)
+void AxonGammaDistribution::dichotomy(Eigen::Vector3d position_that_worked, Growth growth, Axon &axon, double &min_rad, double &max_rad, int &tries, double &last_rad, int grow_straight)
 {
-    while (tries < 5)
-
-    {
 
         ++tries;
 
         double current_rad = (max_rad + min_rad) / 2;
 
-        growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, current_rad, max_radius, grow_straight_);
+        growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, current_rad, max_radius, grow_straight);
 
         bool can_grow = growth.TestGrowAxonAtPos(position_that_worked);
 
         if (can_grow) // solution is in greater half
         {
+            //cout <<" can grow at " << current_rad << endl;
             last_rad = current_rad; // update the last successful radius
             min_rad = current_rad;
         }
@@ -862,22 +860,22 @@ void AxonGammaDistribution::dichotomy(Eigen::Vector3d position_that_worked, Grow
         {
             max_rad = current_rad;
         }
-    }
+    
 
-    // if (tries < 5)
-    // {
-    //     dichotomy(position_that_worked, growth, axon, min_rad, max_rad, tries, last_rad);
-    // }
+    if (tries < 5)
+    {
+         dichotomy(position_that_worked, growth, axon, min_rad, max_rad, tries, last_rad, grow_straight);
+    }
 
     // axon.radius = last_rad;
 }
-bool AxonGammaDistribution::shrinkRadius(Growth growth, Axon &axon, bool grow_straight_)
+bool AxonGammaDistribution::shrinkRadius(Growth growth, Axon &axon, int grow_straight)
 {
     double initial_radius = axon.radius;
 
     double current_rad = min_radius;
 
-    growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, current_rad, max_radius, grow_straight_);
+    growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, current_rad, max_radius, grow_straight);
 
     Eigen::Vector3d position_that_worked;
     double can_grow = growth.TestGrowAxon(position_that_worked);
@@ -888,8 +886,9 @@ bool AxonGammaDistribution::shrinkRadius(Growth growth, Axon &axon, bool grow_st
         double last_rad = current_rad; // last successful radius
         double max_rad = initial_radius;
         double min_rad = current_rad;
-        dichotomy(position_that_worked, growth, axon, min_rad, max_rad, tries, last_rad, grow_straight_);
+        dichotomy(position_that_worked, growth, axon, min_rad, max_rad, tries, last_rad, grow_straight);
         Dynamic_Sphere s(axon.spheres.size(), axon.id, position_that_worked, last_rad);
+        //cout << "axon : "<< axon.id << " sphere : "<< axon.spheres.size()<< "shrink to :" << last_rad << ", initial at : "<< initial_radius << endl;
         axon.add_sphere(s);
 
         return true;
@@ -903,20 +902,10 @@ bool AxonGammaDistribution::shrinkRadius(Growth growth, Axon &axon, bool grow_st
 void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int &restart_tries)
 {
 
-    bool grow_straight_;
-
-    if (grow_straight == 1)
-    {
-        grow_straight_ = true;
-    }
-    if (grow_straight == 0)
-    {
-        grow_straight_ = false;
-    }
 
     double varied_radius = radiusVariation(axon, time);
 
-    Growth growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, varied_radius, max_radius, grow_straight_);
+    Growth growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, varied_radius, max_radius, grow_straight);
 
     bool can_grow = growth.GrowAxon(); // adds sphere
 
@@ -928,14 +917,12 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
     {
         if (!can_grow)
         {
-            if (shrink_tries < 10000)
+            if (shrink_tries < 10)
             {
                 {
-                    if (shrink_tries > 100) {
-                        cout << "axon " << axon.id << " shrinking " << endl;
-                    }
 
-                    bool shrink = shrinkRadius(growth, axon, grow_straight_); // adds a sphere if it works
+
+                    bool shrink = shrinkRadius(growth, axon, grow_straight); // adds a sphere if it works
 
                     if (!shrink) // shrinking will not help growth
                     {
@@ -978,7 +965,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
                 }
             }
 
-            if (grow_straight_) // if when growing straight it collides with environment
+            if (grow_straight==1) // if when growing straight it collides with environment
             {
                 grow_straight = 0; // set to false so that next step doesn't go straight
                 straight_growths = 0;
@@ -986,7 +973,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
         }
         else
         {
-            if (grow_straight_)
+            if (grow_straight == 1)
             {
                 if (straight_growths >= 4) // if axon has been growing straight for 4 spheres in a row
                 {

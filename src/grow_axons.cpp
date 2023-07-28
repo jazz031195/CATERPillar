@@ -9,7 +9,7 @@ using namespace std;
 using namespace Eigen;
 using namespace std::chrono;
 
-Growth::Growth(Axon axon_to_grow_, std::vector<Axon> axons, std::vector<Axon> axons_to_regrow, Eigen::Vector3d voxel_size_, bool tortuous_, double radius_, double max_radius_, bool grow_straight_)
+Growth::Growth(Axon axon_to_grow_, std::vector<Axon> axons, std::vector<Axon> axons_to_regrow, Eigen::Vector3d voxel_size_, bool tortuous_, double radius_, double max_radius_, int grow_straight_)
 {
     env_axons = axons;
 
@@ -27,7 +27,7 @@ Growth::Growth(Axon axon_to_grow_, std::vector<Axon> axons, std::vector<Axon> ax
     radius = radius_;
     if (!tortuous)
     {
-        grow_straight = false;
+        grow_straight = 0;
     }
 
     // initialise centers
@@ -313,7 +313,7 @@ bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked)
 
                 if (tortuous)
                 {
-                    if (grow_straight)
+                    if (grow_straight==1)
                     {
                         find_next_center_straight(centers, distance, s);
                     }
@@ -322,9 +322,9 @@ bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked)
                         find_next_center(s, centers, distance);
                     }
                     collides = isSphereColliding(s);
-                    if (grow_straight && collides)
+                    if (grow_straight ==1 && collides)
                     {
-                        grow_straight = false;
+                        grow_straight = 0;
                     }
                     tries += 1;
                 }
@@ -400,7 +400,7 @@ bool Growth::GrowAxon()
 
                 if (tortuous)
                 {
-                    if (grow_straight)
+                    if (grow_straight==1)
                     {
                         find_next_center_straight(centers, distance, s);
                     }
@@ -409,9 +409,9 @@ bool Growth::GrowAxon()
                         find_next_center(s, centers, distance);
                     }
                     collides = isSphereColliding(s);
-                    if (grow_straight && collides)
+                    if (grow_straight == 1 && collides)
                     {
-                        grow_straight = false;
+                        grow_straight = 0;
                     }
                     tries += 1;
                 }
