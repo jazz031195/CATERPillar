@@ -889,7 +889,6 @@ bool AxonGammaDistribution::shrinkRadius(Growth growth, Axon &axon, bool grow_st
         double max_rad = initial_radius;
         double min_rad = current_rad;
         dichotomy(position_that_worked, growth, axon, min_rad, max_rad, tries, last_rad, grow_straight_);
-        // cout << "Shrink radius : position_that_worked : " << position_that_worked[2] << ", axon : " << axon.id << " spheres size :" << axon.spheres.size()  << endl;
         Dynamic_Sphere s(axon.spheres.size(), axon.id, position_that_worked, last_rad);
         axon.add_sphere(s);
 
@@ -932,6 +931,9 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
             if (shrink_tries < 10000)
             {
                 {
+                    if (shrink_tries > 100) {
+                        cout << "axon " << axon.id << " shrinking " << endl;
+                    }
 
                     bool shrink = shrinkRadius(growth, axon, grow_straight_); // adds a sphere if it works
 
