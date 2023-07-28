@@ -813,7 +813,7 @@ void AxonGammaDistribution::growBatches(std::vector<Axon> &ax_list, std::vector<
 double AxonGammaDistribution::radiusVariation(Axon &axon, int time)
 {   
     
-    double initial_radius = axon.spheres[0].radius;
+    double initial_radius = axon.radius;
     double p = 0.75;
     double frequency = 1. / (100 * initial_radius);
     double phase_shift = 0.;
@@ -838,24 +838,24 @@ void AxonGammaDistribution::dichotomy(Eigen::Vector3d position_that_worked, Grow
 
     {
 
-    ++tries;
+        ++tries;
 
-    double current_rad = (max_rad + min_rad) / 2;
+        double current_rad = (max_rad + min_rad) / 2;
 
-    growth = Growth(axon, axon_env, max_limits, tortuous, current_rad, max_radius, false);
+        growth = Growth(axon, axon_env, max_limits, tortuous, current_rad, max_radius, false);
 
-    bool can_grow = growth.TestGrowAxonAtPos(position_that_worked);
+        bool can_grow = growth.TestGrowAxonAtPos(position_that_worked);
 
-    if (can_grow) // solution is in greater half
-    {
-        last_rad = current_rad; // update the last successful radius
-        min_rad = current_rad;
-    }
+        if (can_grow) // solution is in greater half
+        {
+            last_rad = current_rad; // update the last successful radius
+            min_rad = current_rad;
+        }
 
-    else // solution is in lower half
-    {
-        max_rad = current_rad;
-    }
+        else // solution is in lower half
+        {
+            max_rad = current_rad;
+        }
 
     }
 
@@ -876,13 +876,14 @@ bool AxonGammaDistribution::shrinkRadius(Growth growth, Axon &axon)
 
     Eigen::Vector3d position_that_worked;
     double can_grow = growth.TestGrowAxon(position_that_worked);
-
+    
     int tries = 0;
     if (can_grow) // shrinking is useful
     {
         double last_rad = current_rad; // last successful radius
         double max_rad = initial_radius;
         double min_rad = current_rad;
+        //cout << "position_that_worked : " << position_that_worked << ", axon : " << axon.id << " spheres size :" << axon.spheres.size() << ", straight :" << growth.grow_straight << endl;
         dichotomy(position_that_worked, growth, axon, min_rad, max_rad, tries, last_rad);
         Dynamic_Sphere s(axon.spheres.size(), axon.id, position_that_worked, last_rad);
         axon.add_sphere(s);
