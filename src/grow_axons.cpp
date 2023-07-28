@@ -224,6 +224,7 @@ void Growth::find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers
 
     // sphere to return
     s.center = new_pos;
+
 }
 
 bool Growth::GrowFirstSphere()
@@ -418,9 +419,10 @@ bool Growth::GrowAxon()
 
             if (!collides)
             {
-                sphere_to_add = s;
-                axon_to_grow.add_sphere(sphere_to_add); // we want to change the radius of the sphere
-                //cout << " grow axon at pos : " << sphere_to_add.center <<endl;
+
+                axon_to_grow.add_sphere(s); // we want to change the radius of the sphere
+                //cout << "radius as input : " << radius <<endl;
+                //cout << " grow axon with radius : " << s.radius <<endl;
                 // if we reach edge of voxel
                 if (centers[centers.size() - 1][2] >= voxel_size[2])
                 {

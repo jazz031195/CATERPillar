@@ -15,13 +15,13 @@ int main()
 {
     // number of axons
     unsigned int number_axons = 100;
-    int axon_capacity = 10;
+    int axon_capacity = 1;
 
     // constants for gamma distribution, mean = 0.5 um
     double alpha = 5.0;
     double beta = 0.1;
 
-    double vox_size= 20;
+    double vox_size= 10;
 
     // min and max limits of voxel
     Eigen::Vector3d min_l = {0, 0, 0};
@@ -50,8 +50,6 @@ int main()
 
     AxonDistribution->createSubstrate();
 
-    auto endTime = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime);
 
     // Open the output file stream to the desired file path
     //std::ofstream axons_file("/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/axons_icvf_" + std::to_string(icvf).substr(0, 4) + " _cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(max_l[0]).substr(0, 3) + ".swc");
@@ -68,6 +66,10 @@ int main()
         std::cerr << "Error opening output file!" << std::endl;
         return 1;
     }
+
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime);
+
 
     AxonDistribution->axons_file(axons_file);
     AxonDistribution->simulation_file(simulation_file, duration);

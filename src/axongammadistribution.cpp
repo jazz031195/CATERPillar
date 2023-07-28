@@ -314,6 +314,7 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
             Vector3d Q, D;
             get_begin_end_point(Q, D);
             Axon ax;
+      
             if (radii.size() == radii_.size())
             {
                 ax = Axon(i, Q, D, radii_[i]); // original axons
@@ -812,15 +813,14 @@ void AxonGammaDistribution::growBatches(std::vector<Axon> &ax_list, std::vector<
 // Axon growth
 double AxonGammaDistribution::radiusVariation(Axon &axon, int time)
 {   
-    
     double initial_radius = axon.radius;
     double p = 0.75;
-    double frequency = 1. / (100 * initial_radius);
-    double phase_shift = 0.;
-    double amplitude = (1 - p) * initial_radius;
-    double fluctuation = amplitude * sin(2.0 * M_PI * frequency * time + phase_shift);
-    // axon.radius = initial_radius * (1 + p) / 2 + fluctuation;
-    double r = initial_radius * (1 + p) / 2 + fluctuation;
+    double amplitude = (initial_radius - p* initial_radius) / 2;
+    double mean_radius = p * initial_radius;
+    double angular_frequency = M_PI / initial_radius; // Adjust the frequency to control the sinusoidal curve
+    double r = amplitude * sin(angular_frequency * time) + mean_radius;
+
+
     // if (axon.radius < min_radius)
     // {
     //     axon.radius = min_radius;
@@ -883,10 +883,11 @@ bool AxonGammaDistribution::shrinkRadius(Growth growth, Axon &axon)
         double last_rad = current_rad; // last successful radius
         double max_rad = initial_radius;
         double min_rad = current_rad;
-        //cout << "position_that_worked : " << position_that_worked << ", axon : " << axon.id << " spheres size :" << axon.spheres.size() << ", straight :" << growth.grow_straight << endl;
         dichotomy(position_that_worked, growth, axon, min_rad, max_rad, tries, last_rad);
+        //cout << "Shrink radius : position_that_worked : " << position_that_worked[2] << ", axon : " << axon.id << " spheres size :" << axon.spheres.size()  << endl;
         Dynamic_Sphere s(axon.spheres.size(), axon.id, position_that_worked, last_rad);
         axon.add_sphere(s);
+
         return true;
     }
     else
@@ -897,7 +898,7 @@ bool AxonGammaDistribution::shrinkRadius(Growth growth, Axon &axon)
 }
 void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int &restart_tries)
 {
-    double initial_radius = axon.spheres[0].radius; 
+
     bool grow_straight_;
 
     if (grow_straight == 1)
@@ -914,7 +915,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
         updateEnv(); // takes into account axons to regrow (if any)
     }
     double varied_radius = radiusVariation(axon, time);
-    // cout << "initial " << axon.radius << " updated " << radiusVariation(axon, time) << endl;
+    //cout << "ax id : " << axon.id << ", initial " << axon.radius << " updated " << varied_radius<< endl;
     Growth growth = Growth(axon, axon_env, max_limits, tortuous, varied_radius, max_radius, grow_straight_);
 
     bool can_grow = growth.GrowAxon(); // adds sphere
@@ -931,7 +932,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
             {
                 {
 
-                    bool shrink = shrinkRadius(growth, axon);
+                    bool shrink = shrinkRadius(growth, axon); // adds a sphere if it works
 
                     if (!shrink) // shrinking will not help growth
                     {
@@ -951,7 +952,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
                             finished = 1;
                             {
                                 std::lock_guard<std::mutex> lock(stuckMutex);
-                                stuck_radii.push_back(initial_radius);
+                                stuck_radii.push_back(axon.radius);
                             }
                         }
                     }
@@ -970,7 +971,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
                 finished = 1;
                 {
                     std::lock_guard<std::mutex> lock(stuckMutex);
-                    stuck_radii.push_back(initial_radius);
+                    stuck_radii.push_back(axon.radius);
                 }
             }
 
