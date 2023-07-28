@@ -32,10 +32,10 @@ int main()
 
     // simulation parameters
     bool tortuous = true;
-    bool draw = true;
+    bool draw = false;
 
     // density parameters
-    double icvf = 0.3;
+    double icvf = 0.7;
 
     // number of regrowth batches allowed
     int regrow_thr = 10;

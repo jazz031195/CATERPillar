@@ -32,8 +32,6 @@ public:
     std::vector<Axon> axons_to_regrow;
     std::vector<double> stuck_radii; /*!< radii of stuck axons */
 
-    std::vector<Axon> axon_env; /*!< axons and regrowing axons */
-
     unsigned num_obstacles; /*!< number of cylnders fit inside the substrate */
     int num_batches;
     int axon_capacity; /* Safe number of axon per batch to avoid crash */
@@ -114,19 +112,18 @@ public:
     void growBatches(std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_);
     void setBatches(int num_axons, std::vector<int> &num_subsets);
     void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_);
-    void updateEnv();
 
     void createSubstrate();
 
     /*!
      *  \brief Shrinks the radius to allow passage between axons
      */
-    bool shrinkRadius(Growth growth, Axon &axon);
+    bool shrinkRadius(Growth growth, Axon &axon, bool grow_straight_);
 
     /*!
      *  \brief Finds a radius for which shrinkage allows passage
      */
-    void dichotomy(Eigen::Vector3d position_that_worked, Growth growth, Axon &axon, double &min_rad, double &max_rad, int &tries, double &last_rad);
+    void dichotomy(Eigen::Vector3d position_that_worked, Growth growth, Axon &axon, double &min_rad, double &max_rad, int &tries, double &last_rad, bool grow_straight_);
 
     /*!
      *  \param row row of the current batch's axon vector

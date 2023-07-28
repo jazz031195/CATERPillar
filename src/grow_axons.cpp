@@ -9,9 +9,15 @@ using namespace std;
 using namespace Eigen;
 using namespace std::chrono;
 
-Growth::Growth(Axon axon_to_grow_, std::vector<Axon> env_axons_, Eigen::Vector3d voxel_size_, bool tortuous_, double radius_, double max_radius_, bool grow_straight_)
+Growth::Growth(Axon axon_to_grow_, std::vector<Axon> axons, std::vector<Axon> axons_to_regrow, Eigen::Vector3d voxel_size_, bool tortuous_, double radius_, double max_radius_, bool grow_straight_)
 {
-    env_axons = env_axons_;
+    env_axons = axons;
+
+    if (!axons_to_regrow.empty())
+    {
+        env_axons.insert(env_axons.end(), axons_to_regrow.begin(), axons_to_regrow.end());
+    }
+
     axon_to_grow = axon_to_grow_;
     voxel_size = voxel_size_;
     tortuous = tortuous_;
