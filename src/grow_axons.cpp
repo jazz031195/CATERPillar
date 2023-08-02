@@ -15,7 +15,12 @@ Growth::Growth(Axon axon_to_grow_, std::vector<Axon> axons, std::vector<Axon> ax
 
     if (!axons_to_regrow.empty())
     {
-        env_axons.insert(env_axons.end(), axons_to_regrow.begin(), axons_to_regrow.end());
+        for (unsigned i = 0; i < axons_to_regrow.size(); i++) {
+            if (axons_to_regrow[i].spheres.size() != 0){
+                env_axons.push_back(axons_to_regrow[i]);
+            } 
+        } 
+        //env_axons.insert(env_axons.end(), axons_to_regrow.begin(), axons_to_regrow.end());
     }
 
     axon_to_grow = axon_to_grow_;
@@ -139,6 +144,11 @@ std::tuple<double, double> phi_theta_to_target(Eigen::Vector3d new_pos, Eigen::V
     return std::make_tuple(phi_to_target, theta_to_target);
 }
 
+
+
+
+
+/*
 bool Growth::isSphereColliding(Dynamic_Sphere sph)
 {
 
@@ -161,6 +171,22 @@ bool Growth::isSphereColliding(Dynamic_Sphere sph)
     }
     return false;
 }
+*/
+
+bool Growth::isSphereColliding_(Dynamic_Sphere sph){
+    // for all axons
+    for (unsigned i = 0; i < env_axons.size(); i++)
+    {
+        if (sph.ax_id != env_axons[i].id) // if not the same axon as sphere to check
+        {
+            if (env_axons[i].isSphereInsideAxon_(sph)){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 
 void Growth::find_next_center(Dynamic_Sphere &s, vector<Eigen::Vector3d> centers, double dist_)
 {
@@ -242,7 +268,7 @@ bool Growth::GrowFirstSphere()
     Dynamic_Sphere s1(0, axon_to_grow.id, axon_to_grow.begin, axon_to_grow.radius);
     // check if first sphere collides
 
-    collides = isSphereColliding(s1);
+    collides = isSphereColliding_(s1);
 
     if (!collides)
     {
@@ -270,7 +296,7 @@ void Growth::find_next_center_straight(vector<Eigen::Vector3d> centers, double d
 bool Growth::TestGrowAxonAtPos(Eigen::Vector3d position_to_test)
 {
     Dynamic_Sphere s(axon_to_grow.spheres.size(), axon_to_grow.id, axon_to_grow.begin, radius);
-    bool collides = isSphereColliding(s);
+    bool collides = isSphereColliding_(s);
     return collides;
 }
 
@@ -321,7 +347,7 @@ bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked)
                     {
                         find_next_center(s, centers, distance);
                     }
-                    collides = isSphereColliding(s);
+                    collides = isSphereColliding_(s);
                     if (grow_straight ==1 && collides)
                     {
                         grow_straight = 0;
@@ -332,7 +358,7 @@ bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked)
                 {
                     find_next_center(s, centers, distance);
 
-                    collides = isSphereColliding(s);
+                    collides = isSphereColliding_(s);
                 }
             }
 
@@ -408,7 +434,7 @@ bool Growth::GrowAxon()
                     {
                         find_next_center(s, centers, distance);
                     }
-                    collides = isSphereColliding(s);
+                    collides = isSphereColliding_(s);
                     if (grow_straight == 1 && collides)
                     {
                         grow_straight = 0;
@@ -419,7 +445,7 @@ bool Growth::GrowAxon()
                 {
                     find_next_center(s, centers, distance);
 
-                    collides = isSphereColliding(s);
+                    collides = isSphereColliding_(s);
                 }
             }
 

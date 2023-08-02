@@ -17,7 +17,7 @@ Axon::Axon(const Axon &ax)
     begin = ax.begin;
     end = ax.end;
     Box = ax.Box;
-    projections = ax.projections;
+    //projections = ax.projections;
 
 };
 
@@ -85,11 +85,11 @@ void Axon::add_sphere(Dynamic_Sphere sphere_to_add){
     }
 
 
-    add_projection(sphere_to_add);
+    //add_projection(sphere_to_add);
 
 
 }
-
+/*
 void Axon::add_projection(Dynamic_Sphere sphere_to_add){
 
     // 2d limits of axon
@@ -114,6 +114,7 @@ void Axon::add_projection(Dynamic_Sphere sphere_to_add){
     }
 
 }
+*/
 
 bool check_with_edge(Eigen::Vector3d position, Vector2d x_limits, Vector2d y_limits){ 
     if ((position[0] >=  x_limits[0])  && (position[0] <= x_limits[1])){
@@ -138,9 +139,69 @@ bool Axon::isNearAxon(Eigen::Vector3d position, double distance_to_be_inside){
     }
 
 }
+std::vector<int> findCommonIntegers(const std::vector<int>& vec1, const std::vector<int>& vec2, const std::vector<int>& vec3) {
+    std::vector<int> result;
+    std::set_intersection(vec1.begin(), vec1.end(),
+                          vec2.begin(), vec2.end(),
+                          std::back_inserter(result));
+    std::vector<int> commonIntegers;
+    std::set_intersection(result.begin(), result.end(),
+                          vec3.begin(), vec3.end(),
+                          std::back_inserter(commonIntegers));
+    return commonIntegers;
+}
+std::vector<int> Axon::checkAxisForCollision(Dynamic_Sphere sph, int axis){
 
+	std::vector<int> spheres_id_to_check;
+	for (auto i = 0; i < spheres.size(); ++i) {
 
+            double min_i = spheres[i].center[axis] - spheres[i].radius;
+            double max_j = sph.center[axis] + sph.radius;
 
+			if (min_i> max_j) {
+				continue;
+			}
+			else {
+				double max_i = spheres[i].center[axis] + spheres[i].radius;
+                double min_j = sph.center[axis] - sph.radius;
+                if (min_j> max_i) {
+                    continue;
+                }
+                else{
+                    spheres_id_to_check.push_back(i);
+                }
+			}
+	}
+
+    return spheres_id_to_check;
+}
+
+bool Axon::isSphereInsideAxon_(Dynamic_Sphere sph){
+    //cout << "isSphereInsideAxon_ : " << id << endl;
+    if(isNearAxon(sph.center, sph.radius + barrier_tickness)){ // if near axon
+        //cout << "is near axon : " << id << endl;
+        std::vector<std::vector<int>> spheres_id_to_check;
+        for (auto axis = 0; axis < 3; ++axis) {
+            spheres_id_to_check.push_back(checkAxisForCollision(sph, axis)); // check for collision along 1 axis
+            if (spheres_id_to_check[axis].size() == 0){
+                return false;
+            }
+        }
+        // find common ids in all 3 axes
+        std::vector<int> spheres_to_check_all_axes = findCommonIntegers(spheres_id_to_check[0], spheres_id_to_check[1], spheres_id_to_check[2]);
+        for (auto i = 0; i < spheres_to_check_all_axes.size(); ++i) {
+            Dynamic_Sphere sphere_to_check = spheres[spheres_to_check_all_axes[i]];
+            if (sph.minDistance(sphere_to_check.center) <= sphere_to_check.radius+ barrier_tickness){
+                return true;
+            }
+        }
+        spheres_id_to_check.clear();
+        spheres_to_check_all_axes.clear();
+    }
+
+    return false;
+}
+/*
 bool Axon::isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_inside, double max_radius){
     // when checking collision with walker -> check with normal radius
     // when checking with collisions of other axons -> check with max_radius so there is room for swelling
@@ -188,5 +249,5 @@ bool Axon::isPosInsideAxon(Eigen::Vector3d &position,  double distance_to_be_ins
     }
     return false;
 } 
-
+*/
 

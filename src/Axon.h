@@ -28,7 +28,7 @@ public:
     Eigen::Vector3d end;
     // Box with <min, max> for each axis (x,y,z)
     std::vector<Eigen::Vector2d> Box;
-    Projections projections;
+    //Projections projections;
 
     /*!
      *  \brief Default constructor. Does nothing
@@ -37,7 +37,7 @@ public:
 
     ~Axon(){
         spheres.clear();
-        projections.clear_projections();
+        //projections.clear_projections();
     };
 
 
@@ -53,9 +53,11 @@ public:
     Axon(Axon const &ax);
 
     void add_sphere(Dynamic_Sphere sphere_to_add);
+    bool isSphereInsideAxon_(Dynamic_Sphere sph);
+    std::vector<int> checkAxisForCollision(Dynamic_Sphere sph, int axis);
     bool isNearAxon(Eigen::Vector3d position, double distance_to_be_inside);
-    bool isPosInsideAxon(Eigen::Vector3d &position, double distance_to_be_inside, double max_radius);
-    void add_projection(Dynamic_Sphere sphere_to_add);
+    //bool isPosInsideAxon(Eigen::Vector3d &position, double distance_to_be_inside, double max_radius);
+    //void add_projection(Dynamic_Sphere sphere_to_add);
 };
 
 #endif // AXON_H

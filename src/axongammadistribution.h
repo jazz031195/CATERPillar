@@ -118,12 +118,12 @@ public:
     /*!
      *  \brief Shrinks the radius to allow passage between axons
      */
-    bool shrinkRadius(Growth growth, Axon &axon, int grow_straight);
+    bool shrinkRadius(Axon &axon, int grow_straight);
 
     /*!
      *  \brief Finds a radius for which shrinkage allows passage
      */
-    void dichotomy(Eigen::Vector3d position_that_worked, Growth growth, Axon &axon, double &min_rad, double &max_rad, int &tries, double &last_rad, int grow_straight);
+    void dichotomy(Eigen::Vector3d position_that_worked, Axon axon, double initial_rad, double &last_rad, int grow_straight);
 
     /*!
      *  \param row row of the current batch's axon vector
