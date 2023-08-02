@@ -4,6 +4,9 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.colors as colors
+import os
+import chardet 
+import glob
 
 
 def read_swc_file(file_path):
@@ -108,7 +111,7 @@ def create_subplots(df, num_axons=10, max_z=None):
 
     # Plot the histogram of coefficient of variation
     sns.histplot(data=cv_data, color='blue', bins=30, kde=True)
-    plt.xlabel('CV of radius')
+    plt.xlabel('CV of diameter')
     plt.ylabel('Frequency')
     plt.title('CV Histogram')
     plt.xticks(rotation=45)
@@ -226,25 +229,62 @@ def combine_files(file_list):
 
 def vox_time_plot(file_list):
     data = combine_files(file_list)
-    sns.lineplot(x=data['Voxel'], y=data['Duration'])
+    # sns.lineplot(x=data['Voxel'], y=data['Duration'])
+    # plt.xlabel('Voxel size (µm)')
+    # plt.ylabel('Time (s)')
+    # plt.title('Time vs. Voxel Size')
+    # plt.legend(title='icvf = ' + str(data['icvf'][0]) + '\n' + 'capacity = ' + str(data['Capacity'][0]), loc='upper left')
+    # plt.show()
+    df = pd.DataFrame(data)
+
+    unique_cap_values = df['Capacity'].unique()
+
+    
+    for capacity in unique_cap_values:
+        subset_data = df[df['Capacity'] == capacity]
+        
+        sns.lineplot(x='Voxel', y='Duration', data=subset_data, label=f'capacity = {capacity}')
+
     plt.xlabel('Voxel size (µm)')
     plt.ylabel('Time (s)')
-    plt.title('Time vs. Voxel Size')
-    plt.legend(title='icvf = ' + str(data['icvf'][0]) + '\n' + 'capacity = ' + str(data['Capacity'][0]), loc='upper left')
+    plt.title('Time vs. Voxel Size for Different Capacity Values')
+    plt.legend(loc='upper left')
     plt.show()
 
+def cap_time_plot(file_list):
+    data = combine_files(file_list)
+    keys = ['Duration', 'Capacity', 'icvf']
+    data = {key: data[key] for key in keys}
+
+    df = pd.DataFrame(data)
+    df['Duration'] =  df['Duration']/60
+    df_pivot = df.pivot_table(index='icvf', columns='Capacity', values='Duration', aggfunc='mean')
+    
+
+    # Set the heatmap parameters
+    sns.heatmap(df_pivot,
+                annot=True,
+                fmt=".2f",  # Format for the annotations (optional, adjust as needed)
+                cmap='viridis')
+
+    plt.title('Simulation Heat Map')
+    plt.xlabel('Capacity')
+    plt.ylabel('icvf')
+    plt.show()
+
+def get_files_from_folder(folder_path):
+
+    txt_files = glob.glob(os.path.join(folder_path, '*.txt'))
+    txt_files.sort()
+    return txt_files
 
 if __name__ == "__main__":
-    # radius_file_path = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/axons.swc"
-    file1 = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/test/simulation_icvf_0.30_cap_10_vox_10..txt"
-    file2 = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/test/simulation_icvf_0.30_cap_10_vox_20..txt"
-    file3 = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/test/simulation_icvf_0.30_cap_10_vox_30..txt"
-    file_list = [file1,file2,file3]
-    # file = radius_file(radius_file_path)
 
+    file = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/final/axons_icvf_0.30_cap_5_vox_30.swc"
+    file2 = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/axons_icvf_0.50 _cap_5_vox_10..swc"
+
+    # create_subplots(radius_file(file2), 51)
+    folder = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/sim/"
+    file_list = get_files_from_folder(folder)
+    cap_time_plot(file_list)
     vox_time_plot(file_list)
-    print(combine_files(file_list))
-
-    # tortuosity_plot(file)
-    # create_subplots(file, 70)
-    # draw_axons(file)
