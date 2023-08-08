@@ -56,6 +56,8 @@ public:
 
     double max_radius; // between all axons in env
 
+    double variation_perc = 0.75;
+
     /*!
      *  \brief Initialize everything.
      */
@@ -76,11 +78,20 @@ public:
      */
     void displayGammaDistribution();
 
+     /*!
+
+     *  \brief Generates a radius from gamma distribution
+     */
+
+    double generate_radius();
+
+    double computeAreaICVF(std::vector<Axon> new_axons);
+
     /*!
      *  \param radii list of radii associated to axons
      *  \brief Creates a list with all the axons to grow
      */
-    void createAxons(std::vector<double> &radii, std::vector<Axon> &new_axons);
+    void createAxons(std::vector<double> &radii, std::vector<Axon> &new_axons, bool regrowth);
 
     /*!
      *  \param index position in the 2d form of the axons vector
@@ -102,23 +113,21 @@ public:
      *  \brief Creates a parallel growth of all axons
      */
     void parallelGrowth();
-    void parallelGrowth_();
 
     /*!
      *  \brief Creates and displays a parallel growth of all axons
      */
     void growthVisualisation();
-    void growthVisualisation_();
     void growBatches(std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_);
     void setBatches(int num_axons, std::vector<int> &num_subsets);
     void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_);
-
+    double computeICVF_();
     void createSubstrate();
 
     /*!
      *  \brief Shrinks the radius to allow passage between axons
      */
-    bool shrinkRadius(Axon &axon, int grow_straight);
+    bool shrinkRadius(double radius_to_shrink, Axon &axon, int grow_straight);
 
     /*!
      *  \brief Finds a radius for which shrinkage allows passage
@@ -156,7 +165,10 @@ public:
     bool check_borders(Eigen::Vector3d pos, double distance_to_border, Eigen::Vector2d &twin_delta_pos);
 
     void get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D);
-
+    void PlaceAxon(double radius, bool regrowth, int i, int &tries, bool &next, Eigen::Vector3d Q, Eigen::Vector3d D, std::vector<Axon> &all_axons, std::vector<Axon> &new_axons);
+    
+    void PlaceTwinAxons(double radius, bool regrowth, int i, int &tries, bool &next, std::vector<Eigen::Vector3d> Qs, std::vector<Axon> &all_axons, std::vector<Axon> &new_axons);
+    std::vector<Eigen::Vector3d> FindTwins(Eigen::Vector3d Q, double rad);
     bool withinBounds(Eigen::Vector3d pos, double distance);
 
 private:

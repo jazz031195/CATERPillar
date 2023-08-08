@@ -7,11 +7,12 @@ import plotly.colors as colors
 import os
 import chardet 
 import glob
-
+from matplotlib.patches import Circle
 
 def read_swc_file(file_path):
-    columns = ["id", "type", "x", "y", "z", "radius", "parent"]
+    columns = ["ax_id","sph_id", "type", "x", "y", "z", "R", "P"]
     df = pd.read_csv(file_path, sep=' ', names=columns)
+    df = df.iloc[1:]
 
     return df
 
@@ -208,6 +209,75 @@ def get_spheres_array(df):
 
     return axons
 
+def draw_circles(center_radii, ax=None, **kwargs):
+    """
+    Draw circles in a 2D plot.
+
+    Parameters:
+        center_radii (list of tuples): List of tuples, where each tuple contains (x, y, radius).
+        ax (matplotlib.axes._axes.Axes, optional): Axes object to draw the circles on. If not provided, a new plot will be created.
+        **kwargs: Additional keyword arguments to customize the appearance of circles.
+    """
+    if ax is None:
+        fig, ax = plt.subplots()
+
+    for x,y,z, radius in center_radii:
+        circle = Circle((x,y,z), radius, **kwargs)
+        ax.add_patch(circle)
+
+    ax.set_aspect('equal', adjustable='datalim')  # Equal aspect ratio
+
+    return ax
+
+def find_closest_to_value(list_of_lists, value):
+    closest_diff = float('inf')
+    closest_list = None
+    
+    for e, sublist in enumerate(list_of_lists):
+        if len(sublist) >= 3:
+
+            diff = abs(sublist[2] - value)
+            if diff < closest_diff:
+                closest_diff = diff
+                index = e
+                closest_value = sublist[2]
+    
+    return index, closest_value
+
+def draw_spheres(file_path):
+    df = read_swc_file(file_path)
+
+    axons = get_spheres_array(df)
+    circles = []
+    z = 5
+
+    for axon in axons:
+
+        if (len(axon) > 1):
+            index, value =  find_closest_to_value(axon, z)
+            distance = np.abs(z-value)
+            R = axon[index][3]
+            if distance == 0:
+                new_r = R
+            else:
+                if distance < R :
+                    new_r = np.sqrt(np.abs(R*R-distance*distance))
+                else:
+                    continue
+            circles.append([axon[index][0],axon[index][1], axon[index][2], new_r])
+        
+    draw_circles(circles, color='blue', alpha=0.5, linewidth=2)
+
+    # Set plot limits
+    plt.xlim(0, 10)
+    plt.ylim(0, 10)
+
+    plt.title('2D Circles')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.grid()
+    plt.show()
+
 def read_data(filename):
     with open(filename, 'r') as file:
         data = {}
@@ -272,19 +342,26 @@ def cap_time_plot(file_list):
     plt.ylabel('icvf')
     plt.show()
 
-def get_files_from_folder(folder_path):
+def get_files_from_folder(folder_path, icvf):
 
-    txt_files = glob.glob(os.path.join(folder_path, '*.txt'))
+    txt_files = glob.glob(os.path.join(folder_path, f"*.txt"))
     txt_files.sort()
-    return txt_files
+    list_txt = []
+    for txt_file in txt_files:
+        if (str(icvf) in txt_file):
+            list_txt.append(txt_file)
+    return list_txt
+
+
 
 if __name__ == "__main__":
 
-    file = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/final/axons_icvf_0.30_cap_5_vox_30.swc"
-    file2 = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/axons_icvf_0.50 _cap_5_vox_10..swc"
+    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.50_cap_1_vox_10.swc"
 
     # create_subplots(radius_file(file2), 51)
-    folder = "/Users/melina/Desktop/EPFL/BachelorProject/Sim_Growth/files/sim/"
-    file_list = get_files_from_folder(folder)
-    cap_time_plot(file_list)
-    vox_time_plot(file_list)
+    folder = "/home/localadmin/Documents/Melina_branch/Sim_Growth/"
+    #file_list = get_files_from_folder(folder, 0.50)
+    #vox_time_plot(file_list)
+    draw_spheres(file)
+    #cap_time_plot(file_list)
+    #vox_time_plot(file_list)

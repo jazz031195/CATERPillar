@@ -144,10 +144,6 @@ std::tuple<double, double> phi_theta_to_target(Eigen::Vector3d new_pos, Eigen::V
     return std::make_tuple(phi_to_target, theta_to_target);
 }
 
-
-
-
-
 /*
 bool Growth::isSphereColliding(Dynamic_Sphere sph)
 {

@@ -83,7 +83,10 @@ void Axon::add_sphere(Dynamic_Sphere sphere_to_add){
         Box[2][1] =  sphere_to_add.center[2] + sphere_to_add.radius;
 
     }
-
+    if (sphere_to_add.radius > radius){
+        cout << "sphere to add radius :" << sphere_to_add.radius  << endl;
+        cout << "initial radius : " << radius << endl;
+    }
 
     //add_projection(sphere_to_add);
 
