@@ -56,7 +56,7 @@ public:
 
     double max_radius; // between all axons in env
 
-    double variation_perc = 0.75;
+    double variation_perc = 0.55;
 
     /*!
      *  \brief Initialize everything.

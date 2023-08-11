@@ -31,7 +31,8 @@ def radius_histogram(df):
     plt.tight_layout()
     plt.show()
 
-def diameter_variation(df, num_axons=10, max_z=None):
+def diameter_variation(file_path, num_axons=10, max_z=None):
+    df = radius_file(file_path)
     plt.figure(figsize=(12, 6))  # Adjust the figure size as needed
     df['R'] = pd.to_numeric(df['R'], errors='coerce')
 
@@ -70,7 +71,7 @@ def create_subplots(df, num_axons=10, max_z=None):
     plt.sca(axes[0])
     df['R'] = pd.to_numeric(df['R'], errors='coerce')
 
-    first_n_axon_ids = df['ax_id'].unique()[:num_axons] # get the first 'num_axons' axon IDs
+    first_n_axon_ids = df['ax_id'].unique()[-num_axons:] # get the first 'num_axons' axon IDs
     df_subset = df[df['ax_id'].isin(first_n_axon_ids)]
 
     # Filter data until the specific 'z' value if provided
@@ -244,12 +245,12 @@ def find_closest_to_value(list_of_lists, value):
     
     return index, closest_value
 
-def draw_spheres(file_path):
+def draw_spheres(file_path, limit):
     df = read_swc_file(file_path)
 
     axons = get_spheres_array(df)
     circles = []
-    z = 5
+    z = 0
 
     for axon in axons:
 
@@ -269,8 +270,8 @@ def draw_spheres(file_path):
     draw_circles(circles, color='blue', alpha=0.5, linewidth=2)
 
     # Set plot limits
-    plt.xlim(0, 10)
-    plt.ylim(0, 10)
+    plt.xlim(0, limit)
+    plt.ylim(0, limit)
 
     plt.title('2D Circles')
     plt.xlabel('X')
@@ -323,12 +324,12 @@ def vox_time_plot(file_list):
 
 def cap_time_plot(file_list):
     data = combine_files(file_list)
-    keys = ['Duration', 'Capacity', 'icvf']
+    keys = ['Duration', 'Capacity', 'Voxel']
     data = {key: data[key] for key in keys}
 
     df = pd.DataFrame(data)
     df['Duration'] =  df['Duration']/60
-    df_pivot = df.pivot_table(index='icvf', columns='Capacity', values='Duration', aggfunc='mean')
+    df_pivot = df.pivot_table(index='Voxel', columns='Capacity', values='Duration', aggfunc='mean')
     
 
     # Set the heatmap parameters
@@ -339,7 +340,7 @@ def cap_time_plot(file_list):
 
     plt.title('Simulation Heat Map')
     plt.xlabel('Capacity')
-    plt.ylabel('icvf')
+    plt.ylabel('Voxel size (um)')
     plt.show()
 
 def get_files_from_folder(folder_path, icvf):
@@ -347,21 +348,28 @@ def get_files_from_folder(folder_path, icvf):
     txt_files = glob.glob(os.path.join(folder_path, f"*.txt"))
     txt_files.sort()
     list_txt = []
-    for txt_file in txt_files:
-        if (str(icvf) in txt_file):
-            list_txt.append(txt_file)
-    return list_txt
+    if icvf != None:
+        for txt_file in txt_files:
+            if (str(icvf) in txt_file):
+                list_txt.append(txt_file)
+        return list_txt
+    else:
+        return txt_files
 
 
 
 if __name__ == "__main__":
 
-    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.50_cap_1_vox_10.swc"
 
     # create_subplots(radius_file(file2), 51)
     folder = "/home/localadmin/Documents/Melina_branch/Sim_Growth/"
-    #file_list = get_files_from_folder(folder, 0.50)
-    #vox_time_plot(file_list)
-    draw_spheres(file)
-    #cap_time_plot(file_list)
-    #vox_time_plot(file_list)
+    file_list = get_files_from_folder(folder,None)
+    vox_time_plot(file_list)
+    #draw_spheres(file, 30)
+    cap_time_plot(file_list)
+    
+    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_0.30_cap_1_vox_10.swc"
+    df = radius_file(file)
+    create_subplots(df, num_axons=10, max_z=None)
+    #tortuosity_plot(df)
+    #diameter_variation(file, num_axons=10, max_z=None)

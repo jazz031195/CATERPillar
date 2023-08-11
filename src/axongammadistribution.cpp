@@ -301,7 +301,9 @@ double AxonGammaDistribution::computeAreaICVF(std::vector<Axon> new_axons)
     double AreaTot = max_limits[0]*max_limits[1];
     for (auto &axon : new_axons)
     {
-        AreaIntra += axon.radius*axon.radius*M_PI;
+        if (withinBounds(axon.spheres[0].center, 0)){
+            AreaIntra += axon.radius*axon.radius*M_PI;
+        }
     }
     return AreaIntra/AreaTot;
 }
@@ -505,43 +507,49 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
 
             Vector3d Q, D;
             get_begin_end_point(Q, D);
-            if (withinBounds(Q, -radii_[i])){
-                PlaceAxon(radii_[i], regrowth, i, tries, next, Q, D, all_axons, new_axons);
-            }
-            else{
+            //if (withinBounds(Q, -radii_[i])){
+            PlaceAxon(radii_[i], regrowth, i, tries, next, Q, D, all_axons, new_axons);
+            //}
+            //else{
                 //cout << "create twins, position : "<< Q<< endl;
                 //cout << "radius : "<< radii_[i]<< endl;
                 //cout << "new_axons.size before :" << new_axons.size() << endl;
-                std::vector<Vector3d> twin_Qs = FindTwins(Q,radii_[i]);
-                PlaceTwinAxons(radii_[i], regrowth, i, tries, next, twin_Qs, all_axons, new_axons);
+                //std::vector<Vector3d> twin_Qs = FindTwins(Q,radii_[i]);
+                //PlaceTwinAxons(radii_[i], regrowth, i, tries, next, twin_Qs, all_axons, new_axons);
                 //cout << "new_axons.size after :" << new_axons.size() << endl;
                 //cout << "next :" << next << endl;
-            }
+            //}
         }
         if (tries >= tries_threshold)
         {
-            if (!regrowth) // creating all axons
-            {
-                cout << "Not enough space, restart" << endl;
-                cout << "achieved :" << new_axons.size() << "/" << radii_.size() << endl;
-                new_axons.clear();
-                colours.clear();
-                all_axons.clear(); // reset all axons
-                i = 0;
-                tries = 0;
-            }
-            else // regrowing some axons
-            {
-                cout << "Not enough space, forget about axon " << i << endl;
-                stuck_axons_id.push_back(i);
-                tries = 0;
-            }
+            //if (!regrowth) // creating all axons
+            //{
+            cout << "Not enough space, restart" << endl;
+            cout << "achieved :" << new_axons.size() << "/" << radii_.size() << endl;
+            new_axons.clear();
+            all_axons = axons;
+            colours.clear();
+            all_axons.clear(); // reset all axons
+            i = 0;
+            tries = 0;
         }
+            //else // regrowing some axons
+            //{
+            //    cout << "Not enough space, forget about axon " << i << endl;
+            //    stuck_axons_id.push_back(i);
+            //    tries = 0;
+            //}
+        //}
     }
     radii_.clear();
-    for (const auto &a : new_axons)
+    for (unsigned j = 0; j < new_axons.size(); ++j)
     {
-        radii_.push_back(a.radius);
+        for (unsigned i = 0; i < all_axons.size(); ++i) {
+            if (all_axons[i].isNearAxon(new_axons[j].spheres[0].center, 10)){
+                new_axons[j].add_nearby_axon(all_axons[i].id);
+            }
+        }
+        radii_.push_back(new_axons[j].radius);
     }
     
     if(!regrowth){
@@ -1009,7 +1017,8 @@ double AxonGammaDistribution::radiusVariation(Axon &axon, int time)
     double p = variation_perc;
     double amplitude = initial_radius*(1 - p)/2;
     double mean_radius = (p+1) * initial_radius/2;
-    double angular_frequency = M_PI / (initial_radius * 100); // Adjust the frequency to control the sinusoidal curve
+
+    double angular_frequency = M_PI / (initial_radius*20); // Adjust the frequency to control the sinusoidal curve
     double r = amplitude * cos(angular_frequency * time) + mean_radius;
     if (r < min_radius)
     {

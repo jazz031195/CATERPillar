@@ -17,9 +17,14 @@ Axon::Axon(const Axon &ax)
     begin = ax.begin;
     end = ax.end;
     Box = ax.Box;
+    nearby_axons = ax.nearby_axons;
     //projections = ax.projections;
 
 };
+
+void Axon::add_nearby_axon(int ax_id){
+    nearby_axons.push_back(ax_id);
+}
 
 
 void Axon::add_sphere(Dynamic_Sphere sphere_to_add){
@@ -158,8 +163,8 @@ std::vector<int> Axon::checkAxisForCollision(Dynamic_Sphere sph, int axis){
 	std::vector<int> spheres_id_to_check;
 	for (auto i = 0; i < spheres.size(); ++i) {
 
-            double min_i = spheres[i].center[axis] - spheres[i].radius;
-            double max_j = sph.center[axis] + sph.radius;
+            double min_i = spheres[i].center[axis] - spheres[i].radius - barrier_tickness;
+            double max_j = sph.center[axis] + sph.radius + barrier_tickness;
 
 			if (min_i> max_j) {
 				continue;

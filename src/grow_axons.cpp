@@ -171,12 +171,25 @@ bool Growth::isSphereColliding(Dynamic_Sphere sph)
 
 bool Growth::isSphereColliding_(Dynamic_Sphere sph){
     // for all axons
-    for (unsigned i = 0; i < env_axons.size(); i++)
+    for (unsigned i = 0; i < axon_to_grow.nearby_axons.size(); i++)
     {
-        if (sph.ax_id != env_axons[i].id) // if not the same axon as sphere to check
-        {
-            if (env_axons[i].isSphereInsideAxon_(sph)){
-                return true;
+        int target_id = axon_to_grow.nearby_axons[i];
+
+        if (sph.ax_id != target_id){
+
+            auto it = std::find_if(env_axons.begin(), env_axons.end(), [target_id](const Axon& a) {
+                return a.id == target_id;
+            });
+            Axon foundAxon;
+
+            if (it != env_axons.end()) {
+                // Convert iterator to Axon object using dereference operator *
+                foundAxon = *it;
+                //std::cout << "Found Axon with ID " << foundAxon.id << std::endl;
+                // Handle the found Axon
+                if (foundAxon.isSphereInsideAxon_(sph)){
+                    return true;
+                }
             }
         }
     }

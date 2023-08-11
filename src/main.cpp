@@ -13,9 +13,9 @@ using namespace Eigen;
 
 int main()
 {
-    std::vector<int> vox_sizes = {10,30,50};
+    std::vector<int> vox_sizes = {50};
     for (int i = 0; i < vox_sizes.size(); i++){
-        std::vector<int> capacities = {1,5,10,20};
+        std::vector<int> capacities = {10};
         for (int c = 0; c < capacities.size(); c++){
             // number of axons
             unsigned int number_axons = 100;
@@ -35,13 +35,13 @@ int main()
 
             // simulation parameters
             bool tortuous = true;
-            bool draw = false;
+            bool draw = true;
 
             // density parameters
-            double icvf = 0.5;
+            double icvf = 0.3;
 
             // number of regrowth batches allowed
-            int regrow_thr = 20;
+            int regrow_thr = 50;
 
             auto startTime = std::chrono::high_resolution_clock::now();
 

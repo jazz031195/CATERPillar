@@ -28,6 +28,7 @@ public:
     Eigen::Vector3d end;
     // Box with <min, max> for each axis (x,y,z)
     std::vector<Eigen::Vector2d> Box;
+    std::vector<int> nearby_axons;
     //Projections projections;
 
     /*!
@@ -56,6 +57,7 @@ public:
     bool isSphereInsideAxon_(Dynamic_Sphere sph);
     std::vector<int> checkAxisForCollision(Dynamic_Sphere sph, int axis);
     bool isNearAxon(Eigen::Vector3d position, double distance_to_be_inside);
+    void add_nearby_axon(int ax_id);
     //bool isPosInsideAxon(Eigen::Vector3d &position, double distance_to_be_inside, double max_radius);
     //void add_projection(Dynamic_Sphere sphere_to_add);
 };
