@@ -38,6 +38,7 @@ public:
 
     ~Axon(){
         spheres.clear();
+        nearby_axons.clear();
         //projections.clear_projections();
     };
 
@@ -50,6 +51,7 @@ public:
         end = end_;
         radius = radius_;
         spheres.clear();
+        nearby_axons.clear();
     }
     Axon(Axon const &ax);
 

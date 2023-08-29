@@ -245,12 +245,11 @@ def find_closest_to_value(list_of_lists, value):
     
     return index, closest_value
 
-def draw_spheres(file_path, limit):
+def draw_spheres(file_path, limit, z):
     df = read_swc_file(file_path)
 
     axons = get_spheres_array(df)
     circles = []
-    z = 0
 
     for axon in axons:
 
@@ -343,7 +342,7 @@ def cap_time_plot(file_list):
     plt.ylabel('Voxel size (um)')
     plt.show()
 
-def get_files_from_folder(folder_path, icvf):
+def get_text_from_folder(folder_path, icvf):
 
     txt_files = glob.glob(os.path.join(folder_path, f"*.txt"))
     txt_files.sort()
@@ -355,7 +354,19 @@ def get_files_from_folder(folder_path, icvf):
         return list_txt
     else:
         return txt_files
+    
+def get_swc_from_folder(folder_path, icvf):
 
+    txt_files = glob.glob(os.path.join(folder_path, f"growth*"))
+    txt_files.sort()
+    list_txt = []
+    if icvf != None:
+        for txt_file in txt_files:
+            if (str(icvf) in txt_file):
+                list_txt.append(txt_file)
+        return list_txt
+    else:
+        return txt_files
 
 
 if __name__ == "__main__":
@@ -363,13 +374,13 @@ if __name__ == "__main__":
 
     # create_subplots(radius_file(file2), 51)
     folder = "/home/localadmin/Documents/Melina_branch/Sim_Growth/"
-    file_list = get_files_from_folder(folder,None)
-    vox_time_plot(file_list)
-    #draw_spheres(file, 30)
-    cap_time_plot(file_list)
+    file_list = get_swc_from_folder(folder,0.3)
+    #vox_time_plot(file_list)
+    print(file_list[1])
+    draw_spheres(file_list[1], 30, z = 15)
+    #cap_time_plot(file_list)
     
-    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_0.30_cap_1_vox_10.swc"
-    df = radius_file(file)
-    create_subplots(df, num_axons=10, max_z=None)
-    #tortuosity_plot(df)
-    #diameter_variation(file, num_axons=10, max_z=None)
+    #file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_0.30_cap_1_vox_50.swc"
+    #df = radius_file(file)
+    #create_subplots(df, num_axons=10, max_z=None)
+

@@ -57,6 +57,7 @@ public:
     double max_radius; // between all axons in env
 
     double variation_perc = 0.55;
+    //double variation_perc = 1;
 
     /*!
      *  \brief Initialize everything.
@@ -120,7 +121,7 @@ public:
     void growthVisualisation();
     void growBatches(std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_);
     void setBatches(int num_axons, std::vector<int> &num_subsets);
-    void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_);
+    void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_,float zoomLevel,bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor);
     double computeICVF_();
     void createSubstrate();
 

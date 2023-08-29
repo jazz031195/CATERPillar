@@ -545,10 +545,11 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
     for (unsigned j = 0; j < new_axons.size(); ++j)
     {
         for (unsigned i = 0; i < all_axons.size(); ++i) {
-            if (all_axons[i].isNearAxon(new_axons[j].spheres[0].center, 10)){
+            if (all_axons[i].isNearAxon(new_axons[j].spheres[0].center, 5)){
                 new_axons[j].add_nearby_axon(all_axons[i].id);
             }
         }
+        //cout << "nearby axons :" << new_axons[j].nearby_axons.size()<< endl;
         radii_.push_back(new_axons[j].radius);
     }
     
@@ -648,47 +649,7 @@ void AxonGammaDistribution::growthVisualisation()
     sf::Window window(sf::VideoMode(800, 600), "3D Visualization");
     window.setActive();
 
-    while (!stop)
-    {
-        std::vector<Axon> new_axons;
-        createAxons(radii, new_axons, false);
-        axons = new_axons;
-        num_obstacles = axons.size();
-        std::vector<int> num_subsets;
-        setBatches(num_obstacles, num_subsets);
-        drawBatches(window, axons, radii, num_subsets);
-        std::vector<double> radii_to_regrow = stuck_radii;
-
-        int num_regrowth = 0;
-
-        while (num_regrowth < regrow_thr && radii_to_regrow.size() > 0)
-        {
-            createAxons(radii_to_regrow, axons_to_regrow, true);
-            regrow_count = radii_to_regrow.size(); // nbr of axons to regrow
-            setBatches(regrow_count, num_subsets);
-            drawBatches(window, axons_to_regrow, radii_to_regrow, num_subsets);
-            radii_to_regrow = stuck_radii;
-            axons.insert(axons.end(), axons_to_regrow.begin(), axons_to_regrow.end()); // add regrown axons to the axons list
-            axons_to_regrow.clear();
-            ++num_regrowth;
-        }
-
-        stop = true;
-    }
-
-    // messages
-    std::cout << "icvf: " << icvf << " voxel size: " << max_limits[0] << std::endl;
-    std::string message = "ICVF achieved: " + std::to_string(icvf * 100);
-    std::cout << message << std::endl;
-    std::cout << "Number grown axons: " << axons.size() << std::endl;
-    std::cout << "Total number axons: " << num_obstacles << std::endl;
-    std::cout << "Number batches: " << num_batches << std::endl;
-    std::cout << "compute icvf " << computeICVF() << "\n"
-              << std::endl;
-}
-void AxonGammaDistribution::drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets)
-{
-    // Initialize OpenGL
+        // Initialize OpenGL
     sf::ContextSettings settings;
     settings.depthBits = 24; // Request a 24-bit depth buffer
 
@@ -716,6 +677,48 @@ void AxonGammaDistribution::drawBatches(sf::Window &window, std::vector<Axon> &a
     sf::Vector2i prevousRotation;
     prevousDisplacement.x = 0;
     prevousDisplacement.y = 0;
+
+    while (!stop)
+    {
+        std::vector<Axon> new_axons;
+        createAxons(radii, new_axons, false);
+        axons = new_axons;
+        num_obstacles = axons.size();
+        std::vector<int> num_subsets;
+        setBatches(num_obstacles, num_subsets);
+        drawBatches(window, axons, radii, num_subsets,zoomLevel,isDragging, lastMousePos, isRightDragging, lastRightMousePos, currentMousePos, mouseDelta, prevousDisplacement, rightMouseDelta, prevousRotation, rotationFactor,displacementFactor);
+        std::vector<double> radii_to_regrow = stuck_radii;
+
+        int num_regrowth = 0;
+
+        while (num_regrowth < regrow_thr && radii_to_regrow.size() > 0)
+        {
+            createAxons(radii_to_regrow, axons_to_regrow, true);
+            regrow_count = radii_to_regrow.size(); // nbr of axons to regrow
+            setBatches(regrow_count, num_subsets);
+            drawBatches(window, axons_to_regrow, radii_to_regrow, num_subsets,zoomLevel,isDragging, lastMousePos, isRightDragging, lastRightMousePos, currentMousePos, mouseDelta, prevousDisplacement, rightMouseDelta, prevousRotation, rotationFactor,displacementFactor);
+            radii_to_regrow = stuck_radii;
+            axons.insert(axons.end(), axons_to_regrow.begin(), axons_to_regrow.end()); // add regrown axons to the axons list
+            axons_to_regrow.clear();
+            ++num_regrowth;
+        }
+
+        stop = true;
+    }
+
+    // messages
+    std::cout << "icvf: " << icvf << " voxel size: " << max_limits[0] << std::endl;
+    std::string message = "ICVF achieved: " + std::to_string(icvf * 100);
+    std::cout << message << std::endl;
+    std::cout << "Number grown axons: " << axons.size() << std::endl;
+    std::cout << "Total number axons: " << num_obstacles << std::endl;
+    std::cout << "Number batches: " << num_batches << std::endl;
+    std::cout << "compute icvf " << computeICVF() << "\n"
+              << std::endl;
+}
+void AxonGammaDistribution::drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets,float zoomLevel,bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor)
+{
+
 
     stuck_radii.clear(); // start batches with no stuck radii
 
@@ -1024,10 +1027,7 @@ double AxonGammaDistribution::radiusVariation(Axon &axon, int time)
     {
         r = min_radius;
     }
-    if (r > initial_radius){
-        cout << "initial radius : " << initial_radius << endl;
-        cout << "varied radius :  " << r << endl;
-    }
+
     return r;
 }
 void AxonGammaDistribution::dichotomy(Eigen::Vector3d position_that_worked, Axon axon, double initial_rad,  double &last_rad, int grow_straight)
@@ -1044,9 +1044,10 @@ void AxonGammaDistribution::dichotomy(Eigen::Vector3d position_that_worked, Axon
         bool can_grow ;
         { 
             std::lock_guard<std::mutex> lock(stuckMutex); 
-            growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, current_rad, max_radius, grow_straight);
-            can_grow = growth.TestGrowAxonAtPos(position_that_worked);
+            growth = Growth(axon, axons, axon.nearby_axons, axons_to_regrow, max_limits, tortuous, current_rad, max_radius, grow_straight);
+            
         } 
+        can_grow = growth.TestGrowAxonAtPos(position_that_worked);
         
 
         if (can_grow) // solution is in greater half
@@ -1064,6 +1065,12 @@ void AxonGammaDistribution::dichotomy(Eigen::Vector3d position_that_worked, Axon
         ++tries;
 
    }
+   if (last_rad > initial_rad){
+        cout << "last rad after dichtomy:" << last_rad << endl;
+        cout << "initial_rad after dichtomy:" << initial_rad << endl;
+        cout << "last rad after dichtomy:" << last_rad << endl;
+   }
+
 
 }
 bool AxonGammaDistribution::shrinkRadius(double radius_to_shrink, Axon &axon, int grow_straight)
@@ -1076,9 +1083,9 @@ bool AxonGammaDistribution::shrinkRadius(double radius_to_shrink, Axon &axon, in
 
     { 
         std::lock_guard<std::mutex> lock(stuckMutex);
-        growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, min_radius, max_radius, grow_straight);
-        can_grow = growth.TestGrowAxon(position_that_worked);
+        growth = Growth(axon, axons, axon.nearby_axons, axons_to_regrow, max_limits, tortuous, min_radius, max_radius, grow_straight);
     } 
+    can_grow = growth.TestGrowAxon(position_that_worked);
 
     int tries = 0;
     if (can_grow) // shrinking is useful
@@ -1088,11 +1095,6 @@ bool AxonGammaDistribution::shrinkRadius(double radius_to_shrink, Axon &axon, in
         Dynamic_Sphere s(axon.spheres.size(), axon.id, position_that_worked, last_rad);
         //cout << "axon : "<< axon.id << " sphere : "<< axon.spheres.size()<< "shrink to :" << last_rad << ", initial at : "<< initial_radius << endl;
         axon.add_sphere(s);
-
-        if (last_rad > initial_radius){
-            cout << "dichotomy radius :" << last_rad << endl;
-            cout << "initial radius : " << initial_radius << endl;
-        }
 
         return true;
     }
@@ -1110,9 +1112,9 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
     bool can_grow;
     {
         std::lock_guard<std::mutex> lock(stuckMutex);
-        growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, varied_radius, max_radius, grow_straight);
-        can_grow = growth.GrowAxon(); // adds sphere
-    } 
+        growth = Growth(axon, axons, axon.nearby_axons, axons_to_regrow, max_limits, tortuous, varied_radius, max_radius, grow_straight);
+    }
+    can_grow = growth.GrowAxon(); // adds sphere 
     
 
     if (growth.finished)
