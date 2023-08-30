@@ -38,7 +38,7 @@ std::vector<std::string> _split_line(const std::string &s, char delim)
 
 AxonGammaDistribution::AxonGammaDistribution(unsigned &num_ax, int &axon_capacity_, double a, double b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, double min_radius_,
-                                             bool tortuous_, bool draw_, int regrow_thr_)
+                                             bool tortuous_, bool draw_, int regrow_thr_, bool can_shrink_)
 {
     alpha = a;
     beta = b;
@@ -53,6 +53,7 @@ AxonGammaDistribution::AxonGammaDistribution(unsigned &num_ax, int &axon_capacit
     min_radius = min_radius_;
     draw = draw_;
     regrow_thr = regrow_thr_;
+    can_shrink=can_shrink_;
 }
 
 void AxonGammaDistribution::computeMinimalSize(std::vector<double> radiis, double icvf_, Eigen::Vector3d &l)
@@ -1042,11 +1043,11 @@ void AxonGammaDistribution::dichotomy(Eigen::Vector3d position_that_worked, Axon
 
         Growth growth;
         bool can_grow ;
-        { 
-            std::lock_guard<std::mutex> lock(stuckMutex); 
-            growth = Growth(axon, axons, axon.nearby_axons, axons_to_regrow, max_limits, tortuous, current_rad, max_radius, grow_straight);
+        //{ 
+        //    std::lock_guard<std::mutex> lock(stuckMutex); 
+        growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, current_rad, max_radius, grow_straight);
             
-        } 
+        //} 
         can_grow = growth.TestGrowAxonAtPos(position_that_worked);
         
 
@@ -1081,10 +1082,10 @@ bool AxonGammaDistribution::shrinkRadius(double radius_to_shrink, Axon &axon, in
     bool can_grow;
     Eigen::Vector3d position_that_worked;
 
-    { 
-        std::lock_guard<std::mutex> lock(stuckMutex);
-        growth = Growth(axon, axons, axon.nearby_axons, axons_to_regrow, max_limits, tortuous, min_radius, max_radius, grow_straight);
-    } 
+    //{ 
+    //    std::lock_guard<std::mutex> lock(stuckMutex);
+    growth = Growth(axon, axons, axons_to_regrow, max_limits, tortuous, min_radius, max_radius, grow_straight);
+    //} 
     can_grow = growth.TestGrowAxon(position_that_worked);
 
     int tries = 0;
@@ -1110,10 +1111,10 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
     double varied_radius = radiusVariation(axon, time);
     Growth growth;
     bool can_grow;
-    {
-        std::lock_guard<std::mutex> lock(stuckMutex);
-        growth = Growth(axon, axons, axon.nearby_axons, axons_to_regrow, max_limits, tortuous, varied_radius, max_radius, grow_straight);
-    }
+    //{
+    //    std::lock_guard<std::mutex> lock(stuckMutex);
+    growth = Growth(axon, axons,axons_to_regrow, max_limits, tortuous, varied_radius, max_radius, grow_straight);
+    //}
     can_grow = growth.GrowAxon(); // adds sphere 
     
 
@@ -1125,7 +1126,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
     {
         if (!can_grow)
         {
-            if (shrink_tries < axon.spheres.size()/5)
+            if (can_shrink && shrink_tries < axon.spheres.size()/5)
             {
                 {
                     bool shrink = shrinkRadius(varied_radius, axon, grow_straight); // adds a sphere if it works

@@ -13,6 +13,9 @@ class Growth
 {
 public:
     std::vector<Axon> env_axons;
+    std::vector<Axon> axons;
+    std::vector<Axon> axons_to_regrow;
+
     Axon axon_to_grow; /* Axon vector */
     Eigen::Vector3d voxel_size;
     bool tortuous;
@@ -24,7 +27,7 @@ public:
     Growth(){};
     ~Growth(){};
 
-    Growth(Axon, std::vector<Axon>, std::vector<int>, std::vector<Axon>,  Eigen::Vector3d, bool, double, double, int);
+    Growth(Axon, std::vector<Axon>, std::vector<Axon>,  Eigen::Vector3d, bool, double, double, int);
 
     bool GrowAxon();
     bool GrowFirstSphere();
@@ -36,6 +39,7 @@ public:
     void find_next_center_straight(double distance, Dynamic_Sphere &s);
     bool TestGrowAxonAtPos(Eigen::Vector3d position_to_test);
     bool TestGrowAxon(Eigen::Vector3d &position_that_worked);
+    void initialise_env_axons();
 
 
 };

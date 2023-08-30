@@ -59,6 +59,8 @@ public:
     double variation_perc = 0.55;
     //double variation_perc = 1;
 
+    bool can_shrink;
+
     /*!
      *  \brief Initialize everything.
      */
@@ -67,7 +69,7 @@ public:
     /*!
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(unsigned &, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int);
+    AxonGammaDistribution(unsigned &, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int, bool);
 
     /*!
      *  \brief Sets icvf and overwrites num_obstacles and num_batches

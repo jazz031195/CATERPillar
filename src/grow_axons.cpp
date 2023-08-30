@@ -9,24 +9,8 @@ using namespace std;
 using namespace Eigen;
 using namespace std::chrono;
 
-Growth::Growth(Axon axon_to_grow_, std::vector<Axon> axons, std::vector<int> axons_id, std::vector<Axon> axons_to_regrow, Eigen::Vector3d voxel_size_, bool tortuous_, double radius_, double max_radius_, int grow_straight_)
+Growth::Growth(Axon axon_to_grow_, std::vector<Axon> axons_, std::vector<Axon> axons_to_regrow_, Eigen::Vector3d voxel_size_, bool tortuous_, double radius_, double max_radius_, int grow_straight_)
 {
-
-
-    for (unsigned i = 0; i < axons.size(); i++){
-        // if id is in axon_ids
-        auto it = std::find(axons_id.begin(), axons_id.end(), axons[i].id);
-        if (it != axons_id.end()){
-            env_axons.push_back(axons[i]);
-        }
-    }
-
-    for (unsigned i = 0; i < axons_to_regrow.size(); i++){
-        auto it = std::find(axons_id.begin(), axons_id.end(), axons_to_regrow[i].id);
-        if (it != axons_id.end()){
-            env_axons.push_back(axons_to_regrow[i]);
-        }
-    }
 
     axon_to_grow = axon_to_grow_;
     voxel_size = voxel_size_;
@@ -35,10 +19,34 @@ Growth::Growth(Axon axon_to_grow_, std::vector<Axon> axons, std::vector<int> axo
     max_radius = max_radius_;
     grow_straight = grow_straight_;
     radius = radius_;
+    axons_to_regrow = axons_to_regrow_;
+    axons = axons_;
+
     if (!tortuous)
     {
         grow_straight = 0;
     }
+
+}
+
+void Growth::initialise_env_axons(){
+
+    for (unsigned i = 0; i < axons.size(); i++){
+        // if id is in axon_ids
+        auto it = std::find(axon_to_grow.nearby_axons.begin(), axon_to_grow.nearby_axons.end(), axons[i].id);
+        if (it != axon_to_grow.nearby_axons.end()){
+            env_axons.push_back(axons[i]);
+        }
+    }
+
+    for (unsigned i = 0; i < axons_to_regrow.size(); i++){
+        auto it = std::find(axon_to_grow.nearby_axons.begin(), axon_to_grow.nearby_axons.end(), axons_to_regrow[i].id);
+        if (it != axon_to_grow.nearby_axons.end()){
+            env_axons.push_back(axons_to_regrow[i]);
+        }
+    }
+    axons.clear();
+    axons_to_regrow.clear();
 
 }
 
@@ -165,26 +173,16 @@ bool Growth::isSphereColliding(Dynamic_Sphere sph)
 
 bool Growth::isSphereColliding_(Dynamic_Sphere sph){
     // for all axons
-    for (unsigned i = 0; i < axon_to_grow.nearby_axons.size(); i++)
+    for (unsigned i = 0; i < env_axons.size(); i++)
     {
-        int target_id = axon_to_grow.nearby_axons[i];
+        int target_id = env_axons[i].id;
 
         if (sph.ax_id != target_id){
 
-            auto it = std::find_if(env_axons.begin(), env_axons.end(), [target_id](const Axon& a) {
-                return a.id == target_id;
-            });
-            Axon foundAxon;
-
-            if (it != env_axons.end()) {
-                // Convert iterator to Axon object using dereference operator *
-                foundAxon = *it;
-                //std::cout << "Found Axon with ID " << foundAxon.id << std::endl;
-                // Handle the found Axon
-                if (foundAxon.isSphereInsideAxon_(sph)){
-                    return true;
-                }
+            if (env_axons[i].isSphereInsideAxon_(sph)){
+                return true;
             }
+            
         }
     }
     return false;
@@ -298,6 +296,7 @@ void Growth::find_next_center_straight(double distance, Dynamic_Sphere &s)
 
 bool Growth::TestGrowAxonAtPos(Eigen::Vector3d position_to_test)
 {
+    initialise_env_axons();
     Dynamic_Sphere s(axon_to_grow.spheres.size(), axon_to_grow.id, axon_to_grow.begin, radius);
     bool collides = isSphereColliding_(s);
     return collides;
@@ -305,6 +304,7 @@ bool Growth::TestGrowAxonAtPos(Eigen::Vector3d position_to_test)
 
 bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked)
 {
+    initialise_env_axons();
     // radii of all spheres add to the centers list
     std::vector<double> sph_radii;
     // if sphere collides with environment
@@ -392,6 +392,7 @@ bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked)
 
 bool Growth::GrowAxon()
 {
+    initialise_env_axons();
     // radii of all spheres add to the centers list
     std::vector<double> sph_radii;
     // if sphere collides with environment

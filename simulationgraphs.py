@@ -374,11 +374,11 @@ if __name__ == "__main__":
 
     # create_subplots(radius_file(file2), 51)
     folder = "/home/localadmin/Documents/Melina_branch/Sim_Growth/"
-    file_list = get_swc_from_folder(folder,0.3)
-    #vox_time_plot(file_list)
-    print(file_list[1])
-    draw_spheres(file_list[1], 30, z = 15)
-    #cap_time_plot(file_list)
+    file_list = get_text_from_folder(folder,0.3)
+    vox_time_plot(file_list)
+    #print(file_list[2])
+    #draw_spheres(file_list[1], 30, z = 15)
+    cap_time_plot(file_list)
     
     #file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_0.30_cap_1_vox_50.swc"
     #df = radius_file(file)

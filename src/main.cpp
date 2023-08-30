@@ -13,9 +13,9 @@ using namespace Eigen;
 
 int main()
 {
-    std::vector<int> vox_sizes = {30};
+    std::vector<int> vox_sizes = {50};
     for (int i = 0; i < vox_sizes.size(); i++){
-        std::vector<int> capacities = {10};
+        std::vector<int> capacities = {20, 10, 1};
         for (int c = 0; c < capacities.size(); c++){
             // number of axons
             unsigned int number_axons = 100;
@@ -33,6 +33,8 @@ int main()
             // minimum radius
             double min_radius = 0.15; // um
 
+            bool can_shrink = false;
+
             // simulation parameters
             bool tortuous = true;
             bool draw = false;
@@ -41,12 +43,12 @@ int main()
             double icvf = 0.3;
 
             // number of regrowth batches allowed
-            int regrow_thr = 50;
+            int regrow_thr = 1000;
 
             auto startTime = std::chrono::high_resolution_clock::now();
 
             // create distribution of axons
-            AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr);
+            AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr, can_shrink);
             AxonDistribution->set_icvf(icvf, max_l[0], max_l[1]);
 
             cout << "AxonDistribution created" << endl;
