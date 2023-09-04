@@ -13,9 +13,9 @@ using namespace Eigen;
 
 int main()
 {
-    std::vector<int> vox_sizes = {50};
+    std::vector<int> vox_sizes = {10};
     for (int i = 0; i < vox_sizes.size(); i++){
-        std::vector<int> capacities = {20, 10, 1};
+        std::vector<int> capacities = {20,10,1};
         for (int c = 0; c < capacities.size(); c++){
             // number of axons
             unsigned int number_axons = 100;
@@ -36,8 +36,10 @@ int main()
             bool can_shrink = false;
 
             // simulation parameters
-            bool tortuous = true;
+            bool tortuous = false;
             bool draw = false;
+            double beading_variation = 0.55;
+            //double beading_variation = 1;
 
             // density parameters
             double icvf = 0.3;
@@ -48,7 +50,7 @@ int main()
             auto startTime = std::chrono::high_resolution_clock::now();
 
             // create distribution of axons
-            AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr, can_shrink);
+            AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr, can_shrink, beading_variation);
             AxonDistribution->set_icvf(icvf, max_l[0], max_l[1]);
 
             cout << "AxonDistribution created" << endl;
@@ -72,8 +74,14 @@ int main()
             
 
             if (!draw){
-                std::string filename = "/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + ".swc"; // Replace with your file name
-
+                std::string directory = "/home/localadmin/Documents/Melina_branch/Sim_Growth";
+                std::string filename;
+                if (tortuous) {
+                    filename = directory + "/axons_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + ".swc"; // Replace with your file name
+                }
+                else{
+                    filename = directory + "/axons_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + "_straight.swc"; // Replace with your file name
+                }
                 std::ifstream file(filename);
                 if (file.good()) {
                     for (int n = 0; n < 10; n++) {
@@ -82,17 +90,31 @@ int main()
                         if (new_file.good()) {
                             continue;
                         } else {
-                            axons_file_name = ("/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + ".swc");
-                            simulation_file_name = ("/home/localadmin/Documents/Melina_branch/Sim_Growth/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + ".txt");
-                            swc_file_name = ("/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + ".swc");
+                            if (tortuous){
+                                axons_file_name = (directory + "axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + ".swc");
+                                simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + ".txt");
+                                swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + ".swc");
+                            }
+                            else{
+                                axons_file_name = (directory + "axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + "_straight.swc");
+                                simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + "_straight.txt");
+                                swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + "_straight.swc");
+                            }
                             break;
                         }
                     }
                 } else {
-
-                    axons_file_name = ("/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + ".swc");
-                    simulation_file_name = ("/home/localadmin/Documents/Melina_branch/Sim_Growth/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + ".txt");
-                    swc_file_name = ("/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + ".swc");
+                    if (tortuous){
+                        axons_file_name = (directory + "/axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + ".swc");
+                        simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + ".txt");
+                        swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + ".swc");
+                    }
+                    else{
+                        axons_file_name = (directory + "/axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_straight.swc");
+                        simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_straight.txt");
+                        swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_straight.swc");
+                    
+                    }
                 }
 
                 std::ofstream axons_file(axons_file_name);

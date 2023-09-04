@@ -56,8 +56,8 @@ public:
 
     double max_radius; // between all axons in env
 
-    double variation_perc = 0.55;
-    //double variation_perc = 1;
+    double variation_perc;
+
 
     bool can_shrink;
 
@@ -69,7 +69,7 @@ public:
     /*!
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(unsigned &, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int, bool);
+    AxonGammaDistribution(unsigned &, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int, bool, double);
 
     /*!
      *  \brief Sets icvf and overwrites num_obstacles and num_batches
@@ -105,7 +105,7 @@ public:
      *  \param stuck number of straight growths
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int &restart_tries);
+    void growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int &restart_tries, bool regrowth);
 
     /*!
      *  \brief Causes sinusoidal fluctuation of the radii
@@ -121,9 +121,9 @@ public:
      *  \brief Creates and displays a parallel growth of all axons
      */
     void growthVisualisation();
-    void growBatches(std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_);
+    void growBatches(std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_, bool regrowth);
     void setBatches(int num_axons, std::vector<int> &num_subsets);
-    void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_,float zoomLevel,bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor);
+    void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_,float zoomLevel,bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor, bool regrowth);
     double computeICVF_();
     void createSubstrate();
 

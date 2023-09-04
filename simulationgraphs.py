@@ -307,6 +307,7 @@ def vox_time_plot(file_list):
     # plt.show()
     df = pd.DataFrame(data)
 
+
     unique_cap_values = df['Capacity'].unique()
 
     
@@ -328,6 +329,7 @@ def cap_time_plot(file_list):
 
     df = pd.DataFrame(data)
     df['Duration'] =  df['Duration']/60
+
     df_pivot = df.pivot_table(index='Voxel', columns='Capacity', values='Duration', aggfunc='mean')
     
 
@@ -342,18 +344,17 @@ def cap_time_plot(file_list):
     plt.ylabel('Voxel size (um)')
     plt.show()
 
-def get_text_from_folder(folder_path, icvf):
+def get_text_from_folder(folder_path,  straight = False):
 
     txt_files = glob.glob(os.path.join(folder_path, f"*.txt"))
     txt_files.sort()
     list_txt = []
-    if icvf != None:
-        for txt_file in txt_files:
-            if (str(icvf) in txt_file):
-                list_txt.append(txt_file)
-        return list_txt
-    else:
-        return txt_files
+    for txt_file in txt_files:
+        if straight and "straight" in txt_file:
+            list_txt.append(txt_file)
+        elif not straight and "straight" not in txt_file:
+            list_txt.append(txt_file)
+    return list_txt
     
 def get_swc_from_folder(folder_path, icvf):
 
@@ -374,8 +375,16 @@ if __name__ == "__main__":
 
     # create_subplots(radius_file(file2), 51)
     folder = "/home/localadmin/Documents/Melina_branch/Sim_Growth/"
-    file_list = get_text_from_folder(folder,0.3)
+    file_list = get_text_from_folder(folder, straight=False)
+
     vox_time_plot(file_list)
+
+    cap_time_plot(file_list)
+
+    file_list = get_text_from_folder(folder, straight=True)
+
+    vox_time_plot(file_list)
+
     #print(file_list[2])
     #draw_spheres(file_list[1], 30, z = 15)
     cap_time_plot(file_list)

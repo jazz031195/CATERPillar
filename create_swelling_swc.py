@@ -26,15 +26,19 @@ def get_all_axons(path):
     spheres = get_all_spheres(path)
     axons = []
     spheres_of_axon=[]
-    last_ax_id = 0 # id of last sphere to be appended
+    last_ax_id = -1 # id of last sphere to be appended
     for s, sphere in enumerate(spheres):
-        if sphere[0] == last_ax_id and s != len(spheres)-1: # if sphere is from same axon
-            spheres_of_axon.append(sphere)
-        else:
-            axons.append(spheres_of_axon) # create new axon
-            spheres_of_axon = []
-            last_ax_id = sphere[0]
-        
+
+        ax_id = sphere[0]
+        if s!=0 and last_ax_id != ax_id:
+            #print ("new axon")
+            axons.append(spheres_of_axon)
+            spheres_of_axon=[]
+
+        spheres_of_axon.append(sphere)
+        last_ax_id = ax_id
+
+    axons.append(spheres_of_axon)
     return axons
 
 def shrink_radius(perc, swollen_radius):
@@ -56,13 +60,17 @@ def create_boolean_list(size, true_percentage):
 def get_first_line_from_file(file_path):
     with open(file_path, 'r') as file:
         first_line = file.readline()
-    return first_line.strip()  # Remove trailing newline character if present
+    return first_line  
 
 def write_list_of_lists_to_file(file_path, lines):
     with open(file_path, 'w') as file:
-        for line in lines:
-            str_line = ' '.join(line) + '\n'
-            file.write(str_line )
+        for e,line in enumerate(lines):
+            if e == 0 :
+                str_line = ''.join(line) 
+                file.write(str_line)
+            else:
+                str_line = ' '.join(line) + '\n'
+                file.write(str_line )
 
 def adjust_percentage_of_true(input_list,  target_percentage):
 
@@ -77,7 +85,7 @@ def adjust_percentage_of_true(input_list,  target_percentage):
     target_true_count = round(len(input_list) * target_percentage / 100)
      #print("target_true_count :",target_true_count)
     #print("true_count :",true_count)
-    if target_true_count >= true_count:
+    if target_true_count > true_count:
         
         raise ValueError("The target percentage must be smaller than the initial percentage.")
 
@@ -87,46 +95,55 @@ def adjust_percentage_of_true(input_list,  target_percentage):
     result_list = [True if i in new_true_indices else False for i, val in enumerate(input_list)]
     return result_list
 
-def shrink_axons(path, output_paths, perc_swelling, perc_swollen_axons):
+def shrink_axons(path, perc_swelling, perc_swollen_axons):
 
     header = get_first_line_from_file(path)
     
     axons = get_all_axons(path)
-
+    
+    # set all swellings to true 
     to_swell = [True]*len(axons)
-
-
+    # 70, 50, 30
     perc_swollen_axons = sorted(perc_swollen_axons, reverse=True)
+    output_paths = [path[:-4]+"_swell_"+str(swell)+path[-4:] for swell in perc_swollen_axons]
 
     for e,perc in enumerate(perc_swollen_axons):
-        #print(perc)
+
+        print("Percentage ", perc)
         to_swell = adjust_percentage_of_true(to_swell, perc)
-        #print(to_swell)
+        print(to_swell.count(True)/len(to_swell))
+    
         new_lines = []
 
         new_lines.append(header)
 
         for i,axon in enumerate(axons):
+
+            old_radius = float(axon[0][6])
+            if i == 0:
+                print(old_radius)
+         
             if (to_swell[i]):
                 for sphere in axon:
                     new_lines.append(sphere)
                     #print(sphere)
             else:
                 for sphere in axon:
-                    old_radius = float(sphere[6])
+                    sphere_ = sphere
+                    old_radius = float(sphere_[6])
                     new_radius = shrink_radius(perc_swelling, old_radius)
-                    sphere[6] = str(new_radius)
+                    sphere_[6] = str(new_radius)
                     #print(sphere)
-                    new_lines.append(sphere)
+                    new_lines.append(sphere_)
+        axons = get_all_axons(path)
         
         write_list_of_lists_to_file(output_paths[e], new_lines)
 
 
 
 
-path = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.50_cap_20_vox_30.swc"
+path = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.50_vox_50.swc"
 
-perc_swollen_axons = [0, 30,50, 70]
-output_paths = [path[:-4]+"_swell_"+str(swell)+path[-4:] for swell in perc_swollen_axons]
+perc_swollen_axons = [0, 30,50, 70, 100]
 perc_swelling = 0.01
-shrink_axons(path, output_paths, perc_swelling, perc_swollen_axons)
+shrink_axons(path,  perc_swelling, perc_swollen_axons)
