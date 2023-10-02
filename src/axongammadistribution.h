@@ -61,6 +61,8 @@ public:
 
     bool can_shrink;
 
+    double radii_swelling = 0.5; // um
+
     /*!
      *  \brief Initialize everything.
      */
@@ -105,12 +107,12 @@ public:
      *  \param stuck number of straight growths
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, int time, int &shrink_tries, int &restart_tries, bool regrowth);
+    void growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, int &shrink_tries, int &restart_tries, bool regrowth);
 
     /*!
      *  \brief Causes sinusoidal fluctuation of the radii
      */
-    double radiusVariation(Axon &axon, int time);
+    double radiusVariation(Axon axon);
 
     /*!
      *  \brief Creates a parallel growth of all axons
@@ -130,12 +132,12 @@ public:
     /*!
      *  \brief Shrinks the radius to allow passage between axons
      */
-    bool shrinkRadius(double radius_to_shrink, Axon &axon, int grow_straight);
+    bool shrinkRadius(Growth growth, double radius_to_shrink, Axon &axon, int grow_straight);
 
     /*!
      *  \brief Finds a radius for which shrinkage allows passage
      */
-    void dichotomy(Eigen::Vector3d position_that_worked, Axon axon, double initial_rad, double &last_rad, int grow_straight);
+    void dichotomy(Growth growth, Eigen::Vector3d position_that_worked, Axon axon, double initial_rad, double &last_rad, int grow_straight);
 
     /*!
      *  \param row row of the current batch's axon vector
@@ -154,7 +156,7 @@ public:
      */
     void axonDensityMap();
 
-    void create_SWC_file(std::ostream &out);
+    void create_SWC_file(std::ostream &out, int overlapping_factor);
 
     void axons_file(std::ostream &out);
     void simulation_file(std::ostream &out, std::chrono::seconds duration);
@@ -173,7 +175,12 @@ public:
     void PlaceTwinAxons(double radius, bool regrowth, int i, int &tries, bool &next, std::vector<Eigen::Vector3d> Qs, std::vector<Axon> &all_axons, std::vector<Axon> &new_axons);
     std::vector<Eigen::Vector3d> FindTwins(Eigen::Vector3d Q, double rad);
     bool withinBounds(Eigen::Vector3d pos, double distance);
-
+    void swellAxons();
+    double dichotomy_swelling(Dynamic_Sphere new_sphere, int index, double swelling_perc);
+    void fill_wih_overlapping_spheres(int overlapping_factor, std::vector<Axon> &final_axons);
+    bool canSpherebePlaced(Dynamic_Sphere sph, std::vector<Axon> axs, bool print = false);
+    double squareCircleOverlap(double L, double circleRadius, double circleCenterX, double circleCenterY);
+    bool FinalCheck();
 private:
     /*!
      *  \brief Computes Intra Celular Volum Fraction given the voxel limits and the list of added cylinders.

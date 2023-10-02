@@ -157,7 +157,7 @@ def draw_axons(df):
             name=f"Axon {e}",
             marker=dict(
                 sizemode="diameter",
-                size=[s[3] * 10 for s in axon],  # Set the size of scatter points for the axon
+                size=[s[3]*3 for s in axon],  # Set the size of scatter points for the axon
                 color=c,  # Set the color of scatter points for the axon
                 line=dict(
                     color="rgba(0, 0, 0, 0)",  # Set color to transparent (alpha=0)
@@ -209,6 +209,8 @@ def get_spheres_array(df):
         axons.append(current_axon) # last axon
 
     return axons
+
+
 
 def draw_circles(center_radii, ax=None, **kwargs):
     """
@@ -375,21 +377,44 @@ if __name__ == "__main__":
 
     # create_subplots(radius_file(file2), 51)
     folder = "/home/localadmin/Documents/Melina_branch/Sim_Growth/"
-    file_list = get_text_from_folder(folder, straight=False)
+    #file_list = get_text_from_folder(folder, straight=False)
 
-    vox_time_plot(file_list)
+    #vox_time_plot(file_list)
 
-    cap_time_plot(file_list)
+    #cap_time_plot(file_list)
 
-    file_list = get_text_from_folder(folder, straight=True)
+    #file_list = get_text_from_folder(folder, straight=True)
 
-    vox_time_plot(file_list)
+    #vox_time_plot(file_list)
 
     #print(file_list[2])
-    #draw_spheres(file_list[1], 30, z = 15)
-    cap_time_plot(file_list)
+    #file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.70_cap_20_vox_10_factor_2.swc"
+    #df = read_swc_file(file)
+    #draw_axons(df)
+
+    #radius_histogram(df)
+    #size = 11
+    #for z in range(size +1):
+    #    draw_spheres(file, size, z =z)
     
     #file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_0.30_cap_1_vox_50.swc"
-    #df = radius_file(file)
-    #create_subplots(df, num_axons=10, max_z=None)
 
+    # Read the data from the text file into a Pandas DataFrame
+    data = pd.read_csv('/home/localadmin/Documents/permeable_MCDS/MCDC_Simulator_public/instructions/axons/growth_icvf_0.50_cap_1_vox_50_factor_8_swell_0.01.swc', delimiter=' ')
+    
+    # Group the data by 'id_ax' to separate spheres by axon
+    grouped_data = data.groupby('id_ax').mean()
+    # Create a figure and axis for the plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Plot the distribution of radii for each axon
+    sns.histplot(grouped_data['R'], kde=True)
+
+    # Set plot labels and legend
+    ax.set_xlabel('Radius')
+    ax.set_ylabel('Count')
+    ax.set_title('Distribution of Radii for All Axons')
+    #plt.legend(title='Axon ID', loc='upper right')  # Specify the legend location
+
+    # Show the plot
+    plt.show()

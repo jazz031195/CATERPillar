@@ -13,9 +13,9 @@ using namespace Eigen;
 
 int main()
 {
-    std::vector<int> vox_sizes = {10};
+    std::vector<int> vox_sizes = {100};
     for (int i = 0; i < vox_sizes.size(); i++){
-        std::vector<int> capacities = {20,10,1};
+        std::vector<int> capacities = {20};
         for (int c = 0; c < capacities.size(); c++){
             // number of axons
             unsigned int number_axons = 100;
@@ -33,19 +33,22 @@ int main()
             // minimum radius
             double min_radius = 0.15; // um
 
-            bool can_shrink = false;
+            bool can_shrink = true;
 
             // simulation parameters
-            bool tortuous = false;
+            bool tortuous = true;
             bool draw = false;
             double beading_variation = 0.55;
             //double beading_variation = 1;
 
             // density parameters
-            double icvf = 0.3;
+            double icvf = 0.6;
 
             // number of regrowth batches allowed
-            int regrow_thr = 1000;
+            int regrow_thr = 500;
+
+            // distance between spheres = radius /spheres_overlap_factor
+            std::vector<int> spheres_overlap_factors = {2, 6, 14};
 
             auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -67,6 +70,7 @@ int main()
 
             std::string icvf_str = std::to_string(icvf);
             std::string vox_size_str = std::to_string(vox_size);
+            
 
             std::string axons_file_name;
             std::string simulation_file_name;
@@ -80,7 +84,7 @@ int main()
                     filename = directory + "/axons_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + ".swc"; // Replace with your file name
                 }
                 else{
-                    filename = directory + "/axons_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) + "_straight.swc"; // Replace with your file name
+                    filename = directory + "/axons_icvf_" + std::to_string(icvf).substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + std::to_string(vox_size).substr(0, 2) +  "_straight.swc"; // Replace with your file name
                 }
                 std::ifstream file(filename);
                 if (file.good()) {
@@ -91,54 +95,75 @@ int main()
                             continue;
                         } else {
                             if (tortuous){
-                                axons_file_name = (directory + "axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + ".swc");
-                                simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + ".txt");
-                                swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + ".swc");
+                                axons_file_name = (directory + "axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +   "_" + std::to_string(n) +".swc");
+                                simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +   "_" + std::to_string(n) +".txt");
+                                swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +   "_" + std::to_string(n) +".swc");
                             }
                             else{
-                                axons_file_name = (directory + "axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + "_straight.swc");
-                                simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + "_straight.txt");
-                                swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_" + std::to_string(n) + "_straight.swc");
+                                axons_file_name = (directory + "axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  "_" + std::to_string(n) +"_straight.swc");
+                                simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  "_" + std::to_string(n) + "_straight.txt");
+                                swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +   "_" + std::to_string(n) + "_straight.swc");
                             }
                             break;
                         }
                     }
                 } else {
                     if (tortuous){
-                        axons_file_name = (directory + "/axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + ".swc");
-                        simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + ".txt");
-                        swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + ".swc");
+                        axons_file_name = (directory + "/axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  ".swc");
+                        simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  ".txt");
+                        swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  ".swc");
                     }
                     else{
-                        axons_file_name = (directory + "/axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_straight.swc");
-                        simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_straight.txt");
-                        swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) + "_straight.swc");
+                        axons_file_name = (directory + "/axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  "_straight.swc");
+                        simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  "_straight.txt");
+                        swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  "_straight.swc");
                     
                     }
-                }
-
-                std::ofstream axons_file(axons_file_name);
-                std::ofstream simulation_file(simulation_file_name);
-                std::ofstream swc_file(swc_file_name);
-        
-                // Check if files opened successfully
-                if (!axons_file || !simulation_file || !swc_file)
-                {
-                    std::cerr << "Error opening output file!" << std::endl;
-                    return 1;
                 }
 
                 auto endTime = std::chrono::high_resolution_clock::now();
                 auto duration = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime);
 
 
-                AxonDistribution->axons_file(axons_file);
-                AxonDistribution->simulation_file(simulation_file, duration);
-                AxonDistribution->create_SWC_file(swc_file);
+                for (int f = 0; f < spheres_overlap_factors.size(); f++){
+                    // factor for overlapping spheres
+                    std::string factor_str =std::to_string(spheres_overlap_factors[f]);
+                    // add to name of file
+                    std::string swc_file_name_ = swc_file_name.substr(0, swc_file_name.size()-4);
+                    swc_file_name_ = swc_file_name_ + "_factor_" +factor_str+".swc";
+                    // create file
+                    std::ofstream swc_file(swc_file_name_);
+                    // Check if files opened successfully
+                    if (!swc_file)
+                    {
+                        std::cerr << "Error opening output file!" << std::endl;
+                        return 1;
+                    }
+                    // write to file
+                    AxonDistribution->create_SWC_file(swc_file, spheres_overlap_factors[f]);
 
-                axons_file.close();
+                    swc_file.close();
+                    
+                }
+
+                //std::ofstream axons_file(axons_file_name);
+                std::ofstream simulation_file(simulation_file_name);
+
+                // Check if files opened successfully
+                if (!simulation_file)
+                {
+                    std::cerr << "Error opening output file!" << std::endl;
+                    return 1;
+                }
+
+                
+
+                //AxonDistribution->axons_file(axons_file);
+                AxonDistribution->simulation_file(simulation_file, duration);
+
+                //axons_file.close();
                 simulation_file.close();
-                swc_file.close();
+                
             }
 
             cout << "End of simulation!" << endl;

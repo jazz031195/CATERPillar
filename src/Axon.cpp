@@ -41,6 +41,7 @@ void Axon::add_sphere(Dynamic_Sphere sphere_to_add){
     // add sphere to list of spheres
     this->spheres.push_back(sphere_to_add);
 
+
     // if there is only one sphere in list
     if (spheres.size() == 1){
         // create box around that one sphere
@@ -132,6 +133,9 @@ bool check_with_edge(Eigen::Vector3d position, Vector2d x_limits, Vector2d y_lim
 
 bool Axon::isNearAxon(Eigen::Vector3d position, double distance_to_be_inside){
 
+    if (spheres.size()==0){
+        return false;
+    }
     Eigen::Vector2d x_limits = Box[0];
     Eigen::Vector2d y_limits = Box[1];
 
@@ -183,7 +187,7 @@ std::vector<int> Axon::checkAxisForCollision(Dynamic_Sphere sph, int axis){
 
 bool Axon::isSphereInsideAxon_(Dynamic_Sphere sph){
     //cout << "isSphereInsideAxon_ : " << id << endl;
-    if(isNearAxon(sph.center, sph.radius + barrier_tickness)){ // if near axon
+    if(isNearAxon(sph.center, 2*sph.radius + barrier_tickness)){ // if near axon
         //cout << "is near axon : " << id << endl;
         std::vector<std::vector<int>> spheres_id_to_check;
         for (auto axis = 0; axis < 3; ++axis) {
@@ -204,6 +208,18 @@ bool Axon::isSphereInsideAxon_(Dynamic_Sphere sph){
         spheres_to_check_all_axes.clear();
     }
 
+    return false;
+}
+
+bool Axon::isSphereInsideAxon_long(Dynamic_Sphere sph){
+    //cout << "isSphereInsideAxon_ : " << id << endl;
+
+    for (auto i = 0; i < spheres.size(); ++i) {
+        if (spheres[i].isInside(sph.center, barrier_tickness+ sph.radius)){
+            return true;
+        }
+    }
+    
     return false;
 }
 /*
