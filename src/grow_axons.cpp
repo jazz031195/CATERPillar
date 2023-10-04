@@ -46,6 +46,8 @@ void Growth::initialise_env_axons(){
             env_axons.push_back(axons_to_regrow[i]);
         }
     }
+
+    //cout << "env_axons :" << env_axons.size() << endl; 
     axons.clear();
     axons_to_regrow.clear();
 

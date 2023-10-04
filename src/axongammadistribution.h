@@ -29,7 +29,7 @@ public:
     std::vector<Axon> axons;   /*!< Axon vector  */
     std::vector<double> radii; /*!< axons radii  */
 
-    std::vector<Axon> axons_to_regrow;
+    std::vector<Axon> growing_axons;
     std::vector<double> stuck_radii; /*!< radii of stuck axons */
 
     unsigned num_obstacles; /*!< number of cylnders fit inside the substrate */
@@ -123,7 +123,7 @@ public:
      *  \brief Creates and displays a parallel growth of all axons
      */
     void growthVisualisation();
-    void growBatches(std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_, bool regrowth);
+    void growBatches(std::vector<double> &radii_, std::vector<int> &num_subsets_, bool regrowth);
     void setBatches(int num_axons, std::vector<int> &num_subsets);
     void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_,float zoomLevel,bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor, bool regrowth);
     double computeICVF_();
@@ -181,6 +181,8 @@ public:
     bool canSpherebePlaced(Dynamic_Sphere sph, std::vector<Axon> axs, bool print = false);
     double squareCircleOverlap(double L, double circleRadius, double circleCenterX, double circleCenterY);
     bool FinalCheck();
+    void createBatch(std::vector<double> &radii_, int num_subset, bool regrowth, int first_index_batch, std::vector<Axon> &new_axons);
+    
 private:
     /*!
      *  \brief Computes Intra Celular Volum Fraction given the voxel limits and the list of added cylinders.

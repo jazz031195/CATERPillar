@@ -388,33 +388,33 @@ if __name__ == "__main__":
     #vox_time_plot(file_list)
 
     #print(file_list[2])
-    #file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.70_cap_20_vox_10_factor_2.swc"
-    #df = read_swc_file(file)
+    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.60_cap_20_vox_10_factor_2.swc"
+    df = read_swc_file(file)
     #draw_axons(df)
 
-    #radius_histogram(df)
-    #size = 11
-    #for z in range(size +1):
-    #    draw_spheres(file, size, z =z)
+    radius_histogram(df)
+    size = 10
+    for z in range(size +1):
+        draw_spheres(file, size, z =z)
     
     #file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_0.30_cap_1_vox_50.swc"
 
     # Read the data from the text file into a Pandas DataFrame
-    data = pd.read_csv('/home/localadmin/Documents/permeable_MCDS/MCDC_Simulator_public/instructions/axons/growth_icvf_0.50_cap_1_vox_50_factor_8_swell_0.01.swc', delimiter=' ')
+    #data = pd.read_csv('/home/localadmin/Documents/permeable_MCDS/MCDC_Simulator_public/instructions/axons/growth_icvf_0.50_cap_1_vox_50_factor_8_swell_0.01.swc', delimiter=' ')
     
     # Group the data by 'id_ax' to separate spheres by axon
-    grouped_data = data.groupby('id_ax').mean()
+    #grouped_data = data.groupby('id_ax').mean()
     # Create a figure and axis for the plot
-    fig, ax = plt.subplots(figsize=(10, 6))
+    #fig, ax = plt.subplots(figsize=(10, 6))
 
     # Plot the distribution of radii for each axon
-    sns.histplot(grouped_data['R'], kde=True)
+    #sns.histplot(grouped_data['R'], kde=True)
 
     # Set plot labels and legend
-    ax.set_xlabel('Radius')
-    ax.set_ylabel('Count')
-    ax.set_title('Distribution of Radii for All Axons')
+    #ax.set_xlabel('Radius')
+    #ax.set_ylabel('Count')
+    #ax.set_title('Distribution of Radii for All Axons')
     #plt.legend(title='Axon ID', loc='upper right')  # Specify the legend location
 
     # Show the plot
-    plt.show()
+    #plt.show()
