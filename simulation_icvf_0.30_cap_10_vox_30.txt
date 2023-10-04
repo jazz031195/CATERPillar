@@ -1,6 +1,0 @@
-Duration 224
-Num_axons 376
-Capacity 10
-Voxel 30
-icvf 0.3
-Density 0.265042
