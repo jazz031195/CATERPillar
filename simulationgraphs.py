@@ -388,12 +388,12 @@ if __name__ == "__main__":
     #vox_time_plot(file_list)
 
     #print(file_list[2])
-    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.60_cap_20_vox_10_factor_2.swc"
+    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.10_cap_10_vox_50_factor_2_0.swc"
     df = read_swc_file(file)
     #draw_axons(df)
 
     radius_histogram(df)
-    size = 10
+    size = 50
     for z in range(size +1):
         draw_spheres(file, size, z =z)
     

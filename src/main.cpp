@@ -13,8 +13,8 @@ using namespace Eigen;
 
 int main()
 {
-    for (int rep = 0; rep < 10; rep++){
-        std::vector<int> vox_sizes = {10};
+    for (int rep = 0; rep < 5; rep++){
+        std::vector<int> vox_sizes = {50};
         for (int i = 0; i < vox_sizes.size(); i++){
             std::vector<int> capacities = {1,10,20};
             for (int c = 0; c < capacities.size(); c++){
@@ -23,7 +23,7 @@ int main()
                 int axon_capacity = capacities[c];
 
                 // constants for gamma distribution, mean = 0.5 um
-                double alpha = 7.0;
+                double alpha = 5.0;
                 double beta = 0.1;
                 double vox_size= vox_sizes[i];
 
@@ -34,7 +34,7 @@ int main()
                 // minimum radius
                 double min_radius = 0.15; // um
 
-                bool can_shrink = true;
+                bool can_shrink = false;
 
                 // simulation parameters
                 bool tortuous = true;
@@ -43,7 +43,7 @@ int main()
                 double beading_variation = 1;
 
                 // density parameters
-                double icvf = 0.6;
+                double icvf = 0.1;
 
                 // number of regrowth batches allowed
                 int regrow_thr = 50;

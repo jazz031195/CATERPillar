@@ -126,6 +126,7 @@ public:
     void growBatches(std::vector<double> &radii_, std::vector<int> &num_subsets_, bool regrowth);
     void setBatches(int num_axons, std::vector<int> &num_subsets);
     void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_,float zoomLevel,bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor, bool regrowth);
+    double segmentCircleArea(Eigen::Vector3d min_pos, Eigen::Vector3d max_pos, Dynamic_Sphere s);
     double computeICVF_();
     void createSubstrate();
 
@@ -175,14 +176,13 @@ public:
     void PlaceTwinAxons(double radius, bool regrowth, int i, int &tries, bool &next, std::vector<Eigen::Vector3d> Qs, std::vector<Axon> &all_axons, std::vector<Axon> &new_axons);
     std::vector<Eigen::Vector3d> FindTwins(Eigen::Vector3d Q, double rad);
     bool withinBounds(Eigen::Vector3d pos, double distance);
-    void swellAxons();
+    bool swellAxons();
     double dichotomy_swelling(Dynamic_Sphere new_sphere, int index, double swelling_perc);
     void fill_wih_overlapping_spheres(int overlapping_factor, std::vector<Axon> &final_axons);
     bool canSpherebePlaced(Dynamic_Sphere sph, std::vector<Axon> axs, bool print = false);
-    double squareCircleOverlap(double L, double circleRadius, double circleCenterX, double circleCenterY);
     bool FinalCheck();
     void createBatch(std::vector<double> &radii_, int num_subset, bool regrowth, int first_index_batch, std::vector<Axon> &new_axons);
-    
+    bool SanityCheck(std::vector<Axon>& growing_axons);
 private:
     /*!
      *  \brief Computes Intra Celular Volum Fraction given the voxel limits and the list of added cylinders.

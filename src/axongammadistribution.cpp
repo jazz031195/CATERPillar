@@ -458,49 +458,37 @@ double AxonGammaDistribution::dichotomy_swelling(Dynamic_Sphere new_sphere, int 
         return max_rad;
     }
 }
-void AxonGammaDistribution::swellAxons(){
+bool AxonGammaDistribution::swellAxons(){
+
+    double obtained_icvf;
+    double current_icvf = computeICVF();;
     
-    for (uint i = 0; i < axons.size(); i++) // for all axons
-    {
-        std::cout << " axon : " << axons[i].id << endl;
-        for (uint j = 0; j < axons[i].spheres.size(); j++)
+    if (current_icvf + 0.01 < icvf){
+        for (uint i = 0; i < axons.size(); i++) // for all axons
         {
-            Dynamic_Sphere new_sphere = axons[i].spheres[j];
-
-            double final_rad = dichotomy_swelling(new_sphere, i, radii_swelling);
-            axons[i].spheres[j].radius = final_rad;
-  
-        }
-    }
-    double obtained_icvf = computeICVF();
-
-    std::cout << "Obtained icvf :" << obtained_icvf << endl;
-    std::cout << "Target icvf :" << icvf << endl;
-
-    // if obtained is too low
-    if (obtained_icvf + 0.05 < 0.6){
-        double new_icvf = obtained_icvf;
-        double difference_icvf = icvf - obtained_icvf;
-        int tries = 0;
-        while (difference_icvf> 0.5 && tries <10){
-            for (uint i = 0; i < axons.size(); i++) // for all axons
+            std::cout << " axon : " << axons[i].id << endl;
+            for (uint j = 0; j < axons[i].spheres.size(); j++)
             {
-                std::cout << " axon : " << axons[i].id << endl;
-                for (uint j = 0; j < axons[i].spheres.size(); j++)
-                {
-                    Dynamic_Sphere new_sphere = axons[i].spheres[j];
+                Dynamic_Sphere new_sphere = axons[i].spheres[j];
 
-                    double final_rad = dichotomy_swelling(new_sphere, i, 0.1);
-                    axons[i].spheres[j].radius = final_rad;
-        
-                }
+                double rad = axons[i].spheres[j].radius;
+
+                double final_rad = dichotomy_swelling(new_sphere, i, 0.1*rad);
+                axons[i].spheres[j].radius = final_rad;
             }
-            tries += 1;
-            new_icvf = computeICVF();
-            std::cout << "New icvf :" << obtained_icvf <<", try :"<< tries << endl;
-            difference_icvf = icvf - new_icvf;
+            obtained_icvf = computeICVF();
+
+            if (obtained_icvf >= icvf){
+                break;
+            }
         }
+
+        std::cout << "Obtained icvf :" << obtained_icvf << endl;
+        std::cout << "Target icvf :" << icvf << endl;
+        return true;
     }
+    return false;
+
 }
 
 std::vector<Eigen::Vector3d> AxonGammaDistribution::FindTwins(Eigen::Vector3d Q, double rad){
@@ -1195,6 +1183,10 @@ void AxonGammaDistribution::parallelGrowth()
     }
     //std::std::cout << "Swelling axons " << std::endl;
     FinalCheck();
+    bool swellaxons = swellAxons();
+    if (swellaxons){
+        FinalCheck();
+    }
 
     // messages
     std::cout << "icvf: " << icvf << " voxel size: " << max_limits[0] << std::endl;
@@ -1208,11 +1200,16 @@ void AxonGammaDistribution::parallelGrowth()
 }
 
 bool AxonGammaDistribution::FinalCheck(){
+
+    std::vector<Axon> final_axons;
+    bool not_collide;
     for (unsigned j = 0; j < axons.size(); j++) {
-        for (unsigned i = 0; i < axons[j].spheres.size(); i++) {
-            if (!canSpherebePlaced(axons[j].spheres[i], axons)){
+        bool all_spheres_can_be_placed = true;
+        for (unsigned i = 0; i < axons[j].spheres.size(); i++) { // for all spheres
+            if (!canSpherebePlaced(axons[j].spheres[i], final_axons)){
                 std::cout << " Axon :" << axons[j].id << ", sphere : " << axons[j].spheres[i].id << " collides with environment !" << endl;
-                
+                all_spheres_can_be_placed = false;
+                /*
                 double initial_radius = axons[j].spheres[i].radius;
                 bool istoobig = true;
                 int tries = 0;
@@ -1228,14 +1225,120 @@ bool AxonGammaDistribution::FinalCheck(){
                     std::cout << " Axon :" << axons[j].id << ", sphere : " << axons[j].spheres[i].id << " was shrunk from "<<initial_radius <<" to "<<axons[j].spheres[i].radius <<  " !" << endl;
                     
                 }
+                */
             
             }
+
+        }
+        if (all_spheres_can_be_placed){
+            final_axons.push_back(axons[j]);
+        }
+
+    }
+    if (final_axons.size() == axons.size()){
+        std::cout << " No Axon collides with environment !" << endl;
+        not_collide = true;
+    }
+    else{
+        not_collide = false;
+        axons.clear();
+        axons = final_axons;
+    }
+                
+    return not_collide;
+}
+/*
+bool AxonGammaDistribution::SanityCheck(){
+    // check that growing axons do not collide with eachother
+    std::vector<Axon> final_growing_axons;
+    bool not_collide;
+    for (unsigned j = 0; j < growing_axons.size(); j++) {
+        bool all_spheres_can_be_placed = true;
+        Dynamic_Sphere last_sphere = growing_axons[j].spheres[growing_axons[j].spheres.size()-1];
+        if (!canSpherebePlaced(last_sphere, final_growing_axons)){
+                all_spheres_can_be_placed = false;
+                stuck_radii.push_back(growing_axons[j].radius);
+                growing_axons[j].spheres.clear();
+                cout << "Sanity check : axon "<< growing_axons[j].id << " collides with environment" << endl;
+
+        }
+        final_growing_axons.push_back(growing_axons[j]);
+    }
+    if (final_growing_axons.size() == growing_axons.size()){
+        not_collide = true;
+    }
+    else{
+        not_collide = false;
+        growing_axons.clear();
+        growing_axons = final_growing_axons;
+    }
+                
+    return not_collide;
+}
+*/
+bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons) {
+
+    // Vector to store results from each thread
+    std::vector<double> thread_results(axon_capacity, -1);
+
+    // Function to be executed by each thread
+    auto thread_func = [this, &growing_axons, &thread_results](unsigned thread_id, unsigned num_threads) {
+        for (unsigned j = thread_id; j < growing_axons.size(); j += num_threads) {
+            if (growing_axons[j].spheres.size() > 0){
+                Dynamic_Sphere last_sphere = growing_axons[j].spheres[growing_axons[j].spheres.size() - 1];
+                if (!canSpherebePlaced(last_sphere, growing_axons)) {
+                    thread_results[thread_id] = growing_axons[j].id;
+                    std::cout << "Sanity check: axon " << growing_axons[j].id << " collides with environment" << std::endl;
+                    std::cout << " axon size : " << growing_axons[j].spheres.size() << endl;
+                }
+                else{
+                    thread_results[thread_id] = -1;
+                }
+            }
+            else{
+                thread_results[thread_id] = -1;
+            }
+        }
+    };
+
+    // Create threads and run the function
+    std::vector<std::thread> threads;
+    for (unsigned i = 0; i < axon_capacity; ++i) {
+        threads.emplace_back(thread_func, i, axon_capacity);
+    }
+
+    // Wait for all threads to finish
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    // Check results from all threads
+    bool not_collide = true; 
+    for (double result : thread_results) {
+        if (result >= 0) {
+            not_collide = false;
+            int position;
+            auto foundObject = std::find_if(growing_axons.begin(), growing_axons.end(), [result](const Axon& ax) {
+                return ax.id == result;
+            });
+
+            if (foundObject != growing_axons.end()) {
+                // Calculate the position of the found object in the vector
+                position = std::distance(growing_axons.begin(), foundObject);
+            }
+            else{
+                cout << " did not find id :" <<result<<endl; 
+                assert(0);
+            }
+            growing_axons[position].spheres.pop_back();
+            //stuck_radii.push_back(growing_axons[position].radius);
+
         }
     }
-    std::cout << " No Axon collides with environment !" << endl;
-                
-    return true;
+
+    return not_collide;
 }
+
 void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector<int> &num_subsets_, bool regrowth)
 {
     stuck_radii.clear();
@@ -1269,22 +1372,24 @@ void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector
         {
             std::vector<std::thread> all_threads;
 
+            std::vector<Axon> growing_axons_copy(growing_axons);
+
             for (unsigned i = 0; i < nbr_growing_axons; i++) // for each axon
             {
     
                 
                 if (finished[i] == 0) // if the axon is not done growing
                 {
-                    if (growing_axons[i].spheres.size() <= 1) // we cannot go straight if there are no first spheres as reference
+                    if (growing_axons_copy[i].spheres.size() <= 1) // we cannot go straight if there are no first spheres as reference
                     {
                         grow_straight[i] = 0; // false
                     }
-                    if (growing_axons[i].spheres.size() >0){
+                    if (growing_axons_copy[i].spheres.size() >0){
                         // add sphere at same time for all axons :
       
                         all_threads.emplace_back(&AxonGammaDistribution::growthThread, // updates stuck_radii
                                                 this,
-                                                std::ref(growing_axons[i]),
+                                                std::ref(growing_axons_copy[i]),
                                                 std::ref(finished[i]),
                                                 std::ref(grow_straight[i]),
                                                 std::ref(straight_growths[i]),
@@ -1306,11 +1411,16 @@ void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector
 
             all_threads.clear(); // Vider le vecteur pour l'itération suivante
 
+            growing_axons = growing_axons_copy;
+            if (axon_capacity > 1){
+                SanityCheck(growing_axons);
+            }
 
             all_finished = std::all_of(finished.begin(), finished.end(), [](bool value)
                                        { return value == 1; }); // if all true, then all axons are finished growing
 
         } // end for spheres
+        
 
         // add axons in batch that worked in axons
         for (unsigned i = 0; i < growing_axons.size(); i++) {
@@ -1435,11 +1545,11 @@ bool AxonGammaDistribution::shrinkRadius(Growth growth, double radius_to_shrink,
     double rad = radius_to_shrink;
     while(!can_grow && rad > min_radius){
         rad = rad - rad*0.1;
-        {
-            std::lock_guard<std::mutex> lock(stuckMutex);
+        //{
+            //std::lock_guard<std::mutex> lock(stuckMutex);
             growth = Growth(axon, axons,growing_axons, max_limits, tortuous, rad, max_radius, grow_straight, radii_swelling);
-            can_grow = growth.GrowAxon();
-        }
+        //}
+        can_grow = growth.GrowAxon();
     }
     if (rad <= min_radius){
         return false;
@@ -1460,12 +1570,11 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
     bool can_grow;
      
 
-
-    {
-        std::lock_guard<std::mutex> lock(stuckMutex);
+    //{
+        //std::lock_guard<std::mutex> lock(stuckMutex);
         growth = Growth(axon, axons,growing_axons, max_limits, tortuous, varied_radius, max_radius, grow_straight, radii_swelling);
-        can_grow = growth.GrowAxon();
-    }
+    //}
+    can_grow = growth.GrowAxon();
 
     
     if (growth.finished)
@@ -1500,10 +1609,10 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
                         std::cout << "Axon " << axon.id << " failed, cannot shrink !" << endl;
                         axon.spheres.clear();
                         finished = 1;
-                        {
-                            std::lock_guard<std::mutex> lock(stuckMutex);
+                        //{
+                            //std::lock_guard<std::mutex> lock(stuckMutex);
                             stuck_radii.push_back(axon.radius);
-                        }
+                        //}
                         //}
 
                     }
@@ -1517,10 +1626,10 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
                 std::cout << "!! Axon " << axon.id << " : failed growing !!" << endl;
                 axon.spheres.clear();
                 finished = 1;
-                {
-                    std::lock_guard<std::mutex> lock(stuckMutex);
+                //{
+                //    std::lock_guard<std::mutex> lock(stuckMutex);
                     stuck_radii.push_back(axon.radius);
-                }
+                //}
                 
             }
 
@@ -1575,46 +1684,135 @@ void AxonGammaDistribution::printSubstrate(ostream &out)
     }
 }
 
+bool sphere_circle_intersection(double &t1, double &t2, Eigen::Vector3d pos1,Eigen::Vector3d pos2, Dynamic_Sphere s){
+    Eigen::Vector3d m = pos1 - s.center;
+    Eigen::Vector3d vec = (pos2-pos1).normalized();
+    double rad = s.radius;
 
-double AxonGammaDistribution::squareCircleOverlap(double L, double circleRadius, double circleCenterX, double circleCenterY) {
-    // Calculate the half side length of the square
-    double halfL = L / 2.0;
+    double a = 1;
+    double b = (m.dot(vec));
+    double c = m.dot(m) - rad*rad;
+    double discr = b*b - a*c;
 
-    // Calculate the distance between the center of the circle and the square's center
-    double dx = std::abs(circleCenterX - halfL);
-    double dy = std::abs(circleCenterY - halfL);
-
-    // Check if the circle is entirely outside the square
-    if (dx > halfL + circleRadius || dy > halfL + circleRadius) {
-        return 0.0;
+    if (discr < 0.0 ){
+        return false;
     }
+    t1 = (-b + sqrt(discr))/(a);
+    t2 = (-b - sqrt(discr))/(a);
 
-    // Check if the circle is entirely inside the square
-    if (dx <= halfL && dy <= halfL && std::hypot(dx, dy) + circleRadius <= halfL) {
-        return M_PI * circleRadius * circleRadius;
-    }
-
-    // Calculate the overlap area
-    double cornerDist = std::hypot(dx - halfL, dy - halfL);
-    if (cornerDist <= circleRadius) {
-        // Circle center is inside the square
-        double sectorAngle = 2.0 * std::acos(cornerDist / circleRadius);
-        double sectorArea = 0.5 * circleRadius * circleRadius * (sectorAngle - std::sin(sectorAngle));
-        double squareArea = 4.0 * halfL * halfL;
-        return squareArea - sectorArea;
-    } else {
-        // Circle center is outside the square
-        double squareArea = 4.0 * halfL * halfL;
-        return squareArea;
-    }
+    return true;
 }
 
+double angleInRadians(const Eigen::Vector3d& vec1, const Eigen::Vector3d& vec2) {
+
+    double dotProduct = 0.0;
+    double mag1 = 0.0;
+    double mag2 = 0.0;
+
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        dotProduct += vec1[i] * vec2[i];
+        mag1 += vec1[i] * vec1[i];
+        mag2 += vec2[i] * vec2[i];
+    }
+
+    // Calculate magnitudes
+    mag1 = std::sqrt(mag1);
+    mag2 = std::sqrt(mag2);
+
+    // Ensure denominators are not zero to avoid division by zero
+    if (mag1 == 0.0 || mag2 == 0.0) {
+        return 0.0; // or any default angle value
+    }
+
+    // Calculate the cosine of the angle
+    double cosTheta = dotProduct / (mag1 * mag2);
+
+    // Calculate the angle in radians
+    double angleRad = std::acos(cosTheta);
+
+    // Ensure the angle is in the range [0, pi]
+    if (angleRad > M_PI) {
+        angleRad = 2 * M_PI - angleRad;
+    }
+
+    return angleRad;
+}
+
+double AxonGammaDistribution::segmentCircleArea(Eigen::Vector3d min_pos, Eigen::Vector3d max_pos, Dynamic_Sphere s) {
+    
+    // distances from min_pos to circle intersections
+    double t1,t2;
+    bool intersect = sphere_circle_intersection(t1, t2, min_pos, max_pos,s);
+    if (intersect){
+        Eigen::Vector3d intersect1 = min_pos + t1*(max_pos-min_pos).normalized();
+        Eigen::Vector3d intersect2 = min_pos + t2*(max_pos-min_pos).normalized();
+        Eigen::Vector3d v1 = intersect1-s.center;
+        Eigen::Vector3d v2 = intersect2-s.center;
+
+        double angle = angleInRadians(v1, v2);
+
+        double area_triangle = s.radius*s.radius*cos(angle)*sin(angle);
+
+        double area_circle_slice = M_PI*angle*s.radius*s.radius/4;
+
+        double area = area_circle_slice - area_triangle;
+
+        return area;
+
+    }
+
+    return 0.0;
+    
+}
+double volumeFrustumCone(double r1,double r2, double h){
+    return M_PI*h*(r1*r1+r2*r2+r1*r2)/3;
+}
 double AxonGammaDistribution::computeICVF()
 {
     if (axons.size() == 0)
         return 0;
-    double AreaV = (max_limits[0] - min_limits[0]) * (max_limits[1] - min_limits[1]) * (max_limits[2] - min_limits[2]); // total volume
-    double AreaC = 0;
+    double VolumeV = (max_limits[0] - min_limits[0]) * (max_limits[1] - min_limits[1]) * (max_limits[2] - min_limits[2]); // total volume
+    double VolumeC = 0;
+    double tortuosity;
+    for (uint i = 0; i < axons.size(); i++) // for all axons
+    {
+        double ax_length = 0;
+        if (axons[i].spheres.size() > 1)
+        {
+            for (uint j = 1; j < axons[i].spheres.size(); j++)
+            {
+                if (axons[i].spheres[j].center[2] <= max_limits[2]){
+                    double l = (axons[i].spheres[j - 1].center - axons[i].spheres[j].center).norm(); // distance between centers
+                    double r1= axons[i].spheres[j - 1].radius;
+                    double r2= axons[i].spheres[j].radius;
+                    double area_cone =  volumeFrustumCone(r1, r2, l);
+                
+                    if (withinBounds(axons[i].spheres[j].center, axons[i].spheres[j].radius) && withinBounds(axons[i].spheres[j-1].center, axons[i].spheres[j-1].radius))
+                    {
+                        VolumeC += area_cone ;
+                    }
+                    else if (withinBounds(axons[i].spheres[j].center, 0) || withinBounds(axons[i].spheres[j-1].center, 0))
+                    {
+                        VolumeC += area_cone/2;
+                    }
+    
+                    ax_length += l;
+                }
+            }
+            tortuosity = ax_length / ((axons[i].begin - axons[i].end).norm()); // ( total distance between all centers / distance between first and last )
+            tortuosities.push_back(tortuosity);
+        }
+    }
+    return VolumeC / VolumeV; // ( total axons volume / total volume )
+}
+
+
+double AxonGammaDistribution::computeICVF_(){
+    
+    if (axons.size() == 0)
+        return 0;
+    double VolumeV = (max_limits[0] - min_limits[0]) * (max_limits[1] - min_limits[1]) * (max_limits[2] - min_limits[2]); // total volume
+    double VolumeC = 0;
     double tortuosity;
     for (uint i = 0; i < axons.size(); i++) // for all axons
     {
@@ -1624,68 +1822,26 @@ double AxonGammaDistribution::computeICVF()
             for (uint j = 1; j < axons[i].spheres.size(); j++)
             {
                 double l = (axons[i].spheres[j - 1].center - axons[i].spheres[j].center).norm(); // distance between centers
-                //double area_circle1 = squareCircleOverlap(max_limits[0] - min_limits[0], axons[i].spheres[j - 1].radius, axons[i].spheres[j - 1].center[0], axons[i].spheres[j - 1].center[1]);
-                //double area_circle2 = squareCircleOverlap(max_limits[0] - min_limits[0], axons[i].spheres[j].radius, axons[i].spheres[j].center[0], axons[i].spheres[j].center[1]);
-                //double mean_area = (area_circle1+area_circle2)/2;
+                double r1= axons[i].spheres[j - 1].radius;
+                double r2= axons[i].spheres[j].radius;
+                double area_cone =  volumeFrustumCone(r1, r2, l);
             
-
-                double mean_r = (axons[i].spheres[j - 1].radius + axons[i].spheres[j].radius) / 2;
-                
                 if (withinBounds(axons[i].spheres[j].center, axons[i].spheres[j].radius) && withinBounds(axons[i].spheres[j-1].center, axons[i].spheres[j-1].radius))
                 {
-                    AreaC += l * M_PI * mean_r * mean_r;
+                    VolumeC += area_cone ;
                 }
                 else if (withinBounds(axons[i].spheres[j].center, 0) && withinBounds(axons[i].spheres[j-1].center, 0))
                 {
-                    AreaC += l * M_PI * mean_r * mean_r/2;
+                    VolumeC += area_cone/2;
                 }
-                
-                //AreaC += l*mean_area;
+ 
                 ax_length += l;
             }
             tortuosity = ax_length / ((axons[i].begin - axons[i].end).norm()); // ( total distance between all centers / distance between first and last )
             tortuosities.push_back(tortuosity);
         }
     }
-    return AreaC / AreaV; // ( total axons volume / total volume )
-}
-
-
-double AxonGammaDistribution::computeICVF_(){
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> udist(0, 1);
-
-    int intra = 0;
-    int num_tries = max_limits[2]*max_limits[1]*max_limits[2]*100000;
-    std::cout << num_tries << endl;
-
-    for (uint i = 0; i < num_tries; i++){
-
-        double t = udist(gen);
-        // double distance_to_border = radiis[i]*sqrt(1+volume_inc_perc) + step_length;
-        double x = (t * (max_limits[0])) + (1 - t) * (min_limits[0]);
-        t = udist(gen);
-        double y = (t * (max_limits[1])) + (1 - t) * (min_limits[1]);
-        t = udist(gen);
-        double z = (t * (max_limits[2])) + (1 - t) * (min_limits[2]);
-
-        Dynamic_Sphere s = Dynamic_Sphere(-1, -1, {x,y,z}, 0.01);
-
-        for (auto &ax : axons)
-        {
-            if (ax.isSphereInsideAxon_(s)) // overlap
-            {
-                ++intra;
-                break;
-            }
-        }
-    }
-
-    return intra/num_tries;
-
-
-    
+    return VolumeC / VolumeV; // ( total axons volume / total volume )
 }
 
 // For analysis
@@ -1844,15 +2000,11 @@ void AxonGammaDistribution::fill_wih_overlapping_spheres(int overlapping_factor,
                 for (uint k = 0; k < radii_interp.size(); k++)
                 {
                     Dynamic_Sphere sph_interp = Dynamic_Sphere(final_axon.spheres.size(), axons_env[i].id, centers[k], radii_interp[k]);
-                    //std::cout << "Maybe add after sphere " <<j <<" in axon :"<< axons[i].id << endl; 
-                    //std::cout << "center 1 :" << axons[i].spheres[j-1].center<< " radius :" <<axons[i].spheres[j-1].radius << endl;
-                    //std::cout << "center 2 :" << axons[i].spheres[j].center <<" radius :" <<axons[i].spheres[j].radius<< endl;
 
                     bool can_place = canSpherebePlaced(sph_interp, axons_env);
                     if (can_place){
 
-                        //std::cout << "       Adding sphere " <<j <<" in axon :"<< axons[i].id << ", center :" <<centers[k] << ", radius :" <<radii_interp[k] << endl; 
-                        // add intermediate spheres
+
                         final_axon.add_sphere(sph_interp);
                     } 
 
