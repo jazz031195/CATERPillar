@@ -685,9 +685,9 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
                 //}
             }
         }
-        if (regrowth){
-            std::cout << "axon " << new_axons[j].id << "has " << new_axons[j].nearby_axons.size()<< " nearby axons" << endl;
-        }
+        //if (regrowth){
+        //    std::cout << "axon " << new_axons[j].id << "has " << new_axons[j].nearby_axons.size()<< " nearby axons" << endl;
+        //}
         //cout << "nearby axons :" << new_axons[j].nearby_axons.size()<< endl;
         radii_.push_back(new_axons[j].radius);
     }
@@ -1162,7 +1162,7 @@ void AxonGammaDistribution::parallelGrowth()
 
         while (num_regrowth < regrow_thr && radii_to_regrow.size() > 0)
         {
-        
+ 
             std::cout << "regrowth num :" << num_regrowth << endl;
             //createAxons(radii_to_regrow, axons_to_regrow, true);
             regrow_count = radii_to_regrow.size(); // nbr of axons to regrow
@@ -1314,6 +1314,7 @@ bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons) {
 
     // Check results from all threads
     bool not_collide = true; 
+    bool clear_one_axon = false;
     for (double result : thread_results) {
         if (result >= 0) {
             not_collide = false;
@@ -1330,8 +1331,14 @@ bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons) {
                 cout << " did not find id :" <<result<<endl; 
                 assert(0);
             }
-            growing_axons[position].spheres.pop_back();
-            //stuck_radii.push_back(growing_axons[position].radius);
+            if (!clear_one_axon){
+                growing_axons[position].keep_only_first_sphere();
+                clear_one_axon =true;
+            }
+            else{
+                growing_axons[position].spheres.pop_back();
+            }
+
 
         }
     }
@@ -1535,7 +1542,7 @@ bool AxonGammaDistribution::shrinkRadius(Growth growth, double radius_to_shrink,
 */
 
 
-bool AxonGammaDistribution::shrinkRadius(Growth growth, double radius_to_shrink, Axon &axon, int grow_straight)
+bool AxonGammaDistribution::shrinkRadius(Growth& growth, double radius_to_shrink, Axon &axon, int grow_straight)
 {
 
     bool can_grow;
@@ -1543,24 +1550,69 @@ bool AxonGammaDistribution::shrinkRadius(Growth growth, double radius_to_shrink,
     // find position that works for smallest radius 
     can_grow = false;
     double rad = radius_to_shrink;
-    while(!can_grow && rad > min_radius){
-        rad = rad - rad*0.1;
-        //{
-            //std::lock_guard<std::mutex> lock(stuckMutex);
-            growth = Growth(axon, axons,growing_axons, max_limits, tortuous, rad, max_radius, grow_straight, radii_swelling);
-        //}
-        can_grow = growth.GrowAxon();
-    }
-    if (rad <= min_radius){
+    double initial_rad = radius_to_shrink;
+    bool can_grow_min_rad = growth.GrowAxon(min_radius);
+
+    if (!can_grow_min_rad){
         return false;
     }
     else{
-        return true;
+        
+        double lower_rad = min_radius;
+        double upper_rad = radius_to_shrink;
+
+        rad = (lower_rad+upper_rad)/2;
+
+        for (int rep = 0; rep < 10; rep++){
+
+            can_grow = growth.GrowAxon(rad);
+            if (can_grow){
+                lower_rad = rad;
+                rad = (rad + upper_rad)/2;
+            }
+            else{
+                upper_rad = rad;
+                rad = (rad + lower_rad)/2;
+            }
+        }
+        if (can_grow){
+            axon = growth.axon_to_grow;
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 
 }
 
+void update_straight(bool can_grow, int &grow_straight,int &straight_growths){
 
+    if (can_grow){
+
+        if (grow_straight == 1)
+        {
+            if (straight_growths >= 4) // if axon has been growing straight for 4 spheres in a row
+            {
+                grow_straight = 0; // set to false so that next step doesn't go straight
+                straight_growths = 0;
+            }
+            straight_growths += 1;
+        }
+        else
+        {
+            // if the sphere hadn't grown straight previously . set to straight for next 4 spheres
+            grow_straight = 1; // set to true
+        }
+    }
+    else{
+        if (grow_straight==1) // if when growing straight it collides with environment
+        {
+            grow_straight = 0; // set to false so that next step doesn't go straight
+            straight_growths = 0;
+        }
+    }
+}
 
 void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, int &shrink_tries, int &restart_tries, bool regrowth)
 {
@@ -1572,11 +1624,11 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
 
     //{
         //std::lock_guard<std::mutex> lock(stuckMutex);
-        growth = Growth(axon, axons,growing_axons, max_limits, tortuous, varied_radius, max_radius, grow_straight, radii_swelling);
+    growth = Growth(axon, axons,growing_axons, max_limits, tortuous, max_radius, grow_straight);
     //}
-    can_grow = growth.GrowAxon();
+    can_grow = growth.GrowAxon(varied_radius);
+    axon = growth.axon_to_grow; // updates axon list
 
-    
     if (growth.finished)
     {
         finished = 1; // 1 for true, if the growth finished
@@ -1585,7 +1637,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
     {
         if (!can_grow)
         {
-            if ((regrowth || can_shrink) && shrink_tries < axon.spheres.size()/5)
+            if ((regrowth || can_shrink))
             {
                 {
                     bool shrink;
@@ -1594,29 +1646,19 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
                     
                     if (!shrink) // shrinking will not help growth
                     {
-                        /*
-                        if (restart_tries < 5)
-                        {
-                            Dynamic_Sphere sphere = axon.spheres[0];
-                            axon.spheres.clear();
-                            //axon.projections.clear_projections();
-                            axon.add_sphere(sphere);
-                            ++restart_tries;
-                        }
-                        else
-                        {
-                        */
                         std::cout << "Axon " << axon.id << " failed, cannot shrink !" << endl;
                         axon.spheres.clear();
                         finished = 1;
-                        //{
-                            //std::lock_guard<std::mutex> lock(stuckMutex);
-                            stuck_radii.push_back(axon.radius);
-                        //}
-                        //}
-
+                        stuck_radii.push_back(axon.radius);
                     }
-
+                    else{
+                        // successfully placed a sphere after shrinking it
+                        can_grow = true;
+                        if (growth.finished)
+                        {
+                            finished = 1; // 1 for true, if the growth finished
+                        }
+                    }
                     
                 }
                 ++shrink_tries;
@@ -1632,35 +1674,13 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
                 //}
                 
             }
-
-            if (grow_straight==1) // if when growing straight it collides with environment
-            {
-                grow_straight = 0; // set to false so that next step doesn't go straight
-                straight_growths = 0;
-            }
         }
         else
         {
             shrink_tries = 0;
-
-            if (grow_straight == 1)
-            {
-                if (straight_growths >= 4) // if axon has been growing straight for 4 spheres in a row
-                {
-                    grow_straight = 0; // set to false so that next step doesn't go straight
-                    straight_growths = 0;
-                }
-                straight_growths += 1;
-            }
-            else
-            {
-                // if the sphere hadn't grown straight previously . set to straight for next 4 spheres
-                grow_straight = 1; // set to true
-            }
-
-            axon = growth.axon_to_grow; // updates axon list
         }
     }
+    update_straight(can_grow, grow_straight, straight_growths);
 }
 
 

@@ -133,7 +133,7 @@ public:
     /*!
      *  \brief Shrinks the radius to allow passage between axons
      */
-    bool shrinkRadius(Growth growth, double radius_to_shrink, Axon &axon, int grow_straight);
+    bool shrinkRadius(Growth& growth, double radius_to_shrink, Axon &axon, int grow_straight);
 
     /*!
      *  \brief Finds a radius for which shrinkage allows passage

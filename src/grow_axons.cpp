@@ -9,7 +9,7 @@ using namespace std;
 using namespace Eigen;
 using namespace std::chrono;
 
-Growth::Growth(Axon axon_to_grow_, std::vector<Axon> axons_, std::vector<Axon> axons_to_regrow_, Eigen::Vector3d voxel_size_, bool tortuous_, double radius_, double max_radius_, int grow_straight_, double radii_swelling_)
+Growth::Growth(Axon& axon_to_grow_, std::vector<Axon> axons_, std::vector<Axon> axons_to_regrow_, Eigen::Vector3d voxel_size_, bool tortuous_, double max_radius_, int grow_straight_)
 {
 
     axon_to_grow = axon_to_grow_;
@@ -18,15 +18,14 @@ Growth::Growth(Axon axon_to_grow_, std::vector<Axon> axons_, std::vector<Axon> a
     finished = false;
     max_radius = max_radius_;
     grow_straight = grow_straight_;
-    radius = radius_;
     axons_to_regrow = axons_to_regrow_;
     axons = axons_;
-    radii_swelling = radii_swelling_;
 
     if (!tortuous)
     {
         grow_straight = 0;
     }
+    initialise_env_axons();
 
 }
 
@@ -291,8 +290,8 @@ void Growth::find_next_center(Dynamic_Sphere &s,  double dist_)
         bool inside_voxel = false;
         int restart = 0;
 
-        std::normal_distribution<float> phi_dist(phi_to_target / M_PI, 0.1);
-        std::normal_distribution<float> theta_dist(theta_to_target / M_PI, 0.1);
+        std::normal_distribution<float> phi_dist(phi_to_target / M_PI, 0.12);
+        std::normal_distribution<float> theta_dist(theta_to_target / M_PI, 0.12);
             
 
         phi = phi_dist(gen) * M_PI;
@@ -350,7 +349,7 @@ void Growth::find_next_center_straight(double distance, Dynamic_Sphere &s)
 
 bool Growth::TestGrowAxonAtPos(Eigen::Vector3d position_to_test, double radius_to_test)
 {
-    initialise_env_axons();
+
     Dynamic_Sphere s(axon_to_grow.spheres.size(), axon_to_grow.id, axon_to_grow.begin, radius_to_test);
     bool iscolliding = isSphereColliding_(s);
     bool isinside = check_borders(s.center, s.radius);
@@ -364,12 +363,12 @@ bool Growth::TestGrowAxonAtPos(Eigen::Vector3d position_to_test, double radius_t
 
 bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked, double radius_to_test)
 {
-    initialise_env_axons();
+
     // if sphere collides with environment
     bool collides;
     bool can_grow_;
 
-    double distance = (radius)/2;
+    double distance = (radius_to_test)/2;
 
     if (axon_to_grow.spheres[axon_to_grow.spheres.size() -1].center[2] < voxel_size[2]) // still growing
     {
@@ -460,9 +459,9 @@ bool Growth::TestGrowAxon(Eigen::Vector3d &position_that_worked, double radius_t
     }
 }
 
-bool Growth::GrowAxon()
+bool Growth::GrowAxon(double radius)
 {
-    initialise_env_axons();
+
     // if sphere collides with environment
     bool collides;
     bool can_grow_;
@@ -552,6 +551,7 @@ bool Growth::GrowAxon()
             {
 
                 axon_to_grow.add_sphere(s); // we want to change the radius of the sphere
+                //cout << "sphere added to axon, new size :" << axon_to_grow.spheres.size() << endl;
                 // if we reach edge of voxel
                 if (axon_to_grow.spheres[axon_to_grow.spheres.size() -1].center[2] > voxel_size[2])
                 {

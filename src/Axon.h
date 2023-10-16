@@ -30,7 +30,6 @@ public:
     std::vector<Eigen::Vector2d> Box;
     std::vector<int> nearby_axons;
   
-  
     //Projections projections;
 
     /*!
@@ -64,6 +63,7 @@ public:
     bool isNearAxon(Eigen::Vector3d position, double distance_to_be_inside);
     void add_nearby_axon(int ax_id);
     bool isSphereInsideAxon_long(Dynamic_Sphere sph);
+    void keep_only_first_sphere();
     //bool isPosInsideAxon(Eigen::Vector3d &position, double distance_to_be_inside, double max_radius);
     //void add_projection(Dynamic_Sphere sphere_to_add);
 };

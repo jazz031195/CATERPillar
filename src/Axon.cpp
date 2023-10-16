@@ -26,6 +26,15 @@ void Axon::add_nearby_axon(int ax_id){
     nearby_axons.push_back(ax_id);
 }
 
+void Axon::keep_only_first_sphere(){
+    Dynamic_Sphere s = spheres[0];
+    spheres.clear();
+    Box.clear();
+    add_sphere(s);
+
+}
+
+
 
 void Axon::add_sphere(Dynamic_Sphere sphere_to_add){
 

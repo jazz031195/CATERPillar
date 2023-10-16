@@ -23,15 +23,14 @@ public:
     bool finished;
     double max_radius; /* initial radius */ 
     bool grow_straight; /* Sometimes, you want the axon to grow staright and sometimes you want it to grow in a different random direction */
-    double radius;
-    double radii_swelling;
+
 
     Growth(){};
     ~Growth(){};
 
-    Growth(Axon, std::vector<Axon>, std::vector<Axon>,  Eigen::Vector3d, bool, double, double, int, double);
+    Growth(Axon&, std::vector<Axon>, std::vector<Axon>,  Eigen::Vector3d, bool, double, int);
 
-    bool GrowAxon();
+    bool GrowAxon(double radius);
     bool GrowFirstSphere();
     void find_next_center(Dynamic_Sphere &s,double dist_);
     //bool isSphereColliding(Dynamic_Sphere sph);

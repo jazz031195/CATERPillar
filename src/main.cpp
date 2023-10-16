@@ -13,10 +13,10 @@ using namespace Eigen;
 
 int main()
 {
-    for (int rep = 0; rep < 5; rep++){
-        std::vector<int> vox_sizes = {50};
+    for (int rep = 0; rep < 1; rep++){
+        std::vector<int> vox_sizes = {20};
         for (int i = 0; i < vox_sizes.size(); i++){
-            std::vector<int> capacities = {1,10,20};
+            std::vector<int> capacities = {25};
             for (int c = 0; c < capacities.size(); c++){
                 // number of axons
                 unsigned int number_axons = 100;
@@ -43,10 +43,10 @@ int main()
                 double beading_variation = 1;
 
                 // density parameters
-                double icvf = 0.1;
+                double icvf = 0.6;
 
                 // number of regrowth batches allowed
-                int regrow_thr = 50;
+                int regrow_thr = 5;
 
                 // distance between spheres = radius /spheres_overlap_factor
                 std::vector<int> spheres_overlap_factors = {2};
