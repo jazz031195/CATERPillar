@@ -388,7 +388,7 @@ if __name__ == "__main__":
     #vox_time_plot(file_list)
 
     #print(file_list[2])
-    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.10_cap_10_vox_50_factor_2_0.swc"
+    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.10_cap_25_vox_50_factor_2_0.swc"
     df = read_swc_file(file)
     #draw_axons(df)
 

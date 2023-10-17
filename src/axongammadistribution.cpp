@@ -630,6 +630,7 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
     std::vector<Axon> all_axons = axons;
     new_axons.clear();
     long int tries_threshold = 100000;
+    int tries_to_place_all_axons = 0;
 
 
     for (unsigned i = 0; i < radii_.size(); ++i) // create axon for each radius
@@ -646,7 +647,7 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
             PlaceAxon(radii_[i], regrowth, i, tries, next, Q, D, all_axons, new_axons);
 
         }
-        if (tries >= tries_threshold)
+        if (tries >= tries_threshold && tries_to_place_all_axons < 10)
         {
             std::cout << "Not enough space, restart" << endl;
             std::cout << "achieved :" << new_axons.size() << "/" << radii_.size() << endl;
@@ -655,7 +656,14 @@ void AxonGammaDistribution::createAxons(std::vector<double> &radii_, std::vector
             colours.clear();
             i = -1;
             tries = 0;
+            tries_to_place_all_axons += 1;
         }
+        // if we can't place all axons, forget about those that aren't placed
+        else if (tries_to_place_all_axons >= 10)
+        {
+            cout << " Forget about other axons" << endl;
+        }
+        
     }
     radii_.clear();
     //cout << "All axons size :" << all_axons.size() << endl;
@@ -792,9 +800,9 @@ void AxonGammaDistribution::createBatch(std::vector<double> &radii_, int num_sub
                 //}
             }
         }
-        if (regrowth){
-            std::cout << "axon " << new_axons[j].id << "has " << new_axons[j].nearby_axons.size()<< " nearby axons" << endl;
-        }
+        //if (regrowth){
+        //    std::cout << "axon " << new_axons[j].id << "has " << new_axons[j].nearby_axons.size()<< " nearby axons" << endl;
+        //}
         //std::cout << "nearby axons :" << new_axons[j].nearby_axons.size()<< endl;
         //radii_.push_back(new_axons[j].radius);
     }
@@ -1551,35 +1559,29 @@ bool AxonGammaDistribution::shrinkRadius(Growth& growth, double radius_to_shrink
     can_grow = false;
     double rad = radius_to_shrink;
     double initial_rad = radius_to_shrink;
-    bool can_grow_min_rad = growth.GrowAxon(min_radius);
+    bool create_sphere = true;
+
+    bool can_grow_min_rad = growth.GrowAxon(min_radius, false);
+    
 
     if (!can_grow_min_rad){
+        cout << "minimum radius doesn't fit, min rad :"<< min_radius << endl;
         return false;
     }
     else{
-        
-        double lower_rad = min_radius;
-        double upper_rad = radius_to_shrink;
 
-        rad = (lower_rad+upper_rad)/2;
+        while (!can_grow && rad > min_radius){
 
-        for (int rep = 0; rep < 10; rep++){
+            rad -= 0.1*initial_rad;
+            can_grow = growth.GrowAxon(rad, create_sphere);
 
-            can_grow = growth.GrowAxon(rad);
-            if (can_grow){
-                lower_rad = rad;
-                rad = (rad + upper_rad)/2;
-            }
-            else{
-                upper_rad = rad;
-                rad = (rad + lower_rad)/2;
-            }
         }
         if (can_grow){
             axon = growth.axon_to_grow;
             return true;
         }
         else{
+            cout << "cannot shrink after dichotomy" << endl;
             return false;
         }
     }
@@ -1597,7 +1599,9 @@ void update_straight(bool can_grow, int &grow_straight,int &straight_growths){
                 grow_straight = 0; // set to false so that next step doesn't go straight
                 straight_growths = 0;
             }
-            straight_growths += 1;
+            else{
+                straight_growths += 1;
+            }
         }
         else
         {
@@ -1626,7 +1630,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
         //std::lock_guard<std::mutex> lock(stuckMutex);
     growth = Growth(axon, axons,growing_axons, max_limits, tortuous, max_radius, grow_straight);
     //}
-    can_grow = growth.GrowAxon(varied_radius);
+    can_grow = growth.GrowAxon(varied_radius, true);
     axon = growth.axon_to_grow; // updates axon list
 
     if (growth.finished)
@@ -1641,9 +1645,9 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
             {
                 {
                     bool shrink;
-
+                    cout << "shrink axon " << axon.id << ", spheres size :" << axon.spheres.size()<< endl;
                     shrink = shrinkRadius(growth, varied_radius, axon, grow_straight); // adds a sphere if it works
-                    
+                    //cout << "After shrink :axon " << axon.id << ", spheres size :" << axon.spheres.size()<< endl;
                     if (!shrink) // shrinking will not help growth
                     {
                         std::cout << "Axon " << axon.id << " failed, cannot shrink !" << endl;

@@ -30,7 +30,7 @@ public:
 
     Growth(Axon&, std::vector<Axon>, std::vector<Axon>,  Eigen::Vector3d, bool, double, int);
 
-    bool GrowAxon(double radius);
+    bool GrowAxon(double radius, bool create_sphere);
     bool GrowFirstSphere();
     void find_next_center(Dynamic_Sphere &s,double dist_);
     //bool isSphereColliding(Dynamic_Sphere sph);

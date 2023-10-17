@@ -14,7 +14,7 @@ using namespace Eigen;
 int main()
 {
     for (int rep = 0; rep < 1; rep++){
-        std::vector<int> vox_sizes = {20};
+        std::vector<int> vox_sizes = {50};
         for (int i = 0; i < vox_sizes.size(); i++){
             std::vector<int> capacities = {25};
             for (int c = 0; c < capacities.size(); c++){
@@ -34,7 +34,7 @@ int main()
                 // minimum radius
                 double min_radius = 0.15; // um
 
-                bool can_shrink = false;
+                bool can_shrink = true;
 
                 // simulation parameters
                 bool tortuous = true;
@@ -43,7 +43,7 @@ int main()
                 double beading_variation = 1;
 
                 // density parameters
-                double icvf = 0.6;
+                double icvf = 0.5;
 
                 // number of regrowth batches allowed
                 int regrow_thr = 5;
