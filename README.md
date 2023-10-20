@@ -1,6 +1,6 @@
 # CATERPillar  :Computational Axonal Threading Engine for Realistic Proliferation
 
-
+![GitHub Logo](https://github.com/jazz031195/CATERPillar/blob/updated/caterpillar.jpg)
 
 ## Installations
 ### MacOs
