@@ -23,10 +23,12 @@ def radius_file(file_path):
 
 def radius_histogram(df):
     df['R'] = pd.to_numeric(df['R'], errors='coerce')
-    sns.histplot(data=df, x="R", color='blue', bins=30, kde=True)
-    plt.xlabel('Radius')
+    df["Diameter"] = df["R"]*2
+    df = df.groupby(by = "ax_id").mean()
+    sns.histplot(data=df, x="Diameter", color='blue', bins=30, kde=True)
+    plt.xlabel('Diameter')
     plt.ylabel('Frequency')
-    plt.title('Radius Histogram')
+    plt.title('Diameter Histogram')
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
@@ -388,33 +390,12 @@ if __name__ == "__main__":
     #vox_time_plot(file_list)
 
     #print(file_list[2])
-    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.10_cap_25_vox_50_factor_2_0.swc"
+    file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/growth_icvf_0.10_cap_24_vox_10_factor_2_0.swc"
     df = read_swc_file(file)
     #draw_axons(df)
 
     radius_histogram(df)
-    size = 50
-    for z in range(size +1):
-        draw_spheres(file, size, z =z)
+    #size = 50
+    #for z in range(size +1):
+    #    draw_spheres(file, size, z =z)
     
-    #file = "/home/localadmin/Documents/Melina_branch/Sim_Growth/axons_icvf_0.30_cap_1_vox_50.swc"
-
-    # Read the data from the text file into a Pandas DataFrame
-    #data = pd.read_csv('/home/localadmin/Documents/permeable_MCDS/MCDC_Simulator_public/instructions/axons/growth_icvf_0.50_cap_1_vox_50_factor_8_swell_0.01.swc', delimiter=' ')
-    
-    # Group the data by 'id_ax' to separate spheres by axon
-    #grouped_data = data.groupby('id_ax').mean()
-    # Create a figure and axis for the plot
-    #fig, ax = plt.subplots(figsize=(10, 6))
-
-    # Plot the distribution of radii for each axon
-    #sns.histplot(grouped_data['R'], kde=True)
-
-    # Set plot labels and legend
-    #ax.set_xlabel('Radius')
-    #ax.set_ylabel('Count')
-    #ax.set_title('Distribution of Radii for All Axons')
-    #plt.legend(title='Axon ID', loc='upper right')  # Specify the legend location
-
-    # Show the plot
-    #plt.show()

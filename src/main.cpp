@@ -13,17 +13,16 @@ using namespace Eigen;
 
 int main()
 {
-    for (int rep = 0; rep < 1; rep++){
+    for (int rep = 0; rep < 20; rep++){
         std::vector<int> vox_sizes = {50};
         for (int i = 0; i < vox_sizes.size(); i++){
-            std::vector<int> capacities = {25};
+            std::vector<int> capacities = {24, 18, 12, 6, 3, 1};
             for (int c = 0; c < capacities.size(); c++){
-                // number of axons
-                unsigned int number_axons = 100;
+
                 int axon_capacity = capacities[c];
 
                 // constants for gamma distribution, mean = 0.5 um
-                double alpha = 5.0;
+                double alpha = 8.0;
                 double beta = 0.1;
                 double vox_size= vox_sizes[i];
 
@@ -43,7 +42,7 @@ int main()
                 double beading_variation = 1;
 
                 // density parameters
-                double icvf = 0.5;
+                double icvf = 0.3;
 
                 // number of regrowth batches allowed
                 int regrow_thr = 5;
@@ -54,8 +53,7 @@ int main()
                 auto startTime = std::chrono::high_resolution_clock::now();
 
                 // create distribution of axons
-                AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(number_axons, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr, can_shrink, beading_variation);
-                AxonDistribution->set_icvf(icvf, max_l[0], max_l[1]);
+                AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(icvf, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr, can_shrink, beading_variation);
 
                 cout << "AxonDistribution created" << endl;
 
@@ -96,12 +94,12 @@ int main()
                                 continue;
                             } else {
                                 if (tortuous){
-                                    axons_file_name = (directory + "axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +   "_" + std::to_string(n) +".swc");
+                                    axons_file_name = (directory + "/axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +   "_" + std::to_string(n) +".swc");
                                     simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +   "_" + std::to_string(n) +".txt");
                                     swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +   "_" + std::to_string(n) +".swc");
                                 }
                                 else{
-                                    axons_file_name = (directory + "axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  "_" + std::to_string(n) +"_straight.swc");
+                                    axons_file_name = (directory + "/axons_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  "_" + std::to_string(n) +"_straight.swc");
                                     simulation_file_name = (directory + "/simulation_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +  "_" + std::to_string(n) + "_straight.txt");
                                     swc_file_name = (directory + "/growth_icvf_" + icvf_str.substr(0, 4) + "_cap_" + std::to_string(axon_capacity) + "_vox_" + vox_size_str.substr(0, 2) +   "_" + std::to_string(n) + "_straight.swc");
                                 }

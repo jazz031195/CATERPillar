@@ -1,11 +1,10 @@
-//!  CylinderGammaDistribution Class =============================================================/
+//! AxonGammaDistribution Class ================================================================ /
 /*!
-*   \details   Class to construct a substrate taken from a Gamma distribution of radiis placed in
+*   \details   This class constructs a substrate taken from a Gamma distribution of radii placed in
 *              a single voxel structure.
 *   \author    Jasmine Nguyen-Duc
-*   \date      Septembre 2022
-*   \version   0.2
-=================================================================================================*/
+*   \date      September 2023
+=============================================================================================== */
 
 #ifndef AXONGAMMADISTRIBUTION_H
 #define AXONGAMMADISTRIBUTION_H
@@ -16,7 +15,7 @@
 #include <iostream>
 #include "Axon.h"
 #include "grow_axons.h"
-#include "dynamic_sphere.h"
+#include "sphere.h"
 #include <thread>
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -26,42 +25,38 @@
 class AxonGammaDistribution
 {
 public:
-    std::vector<Axon> axons;   /*!< Axon vector  */
-    std::vector<double> radii; /*!< axons radii  */
+    std::vector<Axon> axons;            /*!< Vector of axons */
+    std::vector<double> radii;          /*!< Axon radii */
+    std::vector<Axon> growing_axons;    /*!< Axons that are growing in threads */
+    std::vector<double> stuck_radii;    /*!< Radii of stuck axons, to regrow */
+    unsigned num_obstacles;             /*!< Number of axons in the substrate */
+    int num_batches;                    /*!< Number of batches of axons */
+    int axon_capacity;                  /*!< Number of axons per batch (do not choose more than the maximum number of cores to avoid a crash) */
+    double icvf;                        /*!< Intracellular Compartment Volume Fraction */
+    double target_icvf;                 /*!< Target Intracellular Compartment Volume Fraction */
+    bool tortuous;                      /*!< If true, the axons are tortuous; otherwise, they are straight */
 
-    std::vector<Axon> growing_axons;
-    std::vector<double> stuck_radii; /*!< radii of stuck axons */
+    std::vector<double> tortuosities;   /*!< Orientation dispersion fraction of each axon */
+    
+    double alpha;                       /*!< Alpha coefficient of the Gamma distribution of the radii */
+    double beta;                        /*!< Beta coefficient of the gamma distribution of the radii */
 
-    unsigned num_obstacles; /*!< number of cylnders fit inside the substrate */
-    int num_batches;
-    int axon_capacity; /* Safe number of axon per batch to avoid crash */
-    std::mutex axonsMutex;
-    std::mutex stuckMutex;
+    int regrow_count = 0;               /*!< Number of axons to regrow */
+    int regrow_thr;                     /*!< Number of regrowth batches allowed */
 
-    double alpha; /*!< alpha coefficient of the Gamma distribution                           */
-    double beta;  /*!< beta coefficient of the gamma distribution                            */
-    double icvf;
-    int regrow_count = 0; /*!< number of axons to regrow */
-    int regrow_thr;       /*!< Number of regrowth batches allowed*/
+    Eigen::Vector3d min_limits;         /*!< Voxel min limits (if any) (bottom left corner) */
+    Eigen::Vector3d max_limits;         /*!< Voxel max limits (if any) */
 
-    Eigen::Vector3d min_limits; /*!< voxel min limits (if any) (bottom left corner)                     */
-    Eigen::Vector3d max_limits; /*!< voxel max limits (if any)                                          */
+    bool draw;                          /*!< If true, the voxel is drawn in a window */
 
-    bool tortuous;
-    bool draw;
+    double min_radius;                  /*!< Minimum radius value of all axons */
+    double max_radius;                  /*!< Maximum radius value of all axons */
 
-    std::vector<double> tortuosities; /*!< ODF                                                          */
-    double min_radius;
-    std::vector<GLfloat> colours;
+    std::vector<GLfloat> colours;       /*!< List of colors for the visualization of axons */
 
-    double max_radius; // between all axons in env
+    double variation_perc;              /*!< For beading: percentage of variation between the maximum radius and minimum radius in each axon. If set to 1, there is no "beading" */
 
-    double variation_perc;
-
-
-    bool can_shrink;
-
-    double radii_swelling = 0.5; // um
+    bool can_shrink;                    /*!< If true, the axons are allowed to shrink during the first attempt to place axons */
 
     /*!
      *  \brief Initialize everything.
@@ -71,45 +66,26 @@ public:
     /*!
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(unsigned &, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int, bool, double);
-
+    AxonGammaDistribution(double, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int, bool, double);
+    
     /*!
-     *  \brief Sets icvf and overwrites num_obstacles and num_batches
+     *  \param new_axons Vector of axons to use
+     *  \brief Calculate the intracellular area / total area while using only the first sphere of each axon
      */
-    void set_icvf(double icvf_, double x, double y);
-
-    /*!
-     *  \brief Shows a small histogram of the gamma distribution
-     */
-    void displayGammaDistribution();
-
-     /*!
-
-     *  \brief Generates a radius from gamma distribution
-     */
-
-    double generate_radius();
-
     double computeAreaICVF(std::vector<Axon> new_axons);
-
+    
     /*!
-     *  \param radii list of radii associated to axons
-     *  \brief Creates a list with all the axons to grow
-     */
-    void createAxons(std::vector<double> &radii, std::vector<Axon> &new_axons, bool regrowth);
-
-    /*!
-     *  \param index position in the 2d form of the axons vector
-     *  \param can_grow assesses if growth possible
-     *  \param finished assesses if growth finished, true = 1 and false = 0
-     *  \param grow_straight determines growth direction, true = 1 and false = 0
-     *  \param stuck number of times growth was not possible
-     *  \param stuck number of straight growths
+     *  \param axon Axon to grow one extra sphere on
+     *  \param finished Assesses if growth finished, true = 1, and false = 0
+     *  \param grow_straight Determines whether the growth is straight or in a random direction, true = 1, and false = 0
+     *  \param straight_growths Last number of spheres in a row that grow in a straight line (4 max)
+     *  \param regrowth If true, the axons are regrowing after failing in previous batches
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, int &shrink_tries, int &restart_tries, bool regrowth);
+    void growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, bool regrowth);
 
     /*!
+     *  \param axon Axon to modify
      *  \brief Causes sinusoidal fluctuation of the radii
      */
     double radiusVariation(Axon axon);
@@ -123,29 +99,6 @@ public:
      *  \brief Creates and displays a parallel growth of all axons
      */
     void growthVisualisation();
-    void growBatches(std::vector<double> &radii_, std::vector<int> &num_subsets_, bool regrowth);
-    void setBatches(int num_axons, std::vector<int> &num_subsets);
-    void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> &radii_, std::vector<int> &num_subsets_,float zoomLevel,bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor, bool regrowth);
-    double segmentCircleArea(Eigen::Vector3d min_pos, Eigen::Vector3d max_pos, Dynamic_Sphere s);
-    double computeICVF_();
-    void createSubstrate();
-
-    /*!
-     *  \brief Shrinks the radius to allow passage between axons
-     */
-    bool shrinkRadius(Growth& growth, double radius_to_shrink, Axon &axon, int grow_straight);
-
-    /*!
-     *  \brief Finds a radius for which shrinkage allows passage
-     */
-    void dichotomy(Growth growth, Eigen::Vector3d position_that_worked, Axon axon, double initial_rad, double &last_rad, int grow_straight);
-
-    /*!
-     *  \param row row of the current batch's axon vector
-     *  \param window drawing window
-     *  \brief draws sequential axon growth
-     */
-    void drawWorld(std::vector<Axon> ax_list, unsigned int row, sf::Window &window, int num_ax);
 
     /*!
      *  \brief Generates list of radii following gamma distribution
@@ -153,46 +106,160 @@ public:
     void generate_radii(std::vector<double> &radiis);
 
     /*!
-     *  \brief Draws 2d map of axon's initial placement
+     *  \param axon Axon to grow one extra sphere on
+     *  \param finished Assesses if growth finished, true = 1, and false = 0
+     *  \param grow_straight Determines whether the growth is straight or in a random direction, true = 1, and false = 0
+     *  \param straight_growths Last number of spheres in a row that grow in a straight line (4 max)
+     *  \param regrowth If true, the axons are regrowing after failing in previous batches
+     *  \brief Creates a parallel growth of a batch of axons
      */
-    void axonDensityMap();
+    void growBatches(std::vector<double> &radii_, std::vector<int> &num_subsets_, bool regrowth);
+    
+    /*!
+     *  \param Q Starting point of axon
+     *  \param D Ending point of axon
+     *  \brief Gets a position in the plane for the starting point of an axon
+     */
+    void get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D);
 
+    /*!
+     *  \param num_axon Number of axons
+     *  \param num_subsets Number of batches
+     *  \brief Sets the number of batches based on capacity, icvf, and voxel size
+     */
+    void setBatches(int num_axons, std::vector<int> &num_subsets);
+
+    /*!
+     *  \param window Window to visualize growing axons
+     *  \param ax_list List of axons
+     *  \param num_subsets_ Number of batches
+     *  \param regrowth If true, the axons are regrowing after failing in previous batches
+     *  \param other_parameters For visualization purposes
+     *  \brief Draw the batches of growing axons
+     */
+    void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> radii_, std::vector<int> num_subsets_, float zoomLevel, bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor, bool regrowth);
+    
+     /*!
+     *  \param ax_list List of axons to draw.
+     *  \brief Draws sequential axon growth.
+     */
+    void drawWorld(std::vector<Axon> ax_list);
+
+    /*!
+     *  \brief Creates the entire substrate
+     */
+    void createSubstrate();
+
+    /*!
+     *  \brief Updates the window for visualization with respect to zooming, dragging, etc.
+     */
+    void update_window(sf::Window &window, float zoomLevel, sf::Vector2i prevousDisplacement, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor);
+
+    /*!
+     *  \param growth Growth object with knowledge of the environment
+     *  \param radius_to_shrink Radius to shrink
+     *  \param axon Axon to shrink
+     *  \brief Shrinks the radius to allow passage between axons
+     */
+    bool shrinkRadius(Growth& growth, double radius_to_shrink, Axon &axon);
+
+    /*!
+     *  \brief Swells axons
+     */
+    bool swellAxons();
+
+    /*!
+     *  \param new_sphere Sphere to swell
+     *  \param swelling_perc Percentage of volume to gain during swelling
+     *  \brief Finds the best swelling percentage so that the sphere doesn't overlap with the environment
+     */
+    double dichotomy_swelling(Sphere new_sphere, double swelling_perc);
+
+    /*!
+     *  \param overlapping_factor Distance between spheres is radius/overlapping_factor
+     *  \param final_axons Resulting axons
+     *  \brief Adds spheres in between existing ones
+     */
+    void fill_with_overlapping_spheres(int overlapping_factor, std::vector<Axon> &final_axons);
+
+    /*!
+     *  \param sph Sphere
+     *  \param axs Axons to check overlapping with
+     *  \brief Checks if a sphere overlaps with any of the axons in axs
+     */
+    bool canSpherebePlaced(Sphere sph, std::vector<Axon> axs);
+
+    /*!
+     *  \param axs Axons to check 
+     *  \brief Checks if any axon overlaps with another
+     */
+    bool FinalCheck(std::vector<Axon>& axs);
+    /*!
+     *  \param radii_ List of axon radii 
+        \param num_subset Number of batches
+        \param regrowth If true, the axons are regrowing after failing in previous batches
+        \param first_index_batch Index of batch
+        \param new_axons Axons created in batch
+     *  \brief Creates a batch of axons by creating their first sphere on a plane
+     */
+    void createBatch(std::vector<double> radii_, int num_subset, bool regrowth, int first_index_batch, std::vector<Axon> &new_axons);
+    
+    /*!
+     *  \param growing_axons Axons that have grown in batch
+     *  \brief Checks if the axons that have grown in batch collide with each other
+     */
+    bool SanityCheck(std::vector<Axon>& growing_axons);
+
+    /*!
+     *  \param axon_to_grow Axon that is grown
+     *  \param regrowth If true, the axons are regrowing after failing in previous batches
+     *  \brief Grows the entire axon
+     */
+    void growAxon(Axon& axon_to_grow, bool regrowth);
+
+    /*!
+     *  \param pos Position
+     *  \param distance Distance to be inside voxel
+     *  \brief Check if the position is inside the voxel
+     */
+    bool withinBounds(Eigen::Vector3d pos, double distance);
+    
+    /*!
+     *  \param radius Radius of axon.
+     *  \param regrowth If true, the axons are regrowing after failing in previous batches.
+     *  \param i Index value.
+     *  \param tries Number of tries before axon is placed.
+     *  \param next If true, the axon was successfully placed and we can place the next one.
+     *  \param Q Starting point of axon.
+     *  \param D Ending point of axon.
+     *  \param all_axons All axons placed.
+     *  \param new_axons Newly placed axons.
+     *  \brief Places an axon in voxel.
+     */
+    void PlaceAxon(double radius, bool regrowth, int i, int &tries, bool &next, Eigen::Vector3d Q, Eigen::Vector3d D, std::vector<Axon> &all_axons, std::vector<Axon> &new_axons);
+
+    /*!
+     *  \param out Output stream to write SWC data.
+     *  \param overlapping_factor Distance between spheres is radius / overlapping_factor.
+     *  \brief Writes a SWC file to save the position of axons.
+     */
     void create_SWC_file(std::ostream &out, int overlapping_factor);
 
-    void axons_file(std::ostream &out);
+    /*!
+     *  \param out Output stream to write simulation details.
+     *  \param duration Duration of the growth in seconds.
+     *  \brief Writes to a file some details on the simulation (duration, etc.).
+     */
     void simulation_file(std::ostream &out, std::chrono::seconds duration);
 
-    /*!
-     *  \brief Prints the cylinders positions in a file or output stream.
-     *  \param out ostream where to write the info.
-     */
-    void printSubstrate(std::ostream &out);
-
-    bool check_borders(Eigen::Vector3d pos, double distance_to_border, Eigen::Vector2d &twin_delta_pos);
-
-    void get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D);
-    void PlaceAxon(double radius, bool regrowth, int i, int &tries, bool &next, Eigen::Vector3d Q, Eigen::Vector3d D, std::vector<Axon> &all_axons, std::vector<Axon> &new_axons);
-    
-    void PlaceTwinAxons(double radius, bool regrowth, int i, int &tries, bool &next, std::vector<Eigen::Vector3d> Qs, std::vector<Axon> &all_axons, std::vector<Axon> &new_axons);
-    std::vector<Eigen::Vector3d> FindTwins(Eigen::Vector3d Q, double rad);
-    bool withinBounds(Eigen::Vector3d pos, double distance);
-    bool swellAxons();
-    double dichotomy_swelling(Dynamic_Sphere new_sphere, int index, double swelling_perc);
-    void fill_wih_overlapping_spheres(int overlapping_factor, std::vector<Axon> &final_axons);
-    bool canSpherebePlaced(Dynamic_Sphere sph, std::vector<Axon> axs, bool print = false);
-    bool FinalCheck();
-    void createBatch(std::vector<double> &radii_, int num_subset, bool regrowth, int first_index_batch, std::vector<Axon> &new_axons);
-    bool SanityCheck(std::vector<Axon>& growing_axons);
 private:
+
     /*!
-     *  \brief Computes Intra Celular Volum Fraction given the voxel limits and the list of added cylinders.
-     *  \param cylinders List of included cylinders.
-     *  \param min_limits voxel min limits.
-     *  \param max_limits voxel max limits.
+     *  \brief Computes Intra Cellular Volum Fraction given the voxel limits and the list of added cylinders.
      */
     double computeICVF();
 
-    void computeMinimalSize(std::vector<double> radiis, double icvf_, Eigen::Vector3d &l);
 };
 
 #endif // AXONGAMMADISTRIBUTION_H
+

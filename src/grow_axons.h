@@ -7,42 +7,40 @@
 #include "constants.h"
 #include <iostream>
 #include "Axon.h"
-#include "dynamic_sphere.h"
+#include "sphere.h"
 
 class Growth
 {
 public:
-    std::vector<Axon> env_axons;
-    std::vector<Axon> axons;
-    std::vector<Axon> axons_to_regrow;
 
-    Axon axon_to_grow; /* Axon vector */
-    Eigen::Vector3d voxel_size;
-    bool tortuous;
-    Dynamic_Sphere sphere_to_add;
-    bool finished;
-    double max_radius; /* initial radius */ 
-    bool grow_straight; /* Sometimes, you want the axon to grow staright and sometimes you want it to grow in a different random direction */
+    std::vector<Axon> env_axons;            /* Only axosn that are close to the one growing */
+    std::vector<Axon> axons;                /* All axons in environment */
+    Axon axon_to_grow;                      /* Axon to grow */
+    Eigen::Vector3d voxel_size;             /* Voxel size in um */ 
+    bool tortuous;                          /* True if the axon is in general tortuous */ 
+    Sphere sphere_to_add;                   /* Sphere to add to axon */ 
+    bool finished;                          /* True if the axon has finished growing */ 
+    double max_radius;                      /* Maximum radius */ 
+    bool grow_straight;                     /* True if the next sphere should grow straight */
 
 
     Growth(){};
     ~Growth(){};
 
-    Growth(Axon&, std::vector<Axon>, std::vector<Axon>,  Eigen::Vector3d, bool, double, int);
+    Growth(Axon&, std::vector<Axon>,  Eigen::Vector3d, bool, double, int);
 
+    /*!
+     *  \brief Adds sphere to axon
+     */
+    void initialise_env_axons();
     bool GrowAxon(double radius, bool create_sphere);
     bool GrowFirstSphere();
-    void find_next_center(Dynamic_Sphere &s,double dist_);
-    //bool isSphereColliding(Dynamic_Sphere sph);
-    bool isSphereColliding_(Dynamic_Sphere sph);
-    std::vector<int> checkAxisForCollision(Dynamic_Sphere sph, int axis);
+    void find_next_center(Sphere &s,double dist_);
+    void find_next_center_straight(double distance, Sphere &s);
+    bool isSphereColliding(Sphere sph);
+    std::vector<int> checkAxisForCollision(Sphere sph, int axis);
     bool check_borders(Eigen::Vector3d pos, double distance_to_border);
-    void find_next_center_straight(double distance, Dynamic_Sphere &s);
-    bool TestGrowAxonAtPos(Eigen::Vector3d position_to_test, double radius_to_test);
-    bool TestGrowAxon(Eigen::Vector3d &position_that_worked, double radius_to_test);
-    void initialise_env_axons();
-    bool isSphereColliding_long(Dynamic_Sphere sph);
-
+    
 
 };
 
