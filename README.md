@@ -9,20 +9,20 @@ Type the following in a terminal :
 - brew install freeglut
 
 
-# Run the program
-## Linux 
+## Run the program
+### Linux 
 - In the compiler_linux.sh, modify the following line : cd "/home/localadmin/Documents/Sim_Growth/src/", to the path that leads to the src folder on your local machine.
 - Adapt the args.conf file to your preference. 
 - In the terminal, use "cd" to go to the folder.
 - Type : "./run_linux.sh"
 
-## MacOs
+### MacOs
 - In the compiler_mac.sh, modify the following line : cd "/home/localadmin/Documents/Sim_Growth/src/", to the path that leads to the src folder on your local machine.
 - Adapt the args.conf file to your preference. 
 - In the terminal, use "cd" to go to the folder.
 - Type : "./run_mac.sh"
 
-# Parameters
+## Parameters
 The parameters are organised in the args.conf file. Some parameters may have multiple values (those written as <parameter>) over which the program will iterate. The parameter value will then appear in the name of the file.
 The parameters that can be modified are the following :
 
@@ -40,7 +40,7 @@ The parameters that can be modified are the following :
 - capacities (list of int, must be bellow the number of processors available on computer) : number of parallel threads to grow axons simultaniously
 - repetitions (int, must be 1 or above) : Number of repetitions for the growing process
 
-# Outputs of program
+## Outputs of program
 - name of file : directory + "/simulation_icvf_" + icvf + "_cap_" + capacity + "_vox_" + vox_size + "_"+ repetition + ".txt"
   -  Duration (in seconds)
   -  Num_axons (number of axons)
