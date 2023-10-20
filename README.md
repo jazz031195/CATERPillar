@@ -3,6 +3,7 @@
 ![GitHub Logo](https://github.com/jazz031195/CATERPillar/blob/updated/caterpillar.jpg)
 
 ## Table of Contents
+- [Introduction](#introduction)
 - [Installation](#installations)
   - [MacOs](#macos)
 - [Run the program](#run-the-program)
