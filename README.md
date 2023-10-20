@@ -3,15 +3,17 @@
 ![GitHub Logo](https://github.com/jazz031195/CATERPillar/blob/updated/caterpillar.jpg)
 
 ## Table of Contents
-- [Installation](#section-1)
-- [Run the program 2](#section-2)
-  - [Linux](#subsection-21)
-  - [MacOs](#subsection-22)
-- [Parameters](#section-3)
-- [Outputs of program](#section-4)
+- [Installation](#installations)
+  - [MacOs](#macos)
+- [Run the program](#run-the-program)
+  - [Linux](#linux)
+  - [MacOs](#macos-1)
+- [Parameters](#parameters)
+- [Outputs of program](#outputs-of-program)
+- [Developers](#developers)
   
 ## Installations
-### MacOs
+### MacOs 
 Type the following in a terminal :
 - /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 - brew install freeglut
