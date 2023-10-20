@@ -1,4 +1,7 @@
-# Sim_Growth
+# CATERPillar  :Computational Axonal Threading Engine for Realistic Proliferation
+
+
+
 ## Installations
 ### MacOs
 Type the following in a terminal :
