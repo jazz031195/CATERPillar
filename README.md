@@ -55,4 +55,7 @@ The parameters that can be modified are the following :
   - X Y Z : coordinates of center of sphere in 3D space in micrometers
   - R : radius in micrometers
   - P : ID of parent sphere 
-
+## Developers 
+- Jasmine Nguyen-Duc
+- Melina Cherchali
+- Ines deRiedmatten
