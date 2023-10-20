@@ -36,6 +36,13 @@ int main(int argn, char* argv[])
     std::vector<double> spheres_overlap_factors = parameters.spheres_overlap_factors;
     int beading_variation = parameters.beading_variation;
     std::string directory = parameters.data_directory;
+    bool tortuous = parameters.tortuous;
+    bool draw = parameters.draw;
+    double alpha = parameters.alpha;
+    double beta = parameters.beta;
+    int regrow_thr = parameters.regrow_thr;
+    double min_radius = parameters.min_rad;
+
     cout << icvfs.size() << endl;
     for (int icvf_index = 0; icvf_index < icvfs.size() ; icvf_index++){
         
@@ -46,33 +53,13 @@ int main(int argn, char* argv[])
                 for (int c = 0; c < capacities.size(); c++){
 
                     int axon_capacity = capacities[c];
-
-                    // constants for gamma distribution, mean = 0.5 um
-                    double alpha = 8.0;
-                    double beta = 0.1;
                     double vox_size= vox_sizes[i];
 
                     // min and max limits of voxel
                     Eigen::Vector3d min_l = {0, 0, 0};
                     Eigen::Vector3d max_l = {vox_size, vox_size, vox_size}; // um
 
-                    // minimum radius
-                    double min_radius = 0.15; // um
-
-                    bool can_shrink = true;
-
-                    // simulation parameters
-                    bool tortuous = true;
-                    bool draw = false;
-                    //double beading_variation = 0.55;
-                    double beading_variation = 1;
-
-                    // density parameters
-                    //double icvf = 0.3;
                     double icvf = icvfs[icvf_index];
-
-                    // number of regrowth batches allowed
-                    int regrow_thr = 5;
 
                     // distance between spheres = radius /spheres_overlap_factor
                     //std::vector<int> spheres_overlap_factors = {2};
@@ -80,7 +67,7 @@ int main(int argn, char* argv[])
                     auto startTime = std::chrono::high_resolution_clock::now();
 
                     // create distribution of axons
-                    AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(icvf, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr, can_shrink, beading_variation);
+                    AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(icvf, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr, beading_variation);
 
                     cout << "AxonDistribution created" << endl;
 

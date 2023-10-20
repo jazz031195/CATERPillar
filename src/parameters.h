@@ -21,13 +21,19 @@ using namespace std;
 class Parameters
 {
 public:
-    std::string data_directory;
+    std::string data_directory = "";
     std::vector<double> capacities;
     std::vector<double> vox_sizes;
-    int repetitions;
+    int repetitions = 1;
     std::vector<double> icvf;
     std::vector<double> spheres_overlap_factors;
-    int beading_variation;
+    int beading_variation = 1;
+    bool tortuous = true;
+    bool draw = false;
+    double alpha;
+    double beta;
+    int regrow_thr = 5;
+    double min_rad = 0.15;
 
     static int str_dist(std::string s, std::string t);
     void readConfFile(std::string conf_file_path);

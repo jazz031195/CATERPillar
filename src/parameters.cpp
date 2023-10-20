@@ -73,7 +73,36 @@ void Parameters::readConfFile(std::string conf_file_path)
         else if (str_dist(tmp,"beading_variation") <= 2){
             in >> beading_variation;
         }
-        
+        else if (str_dist(tmp,"tortuous") <= 2){
+            in >> tmp;
+            if (std::stod(tmp) > 0){
+                tortuous = true;
+            }
+            else{
+                tortuous = false;
+            }
+        }
+        else if (str_dist(tmp,"draw") <= 2){
+            in >> tmp;
+            if (std::stod(tmp) > 0){
+                draw = true;
+            }
+            else{
+                draw = false;
+            }
+        }
+        else if (str_dist(tmp,"alpha") <= 2){
+            in >> alpha;
+        }
+        else if (str_dist(tmp,"beta") <= 2){
+            in >> beta;
+        }
+        else if (str_dist(tmp,"regrow_thr") <= 2){
+            in >> regrow_thr;
+        }
+        else if (str_dist(tmp,"min_rad") <= 2){
+            in >> min_rad;
+        }
         else if ((str_dist(tmp,"<vox_sizes>") == 0)){
 
             in >> tmp;
