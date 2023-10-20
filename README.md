@@ -10,10 +10,17 @@ Type the following in a terminal :
 
 
 # Run the program
+## Linux 
 - In the compiler_linux.sh, modify the following line : cd "/home/localadmin/Documents/Sim_Growth/src/", to the path that leads to the src folder on your local machine.
 - Adapt the args.conf file to your preference. 
-- In the terminal, use "cd" to go to the Sim_Growth folder.
+- In the terminal, use "cd" to go to the folder.
 - Type : "./run_linux.sh"
+
+## MacOs
+- In the compiler_mac.sh, modify the following line : cd "/home/localadmin/Documents/Sim_Growth/src/", to the path that leads to the src folder on your local machine.
+- Adapt the args.conf file to your preference. 
+- In the terminal, use "cd" to go to the folder.
+- Type : "./run_mac.sh"
 
 # Parameters
 The parameters are organised in the args.conf file. Some parameters may have multiple values (those written as <parameter>) over which the program will iterate. The parameter value will then appear in the name of the file.
