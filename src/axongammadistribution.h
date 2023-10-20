@@ -56,8 +56,6 @@ public:
 
     double variation_perc;              /*!< For beading: percentage of variation between the maximum radius and minimum radius in each axon. If set to 1, there is no "beading" */
 
-    bool can_shrink;                    /*!< If true, the axons are allowed to shrink during the first attempt to place axons */
-
     /*!
      *  \brief Initialize everything.
      */
@@ -66,7 +64,7 @@ public:
     /*!
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(double, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int, bool, double);
+    AxonGammaDistribution(double, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int, double);
     
     /*!
      *  \param new_axons Vector of axons to use

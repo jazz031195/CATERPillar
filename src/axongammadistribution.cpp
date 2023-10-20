@@ -38,7 +38,7 @@ std::vector<std::string> _split_line(const std::string &s, char delim)
 
 AxonGammaDistribution::AxonGammaDistribution(double target_icvf_, int &axon_capacity_, double a, double b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, double min_radius_,
-                                             bool tortuous_, bool draw_, int regrow_thr_, bool can_shrink_, double beading_variation)
+                                             bool tortuous_, bool draw_, int regrow_thr_,  double beading_variation)
 {
     alpha = a;
     beta = b;
@@ -53,7 +53,6 @@ AxonGammaDistribution::AxonGammaDistribution(double target_icvf_, int &axon_capa
     min_radius = min_radius_;
     draw = draw_;
     regrow_thr = regrow_thr_;
-    can_shrink=can_shrink_;
     variation_perc = beading_variation;
     target_icvf = target_icvf_;
 
@@ -1230,7 +1229,7 @@ void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_st
     {
         if (!can_grow)
         {
-            if ((regrowth || can_shrink))
+            if ((regrowth))
             {
                 {
                     bool shrink;
