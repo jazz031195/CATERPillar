@@ -263,8 +263,6 @@ void Growth::find_next_center(Sphere &s,  double dist_)
     {
         phi = phi_to_target;
         theta = theta_to_target;
-
-
     }
     // if tortuous, phi and theta comme from distribution
     else
@@ -319,7 +317,6 @@ bool Growth::GrowAxon(double radius_, bool create_sphere)
 
     if (axon_to_grow.spheres[axon_to_grow.spheres.size() -1].center[2] < voxel_size[2]) // still growing
     {
-
 
             collides = true;
             can_grow_ = false;
@@ -378,8 +375,15 @@ bool Growth::GrowAxon(double radius_, bool create_sphere)
                     find_next_center(s, distance);
 
                     collides = isSphereColliding(s);
+                    // check if the sphere is inside the voxel
+                    bool isinside = check_borders(s.center, s.radius);
+                    if (!collides && isinside){
+                        can_grow_ = true;
+                    }
+                    else{
+                        can_grow_ = false;
+                    }
                 }
-                
             }
 
             if (can_grow_ )

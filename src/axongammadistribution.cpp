@@ -1153,6 +1153,7 @@ bool AxonGammaDistribution::shrinkRadius(Growth& growth, double radius_to_shrink
     double initial_rad = radius_to_shrink;
     bool create_sphere = true;
     bool can_grow_min_rad = growth.GrowAxon(min_radius, false);
+    double intervals = (initial_rad-min_radius)/5;
 
     if (!can_grow_min_rad){
         //cout << "minimum radius doesn't fit, min rad :"<< min_radius << endl;
@@ -1161,7 +1162,7 @@ bool AxonGammaDistribution::shrinkRadius(Growth& growth, double radius_to_shrink
     else{
 
         while (!can_grow && rad > min_radius){
-            rad -= 0.1*initial_rad;
+            rad -= intervals;
             can_grow = growth.GrowAxon(rad, create_sphere);
         }
         if (can_grow){
@@ -1227,38 +1228,26 @@ void AxonGammaDistribution::growthThread(Axon &axon, Growth &growth,  int &finis
     {
         if (!can_grow)
         {
-            if ((regrowth))
+            
+            bool shrink;
+            shrink = shrinkRadius(growth, varied_radius, axon); // adds a sphere if it works
+            if (!shrink) // shrinking will not help growth
             {
-                {
-                    bool shrink;
-                    shrink = shrinkRadius(growth, varied_radius, axon); // adds a sphere if it works
-                    if (!shrink) // shrinking will not help growth
-                    {
-                        //std::cout << "Axon " << axon.id << " failed, cannot shrink !" << endl;
-                        axon.destroy();
-                        finished = 1;
-                        stuck_radii.push_back(axon.radius);
-                    }
-                    else{
-                        // successfully placed a sphere after shrinking it
-                        can_grow = true;
-                        if (growth.finished)
-                        {
-                            finished = 1; // 1 for true, if the growth finished
-                        }
-                    }
-                }
-    
-            }
-            else
-            {
-                //std::cout << "!! Axon " << axon.id << " : failed growing !!" << endl;
+                //std::cout << "Axon " << axon.id << " failed, cannot shrink !" << endl;
                 axon.destroy();
                 finished = 1;
                 stuck_radii.push_back(axon.radius);
-       
-                
             }
+            else{
+                // successfully placed a sphere after shrinking it
+                can_grow = true;
+                if (growth.finished)
+                {
+                    finished = 1; // 1 for true, if the growth finished
+                }
+            }
+    
+
         }
     }
     update_straight(can_grow, grow_straight, straight_growths);
