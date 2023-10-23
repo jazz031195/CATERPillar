@@ -103,7 +103,7 @@ int main(int argn, char* argv[])
 
                         for (int f = 0; f < spheres_overlap_factors.size(); f++){
                             // factor for overlapping spheres
-                            std::string factor_str =std::to_string(spheres_overlap_factors[f]);
+                            std::string factor_str =std::to_string(int(spheres_overlap_factors[f]));
                             // add to name of file
                             std::string swc_file_name_ = swc_file_name.substr(0, swc_file_name.size()-4);
                             swc_file_name_ = swc_file_name_ + "_factor_" +factor_str+"_"+std::to_string(rep)+".swc";
@@ -112,7 +112,7 @@ int main(int argn, char* argv[])
                             // Check if files opened successfully
                             if (!swc_file)
                             {
-                                std::cerr << "Error opening output file!" << std::endl;
+                                std::cerr << "Error opening output file : "<< swc_file_name_ << std::endl;
                                 return 1;
                             }
                             // write to file
@@ -129,9 +129,10 @@ int main(int argn, char* argv[])
                         std::ofstream simulation_file(simulation_file_name_);
 
                         // Check if files opened successfully
+
                         if (!simulation_file)
                         {
-                            std::cerr << "Error opening output file!" << std::endl;
+                            std::cerr << "Error opening output file : " << simulation_file_name_ <<std::endl;
                             return 1;
                         }
 

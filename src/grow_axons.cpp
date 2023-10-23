@@ -3,6 +3,7 @@
 #include <algorithm> // std::sort
 #include <random>
 #include <chrono>
+#include <future>
 
 using namespace std;
 using namespace Eigen;
@@ -168,21 +169,51 @@ bool Growth::isSphereColliding(Sphere sph)
 }
 */
 
+/*
+bool Growth::isSphereColliding(Sphere sph) {
+
+    int num_threads;
+    if (env_axons.size() < thread_capacity){
+        num_threads = env_axons.size(); // Set the desired number of threads
+    }
+    else{
+        num_threads = thread_capacity;
+    }
+    std::vector<std::future<bool>> futures;
+
+    for (unsigned i = 0; i < env_axons.size(); ++i) {
+        futures.emplace_back(std::async(std::launch::async, [&](unsigned index) {
+            return isSphereCollidingwithAxon(env_axons[index], sph);
+        }, i));
+    }
+
+    for (auto& future : futures) {
+        if (future.get()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+*/
+
+
 bool Growth::isSphereColliding(Sphere sph){
-    // for all axons
-    for (unsigned i = 0; i < env_axons.size(); i++)
-    {
-        int target_id = env_axons[i].id;
 
-        if (sph.ax_id != target_id){
+    for (unsigned j = 0; j < env_axons.size(); j ++) {
 
-            if (env_axons[i].isSphereInsideAxon(sph)){
-                return true;
-            }
-            
+        if (isSphereCollidingwithAxon(env_axons[j], sph)){
+            return true;
         }
     }
     return false;
+           
+}
+
+
+bool Growth::isSphereCollidingwithAxon(Axon ax, Sphere sph){
+
+    return ax.isSphereInsideAxon(sph);
 }
 
 
@@ -264,29 +295,7 @@ void Growth::find_next_center(Sphere &s,  double dist_)
 
 }
 
-bool Growth::GrowFirstSphere()
-{
 
-    // if sphere collides with environment
-    bool collides;
-    // first sphere to add
-    Sphere s1(0, axon_to_grow.id, axon_to_grow.begin, axon_to_grow.radius);
-    // check if first sphere collides
-
-    collides = isSphereColliding(s1);
-
-    bool isinside = check_borders(s1.center, s1.radius);
-
-    if (!collides && isinside)
-    {
-        sphere_to_add = s1;
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
 
 void Growth::find_next_center_straight(double distance, Sphere &s)
 {
@@ -316,7 +325,7 @@ bool Growth::GrowAxon(double radius_, bool create_sphere)
             can_grow_ = false;
             int tries = 0;
             Sphere s(axon_to_grow.spheres.size(), axon_to_grow.id, axon_to_grow.begin, radius_);
-            while (!can_grow_ and tries < 10000)
+            while (!can_grow_ and tries < 1000)
             {
                 // find the center of next sphere by taking a random position
 
@@ -382,7 +391,7 @@ bool Growth::GrowAxon(double radius_, bool create_sphere)
                 // if we reach edge of voxel
                 if (axon_to_grow.spheres[axon_to_grow.spheres.size() -1].center[2] > voxel_size[2])
                 {
-                    cout << "Axon " << axon_to_grow.id << " done!!" << endl;
+                    //cout << "Axon " << axon_to_grow.id << " done!!" << endl;
                     //cout << axon_to_grow.spheres[axon_to_grow.spheres.size() -1].center[2]  << endl;
                     //cout << voxel_size[2]  << endl;
                     finished = true;
@@ -401,7 +410,7 @@ bool Growth::GrowAxon(double radius_, bool create_sphere)
     }
     else // axon is fully grown
     {
-        cout << "Axon " << axon_to_grow.id << " done!" << endl;
+        //cout << "Axon " << axon_to_grow.id << " done!" << endl;
         finished = true;
         return true;
     }

@@ -166,7 +166,7 @@ std::vector<int> Axon::checkAxisForCollision(Sphere sph, int axis){
 
 bool Axon::isSphereInsideAxon(Sphere sph){
 
-    if(isNearAxon(sph.center, 2*sph.radius + barrier_tickness)){ // if near axon
+    if(sph.ax_id != id && (sph.center, 2*sph.radius + barrier_tickness)){ // if near axon
         std::vector<std::vector<int>> spheres_id_to_check;
         for (auto axis = 0; axis < 3; ++axis) {
             spheres_id_to_check.push_back(checkAxisForCollision(sph, axis)); // check for collision along 1 axis

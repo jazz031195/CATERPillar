@@ -37,7 +37,7 @@ public:
 
     static int str_dist(std::string s, std::string t);
     void readConfFile(std::string conf_file_path);
-    void readVector(ifstream& in , std::vector<double> &parameter);
+
 };
 
 #endif // PARAMETERS_H

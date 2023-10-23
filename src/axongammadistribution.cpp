@@ -219,11 +219,11 @@ void AxonGammaDistribution::generate_radii(std::vector<double> &radiis)
               { return a > b; });
 
     max_radius = radii[0];
-    cout << "Maximum radius :" << max_radius << endl;
+    //cout << "Maximum radius :" << max_radius << endl;
 
     num_obstacles = radii.size();
 
-    std::cout << "Number of axons :" << num_obstacles << endl;
+    //std::cout << "Number of axons :" << num_obstacles << endl;
 }
 
 double AxonGammaDistribution::computeAreaICVF(std::vector<Axon> new_axons)
@@ -372,7 +372,7 @@ bool AxonGammaDistribution::swellAxons(){
     if (current_icvf + 0.01 < icvf){
         for (uint i = 0; i < axons.size(); i++) // for all axons
         {
-            std::cout << " axon : " << axons[i].id << endl;
+            //std::cout << " axon : " << axons[i].id << endl;
             for (uint j = 0; j < axons[i].spheres.size(); j++)
             {
                 Sphere new_sphere = axons[i].spheres[j];
@@ -389,8 +389,8 @@ bool AxonGammaDistribution::swellAxons(){
             }
         }
 
-        std::cout << "Obtained icvf :" << obtained_icvf << endl;
-        std::cout << "Target icvf :" << icvf << endl;
+        //std::cout << "Obtained icvf :" << obtained_icvf << endl;
+        //std::cout << "Target icvf :" << icvf << endl;
         return true;
     }
     return false;
@@ -417,7 +417,7 @@ void AxonGammaDistribution::createBatch(std::vector<double> radii_, int num_subs
 
     for (unsigned i = 0; i < batch_radii.size(); ++i) // create axon for each radius
     {
-        std::cout << "radii created :" << i << "/" << batch_radii.size() << endl;
+        //std::cout << "radii created :" << i << "/" << batch_radii.size() << endl;
         bool next = false;
         
         while (!next && tries < tries_threshold)
@@ -551,7 +551,7 @@ void AxonGammaDistribution::growthVisualisation()
 
         while (num_regrowth < regrow_thr && radii_to_regrow.size() > 0)
         {
-            std::cout << "regrowth num :" << num_regrowth << endl;
+            //std::cout << "regrowth num :" << num_regrowth << endl;
             regrow_count = radii_to_regrow.size(); // nbr of axons to regrow
             setBatches(regrow_count, num_subsets);
             double prev_stuck_radii = stuck_radii.size();
@@ -567,9 +567,10 @@ void AxonGammaDistribution::growthVisualisation()
     }
 
 
-    FinalCheck(axons);
+    //FinalCheck(axons);
     bool swellaxons = swellAxons();
 
+    icvf = computeICVF();
     // messages
     std::cout << "icvf: " << icvf << " voxel size: " << max_limits[0] << std::endl;
     std::string message = "ICVF achieved: " + std::to_string(icvf * 100);
@@ -577,8 +578,6 @@ void AxonGammaDistribution::growthVisualisation()
     std::cout << "Number grown axons: " << axons.size() << std::endl;
     std::cout << "Total number axons: " << num_obstacles << std::endl;
     std::cout << "Number batches: " << num_batches << std::endl;
-    std::cout << "compute icvf " << computeICVF() << "\n"
-              << std::endl;
 }
 
 
@@ -748,7 +747,7 @@ void AxonGammaDistribution::drawBatches(sf::Window &window, std::vector<Axon> &a
 
         growing_axons.clear();
         
-        std::cout << "Stuck axons: " << stuck_radii.size() << endl;
+        //std::cout << "Stuck axons: " << stuck_radii.size() << endl;
 
     } // end for batches
 
@@ -782,7 +781,7 @@ void AxonGammaDistribution::parallelGrowth()
         while (num_regrowth < regrow_thr && radii_to_regrow.size() > 0)
         {
  
-            std::cout << "regrowth num :" << num_regrowth << endl;
+            //std::cout << "regrowth num :" << num_regrowth << endl;
             regrow_count = radii_to_regrow.size(); // nbr of axons to regrow
             setBatches(regrow_count, num_subsets);
             double prev_stuck_radii = stuck_radii.size();
@@ -798,21 +797,21 @@ void AxonGammaDistribution::parallelGrowth()
         stop = true;
     }
 
-    FinalCheck(axons);
-    bool swellaxons = swellAxons();
-    if (swellaxons){
-        FinalCheck(axons);
-    }
+    //FinalCheck(axons);
+    //bool swellaxons = swellAxons();
+    //if (swellaxons){
+    //    FinalCheck(axons);
+    //}
 
     // messages
+    icvf = computeICVF();
     std::cout << "icvf: " << icvf << " voxel size: " << max_limits[0] << std::endl;
     std::string message = "ICVF achieved: " + std::to_string(icvf * 100);
     std::cout << message << std::endl;
     std::cout << "Number grown axons: " << axons.size() << std::endl;
     std::cout << "Total number axons: " << num_obstacles << std::endl;
     std::cout << "Number batches: " << num_batches << std::endl;
-    std::cout << "compute icvf " << computeICVF() << "\n"
-              << std::endl;
+
 }
 
 bool AxonGammaDistribution::FinalCheck(std::vector<Axon>& axs){
@@ -823,7 +822,7 @@ bool AxonGammaDistribution::FinalCheck(std::vector<Axon>& axs){
         bool all_spheres_can_be_placed = true;
         for (unsigned i = 0; i < axs[j].spheres.size(); i++) { // for all spheres
             if (final_axons.size() > 0 && !canSpherebePlaced(axs[j].spheres[i], final_axons)){
-                std::cout << " Axon :" << axs[j].id << ", sphere : " << axs[j].spheres[i].id << " collides with environment !" << endl;
+                //std::cout << " Axon :" << axs[j].id << ", sphere : " << axs[j].spheres[i].id << " collides with environment !" << endl;
                 all_spheres_can_be_placed = false;
                 break;
             }
@@ -859,12 +858,11 @@ bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons) {
                     Sphere last_sphere = growing_axons[j].spheres[k];
                     if (!canSpherebePlaced(last_sphere, growing_axons)) {
                         thread_results[thread_id] = growing_axons[j].id;
-                        std::cout << "Sanity check: axon " << growing_axons[j].id << " collides with environment" << std::endl;
-                        std::cout << " axon size : " << growing_axons[j].spheres.size() << endl;
+                        //std::cout << "Sanity check: axon " << growing_axons[j].id << " collides with environment" << std::endl;
+                        //std::cout << " axon size : " << growing_axons[j].spheres.size() << endl;
       
                         break;
                     }
-
                 }
             }
         }
@@ -897,7 +895,7 @@ bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons) {
                 position = std::distance(growing_axons.begin(), foundObject);
             }
             else{
-                cout << " did not find id :" <<result<<endl; 
+                //cout << " did not find id :" <<result<<endl; 
                 assert(0);
             }
             growing_axons[position].destroy();
@@ -1020,11 +1018,14 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, bool regrowth){
     int grow_straight = 0;
     int straight_growths = 0;
 
+    Growth growth = Growth(axon_to_grow, axons, max_limits, tortuous, max_radius, grow_straight);
+    
+
     while (finished == 0) // if the axon is not done growing
     {
         if (axon_to_grow.spheres.size() >0){
 
-            growthThread(axon_to_grow, finished, grow_straight, straight_growths, regrowth);
+            growthThread(axon_to_grow, growth, finished, grow_straight, straight_growths, regrowth);
         }
         else{
             finished = 1;
@@ -1098,7 +1099,7 @@ void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector
         }
         growing_axons.clear();
         
-        std::cout << "Stuck axons: " << stuck_radii.size() << endl;
+        //std::cout << "Stuck axons: " << stuck_radii.size() << endl;
 
     } // end for batches
 
@@ -1205,17 +1206,14 @@ void update_straight(bool can_grow, int &grow_straight,int &straight_growths){
     }
 }
 
-void AxonGammaDistribution::growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths,  bool regrowth)
+void AxonGammaDistribution::growthThread(Axon &axon, Growth &growth,  int &finished, int &grow_straight, int &straight_growths,  bool regrowth)
 {
 
     double varied_radius = radiusVariation(axon);
-    Growth growth;
     bool can_grow;
      
-
     //{
         //std::lock_guard<std::mutex> lock(stuckMutex);
-    growth = Growth(axon, axons, max_limits, tortuous, max_radius, grow_straight);
     can_grow = growth.GrowAxon(varied_radius, true);
     axon = growth.axon_to_grow; // updates axon list
     //}
@@ -1277,7 +1275,7 @@ double AxonGammaDistribution::computeICVF()
         return 0;
     double VolumeV = (max_limits[0] - min_limits[0]) * (max_limits[1] - min_limits[1]) * (max_limits[2] - min_limits[2]); // total volume
     double VolumeC = 0;
-    double tortuosity;
+    //double tortuosity;
     for (uint i = 0; i < axons.size(); i++) // for all axons
     {
         double ax_length = 0;
@@ -1303,8 +1301,8 @@ double AxonGammaDistribution::computeICVF()
                     ax_length += l;
                 }
             }
-            tortuosity = ax_length / ((axons[i].begin - axons[i].end).norm()); // ( total distance between all centers / distance between first and last )
-            tortuosities.push_back(tortuosity);
+            //tortuosity = ax_length / ((axons[i].begin - axons[i].end).norm()); // ( total distance between all centers / distance between first and last )
+            //tortuosities.push_back(tortuosity);
         }
     }
     return VolumeC / VolumeV; // ( total axons volume / total volume )

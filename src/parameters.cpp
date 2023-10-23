@@ -60,7 +60,6 @@ void Parameters::readConfFile(std::string conf_file_path)
     string tmp="";
     while((in >> tmp) && (str_dist(tmp,"<END>") >= 2) ){
 
-        cout << tmp << endl;
 
         std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
 
@@ -151,12 +150,3 @@ void Parameters::readConfFile(std::string conf_file_path)
     return;
 }
 
-void Parameters::readVector(ifstream& in , std::vector<double> &parameter)
-{
-    double x;
-    in >> x ;
-    parameter.push_back(x);
-
-    cout << parameter.size() << endl;
-    
-}

@@ -74,13 +74,14 @@ public:
     
     /*!
      *  \param axon Axon to grow one extra sphere on
+     *  \param growth Grwoth object with environment in memory
      *  \param finished Assesses if growth finished, true = 1, and false = 0
      *  \param grow_straight Determines whether the growth is straight or in a random direction, true = 1, and false = 0
      *  \param straight_growths Last number of spheres in a row that grow in a straight line (4 max)
      *  \param regrowth If true, the axons are regrowing after failing in previous batches
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(Axon &axon, int &finished, int &grow_straight, int &straight_growths, bool regrowth);
+    void growthThread(Axon &axon, Growth &growth, int &finished, int &grow_straight, int &straight_growths, bool regrowth);
 
     /*!
      *  \param axon Axon to modify
