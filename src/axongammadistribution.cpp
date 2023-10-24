@@ -401,7 +401,7 @@ void AxonGammaDistribution::createBatch(std::vector<double> radii_, int num_subs
 {
     int tries = 0;
     std::vector<int> stuck_axons_id;
-    long int tries_threshold = 100000;
+    long int tries_threshold = max_limits[0]*max_limits[1]*2;
     std::vector<Axon> all_axons = axons;
     new_axons.clear();
 
@@ -411,10 +411,6 @@ void AxonGammaDistribution::createBatch(std::vector<double> radii_, int num_subs
     // Create a new vector using the iterators
     std::vector<double> batch_radii(startIterator, stopIterator);
 
-    int placement_tries_thresh = 10;
-    int placement_tries = 0;
-
-
     for (unsigned i = 0; i < batch_radii.size(); ++i) // create axon for each radius
     {
         //std::cout << "radii created :" << i << "/" << batch_radii.size() << endl;
@@ -422,29 +418,17 @@ void AxonGammaDistribution::createBatch(std::vector<double> radii_, int num_subs
         
         while (!next && tries < tries_threshold)
         {
-
             Vector3d Q, D;
             get_begin_end_point(Q, D);
             int axon_index = first_index_batch + i;
             PlaceAxon(batch_radii[i], regrowth, axon_index, tries, next, Q, D, all_axons, new_axons);
-            
-
         }
-        if (tries >= tries_threshold && placement_tries < placement_tries_thresh)
+        if (tries >= tries_threshold)
         {
-
-            std::cout << "Not enough space, restart" << endl;
-            std::cout << "achieved :" << new_axons.size() << "/" << batch_radii.size() << endl;
-            new_axons.clear();
-            all_axons = axons;
-            colours.clear();
-            i = -1;
+            std::cout << "Not enough space to add an axon -> discard it" << endl;
             tries = 0;
-            placement_tries += 1;
         }
-
     }
-
 }
 
 void AxonGammaDistribution::setBatches(int num_axons, std::vector<int> &num_subsets)
@@ -798,7 +782,7 @@ void AxonGammaDistribution::parallelGrowth()
     }
 
     //FinalCheck(axons);
-    //bool swellaxons = swellAxons();
+    bool swellaxons = swellAxons();
     //if (swellaxons){
     //    FinalCheck(axons);
     //}
@@ -1246,8 +1230,6 @@ void AxonGammaDistribution::growthThread(Axon &axon, Growth &growth,  int &finis
                     finished = 1; // 1 for true, if the growth finished
                 }
             }
-    
-
         }
     }
     update_straight(can_grow, grow_straight, straight_growths);
@@ -1367,6 +1349,41 @@ std::vector<double> equallySpacedValues(double start, double end, int n) {
     return result;
 }
 
+// Function to calculate intermediate points and insert N lines
+void AxonGammaDistribution::fill_with_overlapping_spheres(int overlapping_factor, std::vector<Axon> &final_axons) {
+    if (overlapping_factor > 2){
+        int N = (overlapping_factor/2)-1; 
+        for (uint k = 0; k < axons.size(); k++)
+        {
+            std::vector<Sphere> result;
+            for (size_t i = 0; i < axons[k].spheres.size() - 1; ++i) {
+                result.push_back(axons[k].spheres[i]); // Add the current sphere
+                
+                for (int j = 1; j <= N; ++j) {
+                    double factor = static_cast<double>(j) / (N + 1);
+                    Sphere intermediateSphere;
+                    intermediateSphere.center[0] = axons[k].spheres[i].center[0] + factor * (axons[k].spheres[i + 1].center[0] - axons[k].spheres[i].center[0]);
+                    intermediateSphere.center[1] = axons[k].spheres[i].center[1] + factor * (axons[k].spheres[i + 1].center[1] - axons[k].spheres[i].center[1]);
+                    intermediateSphere.center[2] = axons[k].spheres[i].center[2] + factor * (axons[k].spheres[i + 1].center[2] - axons[k].spheres[i].center[2]);
+                    intermediateSphere.radius = axons[k].spheres[i].radius + factor * (axons[k].spheres[i + 1].radius - axons[k].spheres[i].radius);
+                    intermediateSphere.ax_id = axons[k].spheres[i].ax_id;
+                    intermediateSphere.id = i * N + j; // Adjust ID for intermediate spheres
+                    if (canSpherebePlaced(intermediateSphere, axons)){
+                        result.push_back(intermediateSphere);
+                    }
+                }
+            }
+            result.push_back(axons[k].spheres.back()); // Add the last sphere
+            Axon final_axon = Axon (axons[k].id, axons[k].begin, axons[k].end, axons[k].radius);
+            final_axon.spheres = result;
+            final_axons.push_back(final_axon);
+        }
+    }
+    else{
+        final_axons = axons;
+    }
+}
+/*
 void AxonGammaDistribution::fill_with_overlapping_spheres(int overlapping_factor, std::vector<Axon> &final_axons){
 
     std::vector<Axon> axons_env = axons;
@@ -1397,8 +1414,6 @@ void AxonGammaDistribution::fill_with_overlapping_spheres(int overlapping_factor
 
                     bool can_place = canSpherebePlaced(sph_interp, axons_env);
                     if (can_place){
-
-
                         final_axon.add_sphere(sph_interp);
                     } 
 
@@ -1415,3 +1430,4 @@ void AxonGammaDistribution::fill_with_overlapping_spheres(int overlapping_factor
     }
 } 
 
+*/

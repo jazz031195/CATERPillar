@@ -179,6 +179,7 @@ public:
      *  \param final_axons Resulting axons
      *  \brief Adds spheres in between existing ones
      */
+    // Function to calculate intermediate points and insert N lines
     void fill_with_overlapping_spheres(int overlapping_factor, std::vector<Axon> &final_axons);
 
     /*!
