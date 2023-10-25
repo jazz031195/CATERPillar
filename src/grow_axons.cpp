@@ -312,8 +312,10 @@ bool Growth::GrowAxon(double radius_, bool create_sphere)
     // if sphere collides with environment
     bool collides;
     bool can_grow_;
+    // the distance between two consecutive spheres is the maximum radius / 2
+    double max_radius_ = max(radius_, axon_to_grow.spheres[axon_to_grow.spheres.size()-1].radius);
 
-    double distance = (radius_)/2;
+    double distance = (max_radius_)/2;
 
     if (axon_to_grow.spheres[axon_to_grow.spheres.size() -1].center[2] < voxel_size[2]) // still growing
     {

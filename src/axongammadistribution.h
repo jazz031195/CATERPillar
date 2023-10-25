@@ -81,7 +81,7 @@ public:
      *  \param regrowth If true, the axons are regrowing after failing in previous batches
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(Axon &axon, Growth &growth, int &finished, int &grow_straight, int &straight_growths, bool regrowth);
+    void growthThread(Axon &axon, Growth &growth, int &finished, int &grow_straight, int &straight_growths, bool regrowth, std::vector<double> &stuck_radii_);
 
     /*!
      *  \param axon Axon to modify
@@ -131,13 +131,40 @@ public:
     /*!
      *  \param window Window to visualize growing axons
      *  \param ax_list List of axons
-     *  \param num_subsets_ Number of batches
+     *  \param num_subsets_ List of batches with number of axons to grow in each 
      *  \param regrowth If true, the axons are regrowing after failing in previous batches
      *  \param other_parameters For visualization purposes
      *  \brief Draw the batches of growing axons
      */
     void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> radii_, std::vector<int> num_subsets_, float zoomLevel, bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor, bool regrowth);
     
+    /*!
+     *  \param window Window to visualize growing axons
+     *  \param stuck_radii_ radii of axons that got stuck
+     *  \param radii_ radii of all axons to grow
+     *  \param number_axons_to_grow number of axons to grow
+     *  \param first_index_batch first axon in radii_ to grow 
+     *  \param num_subsets_ List of batches with number of axons to grow in each 
+     *  \param regrowth If true, the axons are regrowing after failing in previous batches
+     *  \param growing_axons List of axons that have grown
+     *  \brief Draw the batches of growing axons
+     */
+
+    void growBatch(int number_axons_to_grow, std::vector<double> &radii_, std::vector<double> &stuck_radii_, bool regrowth, int first_index_batch, std::vector<Axon> &growing_axons);
+    /*!
+     *  \param window Window to visualize growing axons
+     *  \param stuck_radii_ radii of axons that got stuck
+     *  \param radii_ radii of all axons to grow
+     *  \param number_axons_to_grow number of axons to grow
+     *  \param first_index_batch first axon in radii_ to grow 
+     *  \param num_subsets_ List of batches with number of axons to grow in each 
+     *  \param regrowth If true, the axons are regrowing after failing in previous batches
+     *  \param growing_axons List of axons that have grown
+     *  \param other_parameters For visualization purposes
+     *  \brief Draw the batches of growing axons
+     */
+    void drawBatch(sf::Window &window, int number_axons_to_grow, std::vector<double> &radii_, std::vector<double> &stuck_radii_, bool regrowth, int first_index_batch, std::vector<Axon> &growing_axons, float &zoomLevel,bool &isDragging, sf::Vector2i &lastMousePos, bool &isRightDragging, sf::Vector2i &lastRightMousePos, sf::Vector2i &currentMousePos, sf::Vector2i &mouseDelta, sf::Vector2i &prevousDisplacement, sf::Vector2i &rightMouseDelta, sf::Vector2i &prevousRotation, float &rotationFactor, float &displacementFactor);
+
      /*!
      *  \param ax_list List of axons to draw.
      *  \brief Draws sequential axon growth.
@@ -208,14 +235,14 @@ public:
      *  \param growing_axons Axons that have grown in batch
      *  \brief Checks if the axons that have grown in batch collide with each other
      */
-    bool SanityCheck(std::vector<Axon>& growing_axons);
+    bool SanityCheck(std::vector<Axon>& growing_axons, std::vector<double>& stuck_radii_);
 
     /*!
      *  \param axon_to_grow Axon that is grown
      *  \param regrowth If true, the axons are regrowing after failing in previous batches
      *  \brief Grows the entire axon
      */
-    void growAxon(Axon& axon_to_grow, bool regrowth);
+    void growAxon(Axon& axon_to_grow, bool regrowth, std::vector<double>& stuck_radii_);
 
     /*!
      *  \param pos Position
@@ -252,7 +279,7 @@ public:
      */
     void simulation_file(std::ostream &out, std::chrono::seconds duration);
 
-private:
+    private:
 
     /*!
      *  \brief Computes Intra Cellular Volum Fraction given the voxel limits and the list of added cylinders.

@@ -345,7 +345,7 @@ double AxonGammaDistribution::dichotomy_swelling(Sphere new_sphere, double swell
     overlap = !canSpherebePlaced(new_sphere, axons);
 
     if (overlap){
-        while (restart < 5){
+        while (restart < 10){
             current_rad = (min_rad + max_rad)/2;
             new_sphere.radius = current_rad;
             overlap = !canSpherebePlaced(new_sphere, axons);
@@ -379,7 +379,7 @@ bool AxonGammaDistribution::swellAxons(){
 
                 double rad = axons[i].spheres[j].radius;
 
-                double final_rad = dichotomy_swelling(new_sphere, 0.1*rad);
+                double final_rad = dichotomy_swelling(new_sphere, 0.2*rad);
                 axons[i].spheres[j].radius = final_rad;
             }
             obtained_icvf = computeICVF();
@@ -401,7 +401,7 @@ void AxonGammaDistribution::createBatch(std::vector<double> radii_, int num_subs
 {
     int tries = 0;
     std::vector<int> stuck_axons_id;
-    long int tries_threshold = max_limits[0]*max_limits[1]*2;
+    long int tries_threshold = max_limits[0]*max_limits[1]*10;
     std::vector<Axon> all_axons = axons;
     new_axons.clear();
 
@@ -415,16 +415,19 @@ void AxonGammaDistribution::createBatch(std::vector<double> radii_, int num_subs
     {
         //std::cout << "radii created :" << i << "/" << batch_radii.size() << endl;
         bool next = false;
-        
+        double initial_radius = batch_radii[i];
         while (!next && tries < tries_threshold)
         {
             Vector3d Q, D;
             get_begin_end_point(Q, D);
             int axon_index = first_index_batch + i;
             PlaceAxon(batch_radii[i], regrowth, axon_index, tries, next, Q, D, all_axons, new_axons);
+            if (tries >= tries_threshold/2 && batch_radii[i] - initial_radius*0.1 > min_radius)
+            {
+                batch_radii[i] -= initial_radius*0.1;
+            }
         }
-        if (tries >= tries_threshold)
-        {
+        if (tries > tries_threshold){
             std::cout << "Not enough space to add an axon -> discard it" << endl;
             tries = 0;
         }
@@ -667,6 +670,7 @@ void AxonGammaDistribution::update_window(sf::Window &window, float zoomLevel, s
 void AxonGammaDistribution::drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> radii_, std::vector<int> num_subsets_,float zoomLevel,bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor, bool regrowth)
 {
     stuck_radii.clear(); // start batches with no stuck radii
+    int nbr_tries = 0;
 
     for (unsigned j = 0; j < num_batches; j++) // batches of axon growth
     {
@@ -683,55 +687,25 @@ void AxonGammaDistribution::drawBatches(sf::Window &window, std::vector<Axon> &a
 
         bool all_finished = false;
         bool batch_created;
+        std::vector<double> stuck_radii_;
+        drawBatch(window, num_subsets_[j], radii_, stuck_radii_, regrowth, first_index_batch, growing_axons, zoomLevel, isDragging, lastMousePos, isRightDragging, lastRightMousePos, currentMousePos, mouseDelta, prevousDisplacement, rightMouseDelta, prevousRotation, rotationFactor, displacementFactor);
 
-        // create batch of N axons, update growing axons
-        createBatch(radii_, num_subsets_[j], regrowth, first_index_batch, growing_axons);
-
-        int nbr_growing_axons = growing_axons.size();
-        std::vector<Axon> growing_axons_copy(growing_axons);
-
-        std::vector<std::thread> all_threads;
-
-        for (unsigned i = 0; i < nbr_growing_axons; i++) // for each axon
-        {
-            set_Visualisation_params(window, zoomLevel, isDragging, lastMousePos, isRightDragging, lastRightMousePos, currentMousePos, mouseDelta, prevousDisplacement, rightMouseDelta, prevousRotation, rotationFactor, displacementFactor);
-            update_window(window, zoomLevel, prevousDisplacement,  prevousRotation, rotationFactor, displacementFactor);
-        
-            all_threads.emplace_back(&AxonGammaDistribution::growAxon, 
-                                    this,
-                                    std::ref(growing_axons_copy[i]),
-                                    regrowth);
-
-        } // end for axons
-
-        for (std::thread &t : all_threads)
-        {
-            if (t.joinable()){
-                t.join();
-            } 
+        std::vector<double> new_stuck_radii_;
+        while (stuck_radii_.size()>0 && nbr_tries < 10){
+            new_stuck_radii_.clear();
+            cout << " Sanity check : collision between " << stuck_radii_.size()<<" growing axons" << endl;
+            nbr_tries += 1;
+            drawBatch(window, stuck_radii_.size(), stuck_radii_, new_stuck_radii_, true, 0, growing_axons, zoomLevel, isDragging, lastMousePos, isRightDragging, lastRightMousePos, currentMousePos, mouseDelta, prevousDisplacement, rightMouseDelta, prevousRotation, rotationFactor, displacementFactor);
+            stuck_radii_ = new_stuck_radii_;
         }
-        set_Visualisation_params(window, zoomLevel, isDragging, lastMousePos, isRightDragging, lastRightMousePos, currentMousePos, mouseDelta, prevousDisplacement, rightMouseDelta, prevousRotation, rotationFactor, displacementFactor);
-        update_window(window, zoomLevel, prevousDisplacement,  prevousRotation, rotationFactor, displacementFactor);
-        
-        all_threads.clear(); // Vider le vecteur pour l'itération suivante
-
-        growing_axons = growing_axons_copy;
-        if (axon_capacity > 1){
-            SanityCheck(growing_axons);
-        }
-
-        // add axons in batch that worked in axons
-        for (unsigned i = 0; i < growing_axons.size(); i++) {
-            //cout << "growing_axons["<<i <<"].spheres.size(): " << growing_axons[i].spheres.size() << endl;
-            if (growing_axons[i].spheres.size()>0){
-                axons.push_back(growing_axons[i]);
+        if (nbr_tries >= 10){
+            for (unsigned i = 0; i < stuck_radii_.size(); i++) {
+                stuck_radii.push_back(stuck_radii_[i]);
             }
+            nbr_tries = 0;
         }
-
-
-        growing_axons.clear();
         
-        //std::cout << "Stuck axons: " << stuck_radii.size() << endl;
+        std::cout << "Stuck axons: " << stuck_radii.size() << endl;
 
     } // end for batches
 
@@ -828,7 +802,7 @@ bool AxonGammaDistribution::FinalCheck(std::vector<Axon>& axs){
     return not_collide;
 }
 
-bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons) {
+bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons, std::vector<double>& stuck_radii_) {
 
     // Vector to store results from each thread
     std::vector<double> thread_results(axon_capacity, -1);
@@ -883,7 +857,7 @@ bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons) {
                 assert(0);
             }
             growing_axons[position].destroy();
-            stuck_radii.push_back(growing_axons[position].radius);
+            stuck_radii_.push_back(growing_axons[position].radius);
         }
     }
     
@@ -996,7 +970,7 @@ void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector
 }
 */
 
-void AxonGammaDistribution::growAxon(Axon& axon_to_grow, bool regrowth){
+void AxonGammaDistribution::growAxon(Axon& axon_to_grow, bool regrowth, std::vector<double>& stuck_radii_){
 
     int finished = 0;
     int grow_straight = 0;
@@ -1009,7 +983,7 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, bool regrowth){
     {
         if (axon_to_grow.spheres.size() >0){
 
-            growthThread(axon_to_grow, growth, finished, grow_straight, straight_growths, regrowth);
+            growthThread(axon_to_grow, growth, finished, grow_straight, straight_growths, regrowth, stuck_radii_);
         }
         else{
             finished = 1;
@@ -1017,9 +991,102 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, bool regrowth){
     }
 }
 
+void AxonGammaDistribution::drawBatch(sf::Window &window, int number_axons_to_grow, std::vector<double> &radii_, std::vector<double> &stuck_radii_, bool regrowth, int first_index_batch, std::vector<Axon> &growing_axons, float &zoomLevel,bool &isDragging, sf::Vector2i &lastMousePos, bool &isRightDragging, sf::Vector2i &lastRightMousePos, sf::Vector2i &currentMousePos, sf::Vector2i &mouseDelta, sf::Vector2i &prevousDisplacement, sf::Vector2i &rightMouseDelta, sf::Vector2i &prevousRotation, float &rotationFactor, float &displacementFactor){
+    // create batch of N axons, update growing axons
+    createBatch(radii_, number_axons_to_grow, regrowth, first_index_batch, growing_axons);
+
+    int nbr_growing_axons = growing_axons.size();
+    std::vector<Axon> growing_axons_copy(growing_axons);
+
+    std::vector<std::thread> all_threads;
+    for (unsigned i = 0; i < nbr_growing_axons; i++) // for each axon
+    {
+
+        set_Visualisation_params(window, zoomLevel, isDragging, lastMousePos, isRightDragging, lastRightMousePos, currentMousePos, mouseDelta, prevousDisplacement, rightMouseDelta, prevousRotation, rotationFactor, displacementFactor);
+        update_window(window, zoomLevel, prevousDisplacement,  prevousRotation, rotationFactor, displacementFactor);
+        all_threads.emplace_back(&AxonGammaDistribution::growAxon, 
+                                            this,
+                                            std::ref(growing_axons_copy[i]),
+                                            regrowth, 
+                                            std::ref(stuck_radii_));
+
+    } // end for axons
+
+    for (std::thread &t : all_threads)
+    {
+        if (t.joinable()){
+                        t.join();
+        } 
+    }
+    set_Visualisation_params(window, zoomLevel, isDragging, lastMousePos, isRightDragging, lastRightMousePos, currentMousePos, mouseDelta, prevousDisplacement, rightMouseDelta, prevousRotation, rotationFactor, displacementFactor);
+    update_window(window, zoomLevel, prevousDisplacement,  prevousRotation, rotationFactor, displacementFactor);
+        
+
+    all_threads.clear(); // Vider le vecteur pour l'itération suivante
+
+    growing_axons = growing_axons_copy;
+
+    bool no_collision = SanityCheck(growing_axons, stuck_radii_);
+    
+    // add axons in batch that worked in axons
+    for (unsigned i = 0; i < growing_axons.size(); i++) {
+        //cout << "growing_axons["<<i <<"].spheres.size(): " << growing_axons[i].spheres.size() << endl;
+        if (growing_axons[i].spheres.size()>0){
+            axons.push_back(growing_axons[i]);
+        }
+    }
+
+    growing_axons.clear();
+
+}
+
+void AxonGammaDistribution::growBatch(int number_axons_to_grow, std::vector<double> &radii_, std::vector<double> &stuck_radii_, bool regrowth, int first_index_batch, std::vector<Axon> &growing_axons){
+    // create batch of N axons, update growing axons
+    createBatch(radii_, number_axons_to_grow, regrowth, first_index_batch, growing_axons);
+
+    int nbr_growing_axons = growing_axons.size();
+    std::vector<Axon> growing_axons_copy(growing_axons);
+
+    std::vector<std::thread> all_threads;
+    for (unsigned i = 0; i < nbr_growing_axons; i++) // for each axon
+    {
+
+        all_threads.emplace_back(&AxonGammaDistribution::growAxon, 
+                                            this,
+                                            std::ref(growing_axons_copy[i]),
+                                            regrowth,
+                                            std::ref(stuck_radii_));
+
+    } // end for axons
+
+    for (std::thread &t : all_threads)
+    {
+        if (t.joinable()){
+                        t.join();
+        } 
+    }
+
+    all_threads.clear(); // Vider le vecteur pour l'itération suivante
+
+    growing_axons = growing_axons_copy;
+
+    bool no_collision = SanityCheck(growing_axons, stuck_radii_);
+    
+    // add axons in batch that worked in axons
+    for (unsigned i = 0; i < growing_axons.size(); i++) {
+        //cout << "growing_axons["<<i <<"].spheres.size(): " << growing_axons[i].spheres.size() << endl;
+        if (growing_axons[i].spheres.size()>0){
+            axons.push_back(growing_axons[i]);
+        }
+    }
+
+}
+
 void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector<int> &num_subsets_, bool regrowth)
 {
     stuck_radii.clear();
+
+    int nbr_tries = 0;
     
     for (unsigned j = 0; j < num_batches; j++) // batches of axon growth
     {
@@ -1038,57 +1105,36 @@ void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector
 
         bool all_finished = false;
         bool batch_created;
-        // create batch of N axons, update growing axons
-        createBatch(radii_, num_subsets_[j], regrowth, first_index_batch, growing_axons);
 
-        int nbr_growing_axons = growing_axons.size();
-        std::vector<Axon> growing_axons_copy(growing_axons);
+        std::vector<double> stuck_radii_;
+        growBatch(num_subsets_[j], radii_, stuck_radii_, regrowth, first_index_batch, growing_axons);
 
-        std::vector<std::thread> all_threads;
-        for (unsigned i = 0; i < nbr_growing_axons; i++) // for each axon
-        {
-
-            all_threads.emplace_back(&AxonGammaDistribution::growAxon, 
-                                    this,
-                                    std::ref(growing_axons_copy[i]),
-                                    regrowth);
-
-        } // end for axons
-
-        for (std::thread &t : all_threads)
-        {
-            if (t.joinable()){
-                t.join();
-            } 
+        // tries in 10 times to regrow the stuck axons
+        std::vector<double> new_stuck_radii_;
+        while (stuck_radii_.size()>0 && nbr_tries < 10){
+            new_stuck_radii_.clear();
+            //cout << " Regrow" << stuck_radii_.size()<<" axons" << endl;
+            nbr_tries += 1;
+            growBatch(stuck_radii_.size(), stuck_radii_, new_stuck_radii_, true, 0, growing_axons);
+            stuck_radii_ = new_stuck_radii_;
         }
-
-        all_threads.clear(); // Vider le vecteur pour l'itération suivante
-
-        growing_axons = growing_axons_copy;
-        if (axon_capacity > 1){
-            SanityCheck(growing_axons);
+        if (nbr_tries >= 10){
+            for (unsigned i = 0; i < stuck_radii_.size(); i++) {
+                stuck_radii.push_back(stuck_radii_[i]);
+            }
+            nbr_tries = 0;
         }
 
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime);
         cout << " time for batch = " << duration.count() << " seconds" << endl;
         
-
-        // add axons in batch that worked in axons
-        for (unsigned i = 0; i < growing_axons.size(); i++) {
-            //cout << "growing_axons["<<i <<"].spheres.size(): " << growing_axons[i].spheres.size() << endl;
-            if (growing_axons[i].spheres.size()>0){
-                axons.push_back(growing_axons[i]);
-            }
-        }
         growing_axons.clear();
-        
         //std::cout << "Stuck axons: " << stuck_radii.size() << endl;
 
     } // end for batches
 
 }
-
 
 double get_axonal_length(Axon axon){
     double l = 0;
@@ -1191,19 +1237,26 @@ void update_straight(bool can_grow, int &grow_straight,int &straight_growths){
     }
 }
 
-void AxonGammaDistribution::growthThread(Axon &axon, Growth &growth,  int &finished, int &grow_straight, int &straight_growths,  bool regrowth)
+void AxonGammaDistribution::growthThread(Axon &axon, Growth &growth,  int &finished, int &grow_straight, int &straight_growths,  bool regrowth, std::vector<double> &stuck_radii_)
 {
 
-    double varied_radius = radiusVariation(axon);
+    double varied_radius;
+    if (variation_perc<1){
+        varied_radius = radiusVariation(axon);
+    }
+    else{
+        varied_radius = axon.radius;
+    }
     bool can_grow;
      
     //{
         //std::lock_guard<std::mutex> lock(stuckMutex);
     can_grow = growth.GrowAxon(varied_radius, true);
+    // keep growth attempts in memory
+    growth.axon_to_grow.growth_attempts = axon.growth_attempts; 
     axon = growth.axon_to_grow; // updates axon list
     //}
     
-
     if (growth.finished)
     {
         finished = 1; // 1 for true, if the growth finished
@@ -1217,10 +1270,23 @@ void AxonGammaDistribution::growthThread(Axon &axon, Growth &growth,  int &finis
             shrink = shrinkRadius(growth, varied_radius, axon); // adds a sphere if it works
             if (!shrink) // shrinking will not help growth
             {
-                //std::cout << "Axon " << axon.id << " failed, cannot shrink !" << endl;
-                axon.destroy();
-                finished = 1;
-                stuck_radii.push_back(axon.radius);
+                if (axon.growth_attempts < 50){
+                    Vector3d Q, D;
+                    get_begin_end_point(Q, D);
+                    axon.keep_one_sphere(Q, D);
+                    growth.axon_to_grow = axon;
+                    finished = 0;
+                    can_grow = false;
+                    //std::cout << "Retry Axon " << axon.id << " , number of attempts :"<<axon.growth_attempts << " new position :" << axon.begin  << endl;
+                   
+                }
+                else{
+                    std::cout << "Axon " << axon.id << " failed, cannot shrink !" << endl;
+                    axon.destroy();
+                    finished = 1;
+                    can_grow = false;
+                    stuck_radii_.push_back(axon.radius);
+                }
             }
             else{
                 // successfully placed a sphere after shrinking it

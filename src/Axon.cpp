@@ -16,17 +16,26 @@ Axon::Axon(const Axon &ax)
     begin = ax.begin;
     end = ax.end;
     Box = ax.Box;
+    growth_attempts = ax.growth_attempts;
 
 };
 
-
+void Axon::keep_one_sphere(Eigen::Vector3d begin_, Eigen::Vector3d end_){
+    Sphere s (0, id, begin_, radius);
+    spheres.clear();
+    Box.clear();
+    add_sphere(s);
+    growth_attempts += 1;
+    this->begin = begin_;
+    this->end = end_ ;
+}
 
 void Axon::keep_only_first_sphere(){
     Sphere s = spheres[0];
     spheres.clear();
     Box.clear();
     add_sphere(s);
-
+    growth_attempts += 1;
 }
 
 void Axon::destroy(){

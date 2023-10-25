@@ -26,7 +26,7 @@ public:
     Eigen::Vector3d begin;                          /*!< position of first sphere */
     Eigen::Vector3d end;                            /*!< target position to grow towards */
     std::vector<Eigen::Vector2d> Box;               /*!< Box with <min, max> for each axis (x,y,z) */
-
+    int growth_attempts;
 
     /*!
      *  \brief Default constructor. Does nothing
@@ -47,9 +47,12 @@ public:
         radius = radius_;
         spheres.clear();
         Box.clear();
+        growth_attempts = 0;
     }
 
     Axon(Axon const &ax);
+
+    void keep_one_sphere(Eigen::Vector3d begin_, Eigen::Vector3d end_);
     /*!
      *  \param sphere_to_add sphere to add
      *  \brief Adds sphere to axon
