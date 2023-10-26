@@ -263,7 +263,7 @@ public:
      *  \param new_axons Newly placed axons.
      *  \brief Places an axon in voxel.
      */
-    void PlaceAxon(double radius, bool regrowth, int i, int &tries, bool &next, Eigen::Vector3d Q, Eigen::Vector3d D, std::vector<Axon> &all_axons, std::vector<Axon> &new_axons);
+    void PlaceAxon(double radius_for_axon, double radius_for_first_sphere, bool regrowth, int i, int &tries, bool &next, Eigen::Vector3d Q, Eigen::Vector3d D, std::vector<Axon> &all_axons, std::vector<Axon> &new_axons);
 
     /*!
      *  \param out Output stream to write SWC data.

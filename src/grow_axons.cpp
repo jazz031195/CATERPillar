@@ -144,59 +144,6 @@ std::tuple<double, double> phi_theta_to_target(Eigen::Vector3d new_pos, Eigen::V
     return std::make_tuple(phi_to_target, theta_to_target);
 }
 
-/*
-bool Growth::isSphereColliding(Sphere sph)
-{
-
-    Vector3d position = sph.center;
-
-    for (unsigned i = 0; i < env_axons.size(); i++)
-    {
-        if (sph.ax_id != env_axons[i].id)
-        {
-
-            double distance_to_be_inside = sph.radius;
-            bool isinside = env_axons[i].isPosInsideAxon(position, distance_to_be_inside, max_radius);
-
-            if (isinside)
-            {
-                return true;
-                break;
-            }
-        }
-    }
-    return false;
-}
-*/
-
-/*
-bool Growth::isSphereColliding(Sphere sph) {
-
-    int num_threads;
-    if (env_axons.size() < thread_capacity){
-        num_threads = env_axons.size(); // Set the desired number of threads
-    }
-    else{
-        num_threads = thread_capacity;
-    }
-    std::vector<std::future<bool>> futures;
-
-    for (unsigned i = 0; i < env_axons.size(); ++i) {
-        futures.emplace_back(std::async(std::launch::async, [&](unsigned index) {
-            return isSphereCollidingwithAxon(env_axons[index], sph);
-        }, i));
-    }
-
-    for (auto& future : futures) {
-        if (future.get()) {
-            return true;
-        }
-    }
-
-    return false;
-}
-*/
-
 
 bool Growth::isSphereColliding(Sphere sph){
 
