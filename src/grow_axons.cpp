@@ -9,7 +9,7 @@ using namespace std;
 using namespace Eigen;
 using namespace std::chrono;
 
-Growth::Growth(Axon& axon_to_grow_, std::vector<Axon> axons_, Eigen::Vector3d voxel_size_, bool tortuous_, double max_radius_, int grow_straight_)
+Growth::Growth(Axon& axon_to_grow_, std::vector<Axon> axons_, Eigen::Vector3d voxel_size_, bool tortuous_, double max_radius_, double std_dev_)
 {
 
     axon_to_grow = axon_to_grow_;
@@ -17,8 +17,8 @@ Growth::Growth(Axon& axon_to_grow_, std::vector<Axon> axons_, Eigen::Vector3d vo
     tortuous = tortuous_;
     finished = false;
     max_radius = max_radius_;
-    grow_straight = grow_straight_;
     axons = axons_;
+    std_dev = std_dev_;
 
     if (!tortuous)
     {
@@ -109,37 +109,39 @@ std::tuple<double, double> phi_theta_to_target(Eigen::Vector3d new_pos, Eigen::V
     double phi_to_target;
     double theta_to_target;
 
-    // theta is angle between (1,0) and (x,y)
+    // theta is angle between (1,0) and (z,y)
     // varies between 0 and 2pi
-    theta_to_target = atan2(vector_to_target[1], vector_to_target[0]);
+    theta_to_target = atan2(vector_to_target[1], vector_to_target[2]);
     if (theta_to_target < 0)
     {
         theta_to_target += 2 * M_PI;
     }
 
-    // phi is angle between (0,0,1) and (x,y,z)
+    // phi is angle between (1,0,0) and (x,y,z)
     // varies between 0 and pi
-    if (vector_to_target[2] == 0)
+    if (vector_to_target[0] == 0)
     {
-        phi_to_target = M_PI / 2;
+        phi_to_target = M_PI/2;
     }
-    else if (vector_to_target == Eigen::Vector3d({0, 0, -1}))
+    else if (vector_to_target == Eigen::Vector3d({-1, 0, 0}))
     {
         phi_to_target = M_PI;
     }
-    else if (vector_to_target == Eigen::Vector3d({0, 0, 1}))
+    else if (vector_to_target == Eigen::Vector3d({1, 0, 0}))
     {
         phi_to_target = 0;
     }
     else
     {
         // varies between -pi/2 and pi/2
-        phi_to_target = atan((sqrt(vector_to_target[0] * vector_to_target[0] + vector_to_target[1] * vector_to_target[1])) / vector_to_target[2]);
+        phi_to_target = atan((sqrt(vector_to_target[2] * vector_to_target[2] + vector_to_target[1] * vector_to_target[1])) / vector_to_target[0]);
         if (phi_to_target < 0)
         {
             phi_to_target += M_PI;
         }
     }
+
+    //cout << "phi to target :" << phi_to_target/M_PI << " pi" << endl;
 
     return std::make_tuple(phi_to_target, theta_to_target);
 }
@@ -170,7 +172,7 @@ void Growth::find_next_center(Sphere &s,  double dist_)
 
     // phi and theta angles in spherical coordinates
     // to update position with
-    double phi, theta;
+    double phi, theta, cos_phi, sin_phi;
     // phi and theta angles in spherical coordinates
     // that links the current position to the target position
     double phi_to_target, theta_to_target;
@@ -210,25 +212,48 @@ void Growth::find_next_center(Sphere &s,  double dist_)
     {
         phi = phi_to_target;
         theta = theta_to_target;
+
+        cos_phi = cos(phi);
+        sin_phi = sqrt(1-cos_phi*cos_phi);
     }
     // if tortuous, phi and theta comme from distribution
     else
     {
         bool inside_voxel = false;
         int restart = 0;
+        std::normal_distribution<float> theta_dist(theta_to_target / (2*M_PI), std_dev);
+        theta = theta_dist(gen)*2*M_PI;
+        if(theta > 2*M_PI ){
+            theta = 2*M_PI;
+        }
+        else if (theta < -2*M_PI){
+            theta = -2*M_PI;
+        }
 
-        std::normal_distribution<float> phi_dist(phi_to_target / M_PI, 0.12);
-        std::normal_distribution<float> theta_dist(theta_to_target / M_PI, 0.12);
+        double cos_phi_to_target = cos(phi_to_target);
+        std::normal_distribution<float> cos_phi_dist(cos_phi_to_target, std_dev*2*M_PI);
             
+        cos_phi = cos_phi_dist(gen);
 
-        phi = phi_dist(gen) * M_PI;
-        theta = theta_dist(gen) * M_PI;
+        if (cos_phi > 1 ){
+            cos_phi = 1;
+        }
+        else if (cos_phi < -1){
+            cos_phi = -1;
+        }
+        sin_phi = sqrt(1-cos_phi*cos_phi);
+
+        //cout << "sin_phi :" << sin_phi << endl;
+        
 
     }
     // spherical coordinates to cartesian
-    delta_x = dist_ * cos(theta) * sin(phi);
-    delta_y = dist_ * sin(theta) * sin(phi);
-    delta_z = dist_ * cos(phi);
+    delta_z = dist_ * abs(cos(theta) * sin_phi);
+    delta_y = dist_ * sin(theta) * sin_phi;
+    delta_x = dist_ * cos_phi;
+
+    //cout << "delta_z : " << delta_z << endl;
+  
 
     // update new_pos
     new_pos = curr_pos;
@@ -253,7 +278,7 @@ void Growth::find_next_center_straight(double distance, Sphere &s)
 }
 
 
-bool Growth::GrowAxon(double radius_, bool create_sphere)
+bool Growth::GrowAxon(double radius_, bool create_sphere, int grow_straight)
 {
 
     // if sphere collides with environment

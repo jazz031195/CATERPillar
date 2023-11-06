@@ -20,26 +20,26 @@ using namespace std;
 class Axon : public Obstacle
 {
 public:
+
+
     int id;                                         /*!< ID of axon */
-    std::vector<Sphere> spheres;            /*!< spheres in axon */
+    std::vector<Sphere> spheres;                    /*!< spheres in axon */
     double radius;                                  /*!< radius of axon */
     Eigen::Vector3d begin;                          /*!< position of first sphere */
     Eigen::Vector3d end;                            /*!< target position to grow towards */
     std::vector<Eigen::Vector2d> Box;               /*!< Box with <min, max> for each axis (x,y,z) */
-    int growth_attempts;
+    int growth_attempts;                            /*!< Number of attempts to grow axon in a row*/
+    double beading_amplitude;                       /*!< Amplitude of beading */
+
 
     /*!
      *  \brief Default constructor. Does nothing
      */
-    Axon(){};
+    Axon();
 
-    ~Axon(){
-        spheres.clear();
-        Box.clear();
-    };
+    ~Axon();
 
-
-    Axon(int id_, Eigen::Vector3d begin_, Eigen::Vector3d end_, double radius_)
+    Axon(int id_, Eigen::Vector3d begin_, Eigen::Vector3d end_, double radius_, double beading_amplitude_)
     {
         id = id_;
         begin = begin_;
@@ -48,6 +48,7 @@ public:
         spheres.clear();
         Box.clear();
         growth_attempts = 0;
+        beading_amplitude = beading_amplitude_;
     }
 
     Axon(Axon const &ax);

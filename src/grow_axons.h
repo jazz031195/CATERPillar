@@ -22,12 +22,12 @@ public:
     bool finished;                          /* True if the axon has finished growing */ 
     double max_radius;                      /* Maximum radius */ 
     bool grow_straight;                     /* True if the next sphere should grow straight */
-
+    double std_dev;                         /* Standard deviation for gaussian distribution in generation of directions to grow in */ 
 
     Growth(){};
     ~Growth(){};
 
-    Growth(Axon&, std::vector<Axon>,  Eigen::Vector3d, bool, double, int);
+    Growth(Axon&, std::vector<Axon>,  Eigen::Vector3d, bool, double, double);
 
     /*!
      *  \brief Initialises environment axons that are close by
@@ -39,7 +39,7 @@ public:
      *  \param create_sphere Whether to add the sphere to the list of spheres or not
      *  \brief Grows axon by adding another sphere to it
      */
-    bool GrowAxon(double radius, bool create_sphere);
+    bool GrowAxon(double radius, bool create_sphere, int grow_straight);
     /*!
      *  \param dist_ distance to add the sphere to (from last sphere)
      *  \param s sphere to add

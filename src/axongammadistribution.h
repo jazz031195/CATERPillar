@@ -54,8 +54,10 @@ public:
 
     std::vector<GLfloat> colours;       /*!< List of colors for the visualization of axons */
 
-    double variation_perc;              /*!< For beading: percentage of variation between the maximum radius and minimum radius in each axon. If set to 1, there is no "beading" */
-
+    double beading_variation;              /*!< For beading: percentage of variation between the maximum radius and minimum radius in each axon. If set to 1, there is no "beading" */
+    double std_dev;                     /*< Standard deviation for gaussian distribution in generation of directions to grow in */ 
+    int ondulation_factor;              /*!< axon ondulation factor : the number of spheres during whoch the axon grows straight before picking a direction from gaussian distribution  */
+    double beading_frequency;           /*!< Frequency for the beading  */
     /*!
      *  \brief Initialize everything.
      */
@@ -64,8 +66,43 @@ public:
     /*!
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(double, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int, double);
+    AxonGammaDistribution(double, int &, double, double, Eigen::Vector3d &, Eigen::Vector3d &, double, bool, bool, int, double, double, int, double);
     
+    /*!
+     *  \param window Window to visualize growing axons
+     *  \param stuck_radii_ radii of axons that got stuck
+     *  \param radii_ radii of all axons to grow
+     *  \param number_axons_to_grow number of axons to grow
+     *  \param first_index_batch first axon in radii_ to grow 
+     *  \param num_subsets_ List of batches with number of axons to grow in each 
+     *  \param regrowth If true, the axons are regrowing after failing in previous batches
+     *  \param growing_axons List of axons that have grown
+     *  \param other_parameters For visualization purposes
+     *  \brief Draw the batches of growing axons
+     */
+    void drawBatch(sf::Window &window, int number_axons_to_grow, std::vector<double> &radii_, std::vector<double> &stuck_radii_, bool regrowth, int first_index_batch, std::vector<Axon> &growing_axons, float &zoomLevel,bool &isDragging, sf::Vector2i &lastMousePos, bool &isRightDragging, sf::Vector2i &lastRightMousePos, sf::Vector2i &currentMousePos, sf::Vector2i &mouseDelta, sf::Vector2i &prevousDisplacement, sf::Vector2i &rightMouseDelta, sf::Vector2i &prevousRotation, float &rotationFactor, float &displacementFactor);
+    /*!
+     *  \param window Window to visualize growing axons
+     *  \param ax_list List of axons
+     *  \param num_subsets_ List of batches with number of axons to grow in each 
+     *  \param regrowth If true, the axons are regrowing after failing in previous batches
+     *  \param other_parameters For visualization purposes
+     *  \brief Draw the batches of growing axons
+     */
+    void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> radii_, std::vector<int> num_subsets_, float zoomLevel, bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor, bool regrowth);
+    
+     /*!
+     *  \param ax_list List of axons to draw.
+     *  \brief Draws sequential axon growth.
+     */
+    void drawWorld(std::vector<Axon> ax_list);
+
+    /*!
+     *  \brief Updates the window for visualization with respect to zooming, dragging, etc.
+     */
+    void update_window(sf::Window &window, float zoomLevel, sf::Vector2i prevousDisplacement, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor);
+
+
     /*!
      *  \param new_axons Vector of axons to use
      *  \brief Calculate the intracellular area / total area while using only the first sphere of each axon
@@ -128,15 +165,6 @@ public:
      */
     void setBatches(int num_axons, std::vector<int> &num_subsets);
 
-    /*!
-     *  \param window Window to visualize growing axons
-     *  \param ax_list List of axons
-     *  \param num_subsets_ List of batches with number of axons to grow in each 
-     *  \param regrowth If true, the axons are regrowing after failing in previous batches
-     *  \param other_parameters For visualization purposes
-     *  \brief Draw the batches of growing axons
-     */
-    void drawBatches(sf::Window &window, std::vector<Axon> &ax_list, std::vector<double> radii_, std::vector<int> num_subsets_, float zoomLevel, bool isDragging, sf::Vector2i lastMousePos, bool isRightDragging, sf::Vector2i lastRightMousePos, sf::Vector2i currentMousePos, sf::Vector2i mouseDelta, sf::Vector2i prevousDisplacement, sf::Vector2i rightMouseDelta, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor, bool regrowth);
     
     /*!
      *  \param window Window to visualize growing axons
@@ -151,36 +179,13 @@ public:
      */
 
     void growBatch(int number_axons_to_grow, std::vector<double> &radii_, std::vector<double> &stuck_radii_, bool regrowth, int first_index_batch, std::vector<Axon> &growing_axons);
-    /*!
-     *  \param window Window to visualize growing axons
-     *  \param stuck_radii_ radii of axons that got stuck
-     *  \param radii_ radii of all axons to grow
-     *  \param number_axons_to_grow number of axons to grow
-     *  \param first_index_batch first axon in radii_ to grow 
-     *  \param num_subsets_ List of batches with number of axons to grow in each 
-     *  \param regrowth If true, the axons are regrowing after failing in previous batches
-     *  \param growing_axons List of axons that have grown
-     *  \param other_parameters For visualization purposes
-     *  \brief Draw the batches of growing axons
-     */
-    void drawBatch(sf::Window &window, int number_axons_to_grow, std::vector<double> &radii_, std::vector<double> &stuck_radii_, bool regrowth, int first_index_batch, std::vector<Axon> &growing_axons, float &zoomLevel,bool &isDragging, sf::Vector2i &lastMousePos, bool &isRightDragging, sf::Vector2i &lastRightMousePos, sf::Vector2i &currentMousePos, sf::Vector2i &mouseDelta, sf::Vector2i &prevousDisplacement, sf::Vector2i &rightMouseDelta, sf::Vector2i &prevousRotation, float &rotationFactor, float &displacementFactor);
-
-     /*!
-     *  \param ax_list List of axons to draw.
-     *  \brief Draws sequential axon growth.
-     */
-    void drawWorld(std::vector<Axon> ax_list);
-
+    
     /*!
      *  \brief Creates the entire substrate
      */
     void createSubstrate();
 
-    /*!
-     *  \brief Updates the window for visualization with respect to zooming, dragging, etc.
-     */
-    void update_window(sf::Window &window, float zoomLevel, sf::Vector2i prevousDisplacement, sf::Vector2i prevousRotation, float rotationFactor, float displacementFactor);
-
+    
     /*!
      *  \param growth Growth object with knowledge of the environment
      *  \param radius_to_shrink Radius to shrink
@@ -256,14 +261,12 @@ public:
      *  \param regrowth If true, the axons are regrowing after failing in previous batches.
      *  \param i Index value.
      *  \param tries Number of tries before axon is placed.
-     *  \param next If true, the axon was successfully placed and we can place the next one.
      *  \param Q Starting point of axon.
      *  \param D Ending point of axon.
-     *  \param all_axons All axons placed.
      *  \param new_axons Newly placed axons.
      *  \brief Places an axon in voxel.
      */
-    void PlaceAxon(double radius_for_axon, double radius_for_first_sphere, bool regrowth, int i, int &tries, bool &next, Eigen::Vector3d Q, Eigen::Vector3d D, std::vector<Axon> &all_axons, std::vector<Axon> &new_axons);
+    bool PlaceAxon(double radius_for_axon, double radius_for_first_sphere, bool regrowth, int i, int &tries, Eigen::Vector3d Q, Eigen::Vector3d D, std::vector<Axon> &new_axons);
 
     /*!
      *  \param out Output stream to write SWC data.

@@ -33,8 +33,9 @@ int main(int argn, char* argv[])
     std::vector<double> capacities = parameters.capacities;
     std::vector<double> vox_sizes = parameters.vox_sizes;
     std::vector<double> icvfs = parameters.icvf;
+    cout << icvfs[0] << endl;
     std::vector<double> spheres_overlap_factors = parameters.spheres_overlap_factors;
-    int beading_variation = parameters.beading_variation;
+    double beading_variation = parameters.beading_variation;
     std::string directory = parameters.data_directory;
     bool tortuous = parameters.tortuous;
     bool draw = parameters.draw;
@@ -42,6 +43,9 @@ int main(int argn, char* argv[])
     double beta = parameters.beta;
     int regrow_thr = parameters.regrow_thr;
     double min_radius = parameters.min_rad;
+    double std_dev = parameters.std_dev;
+    int ondulation_factor = parameters.ondulation_factor;
+    double beading_frequency = parameters.beading_frequency;
 
     cout << icvfs.size() << endl;
     for (int icvf_index = 0; icvf_index < icvfs.size() ; icvf_index++){
@@ -61,13 +65,14 @@ int main(int argn, char* argv[])
 
                     double icvf = icvfs[icvf_index];
 
+
                     // distance between spheres = radius /spheres_overlap_factor
                     //std::vector<int> spheres_overlap_factors = {2};
 
                     auto startTime = std::chrono::high_resolution_clock::now();
 
                     // create distribution of axons
-                    AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(icvf, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr, beading_variation);
+                    AxonGammaDistribution *AxonDistribution = new AxonGammaDistribution(icvf, axon_capacity, alpha, beta, min_l, max_l, min_radius, tortuous, draw, regrow_thr, beading_variation, std_dev, ondulation_factor, beading_frequency);
 
                     cout << "AxonDistribution created" << endl;
 

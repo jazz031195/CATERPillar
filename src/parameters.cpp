@@ -96,6 +96,15 @@ void Parameters::readConfFile(std::string conf_file_path)
         else if (str_dist(tmp,"beta") <= 2){
             in >> beta;
         }
+        else if (str_dist(tmp,"std_dev") <= 2){
+            in >> std_dev;
+        }
+        else if (str_dist(tmp,"ondulation_factor") <= 2){
+            in >> ondulation_factor;
+        }
+        else if (str_dist(tmp,"beading_frequency") <= 2){
+            in >> beading_frequency;
+        }
         else if (str_dist(tmp,"regrow_thr") <= 2){
             in >> regrow_thr;
         }
@@ -146,7 +155,9 @@ void Parameters::readConfFile(std::string conf_file_path)
     in.close();
 
     cout << "*********** Finished Reading Configuration File ***********" << endl;
-
+    cout << "icvf :" << icvf[0] << endl;
+    cout << "beading_variation :" << beading_variation << endl;
+    cout << "beading_frequency :" << beading_frequency << endl;
     return;
 }
 
