@@ -1,38 +1,46 @@
-#ifndef THREADS_H
-#define THREADS_H
+#ifndef THREAD_POOL_H
+#define THREAD_POOL_H
 
-#include "Eigen/Core"
-#include <iostream>
 #include <thread>
+#include <vector>
 #include <queue>
 #include <mutex>
 #include <condition_variable>
 #include <functional>
-#include <vector>
+#include <future>
 
-// ThreadPool class declaration
 class ThreadPool {
-public:
-    // Constructor and destructor
-    ThreadPool(size_t num_threads = std::thread::hardware_concurrency());
-    ~ThreadPool();
-
-    // Function to enqueue a task
-    void enqueueTask(std::function<void()> task);
-
 private:
-    // Worker threads
-    std::vector<std::thread> threads_;
+    int m_threads;                                  // Number of threads
+    std::vector<std::thread> threads;              // Vector to hold threads
+    std::queue<std::function<void()>> tasks;       // Task queue
+    std::mutex mtx;                                // Mutex for synchronization
+    std::condition_variable cv;                    // Condition variable
+    bool stop;                                     // Stop flag
 
-    // Task queue
-    std::queue<std::function<void()>> tasks_;
+public:
+    explicit ThreadPool(int numThreads);           // Constructor
+    ~ThreadPool();                                 // Destructor
 
-    // Synchronization primitives
-    std::mutex queue_mutex_;
-    std::condition_variable cv_;
+    // Template function to execute a task
+    template<class F, class... Args>
+    auto enqueueTask(F&& f, Args&&... args) -> std::future<decltype(f(args...))> {
+        using return_type = decltype(f(args...));
 
-    // Stop flag
-    bool stop_ = false;
+        auto task = std::make_shared<std::packaged_task<return_type()>>(
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+        );
+
+        std::future<return_type> res = task->get_future();
+
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            tasks.emplace([task]() { (*task)(); });
+        }
+
+        cv.notify_one();
+        return res;
+    }
 };
 
-#endif // THREADS_H
+#endif

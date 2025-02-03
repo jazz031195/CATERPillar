@@ -18,6 +18,9 @@ from multiprocessing import Pool
 import copy
 from scipy.signal import find_peaks
 
+
+
+
 def read_swc_file(file_path):
     columns = ["ax_id","sph_id", "branch_id", "type", "x", "y", "z", "Rin","Rout", "P"]
     df = pd.read_csv(file_path, sep=' ', names=columns)
@@ -139,8 +142,7 @@ def create_subplots(file_path):
     axons = df.loc[df["type"] == "axon"]
     # add column "myelinatin" with true if Rin = Rout, otherwise false
     axons["myelinated"] = axons["Rin"] != axons["Rout"]
-    axons= axons.loc[axons["myelinated"] == False]
-    print(axons)
+    #axons= axons.loc[axons["myelinated"] == False]
     # calculate covariance of Rout of each axon
     cov_out_mean = axons[["Outer Diameter", "ax_id"]].groupby(by="ax_id").mean()
     cov_out_std = axons[["Outer Diameter", "ax_id"]].groupby(by="ax_id").std()
@@ -235,7 +237,7 @@ def tortuosity(df):
     nbr_axons = int(df.iloc[len(df)-1 ]["ax_id"])
     tortuosities = []
     radii = []
-    for axon in range(100):
+    for axon in range(nbr_axons):
  
         df_ = df.loc[df["ax_id"]== axon].reset_index()
         if(len(df_)== 0):
@@ -261,6 +263,8 @@ def tortuosity(df):
                                         (df_.at[0, 'y'] - df_.at[len(df_)-1, 'y'])**2 +
                                         (df_.at[0, 'z'] - df_.at[len(df_)-1, 'z'])**2)
 
+        if first_last_distance == 0:
+            continue
         # Calculate tortuosity
         tortuosity = total_length / first_last_distance
         tortuosities.append(float(tortuosity))
@@ -322,88 +326,81 @@ def get_random_element_list(list, seed = 0):
     random.seed(seed)
     return random.choice(list)
 
-def draw_axons_with_shading(file_path, glial_only=False):
-    N = 20  # Size scaling factor
-    colors = mcolors.CSS4_COLORS  # Use CSS colors for better compatibility
+def draw_cells(file_path, plot_type="all", axon_indices=None, astrocyte_indices=None):
+    """
+    Draw structures (axons or astrocytes) in 3D with customizable options.
 
-    # Read and preprocess data
+    Parameters:
+    - file_path: str, path to the data file.
+    - plot_type: str, "all" to plot everything, "axons" to plot only axons, 
+                 or "astrocytes" to plot only astrocytes.
+    - axon_indices: list of int, indices of specific axons to plot. If None, all axons are plotted.
+    """
+    N = 10  # Size scaling factor
+    colors = mcolors.CSS4_COLORS
+
+    # Step 1: Read data
     df = read_swc_file(file_path)
 
-    # Color assignment with a fallback in case of errors
+    # Step 2: Assign colors to axons
     df["color"] = df["ax_id"].apply(lambda x: get_random_element(colors, seed=x)[1])
 
-    # Filter for axons in a specific region
-    df_ = df.loc[df["type"] == "axon"]
-    df_ = df_.groupby("ax_id").first().reset_index()
-    ax_ids = df_["ax_id"].unique()
+    # Step 3: Prepare data for plotting
+    if plot_type == "axons" or (plot_type == "all" and axon_indices):
+        df = df[df["type"] == "axon"]
+        if axon_indices is not None:
+            ax_ids = df["ax_id"].unique()
+            axon_indices = [ax_ids[i] for i in axon_indices]
+            df = df[df["ax_id"].isin(axon_indices)]
+    elif plot_type == "astrocytes":
+        df = df[df["type"] != "axon"]
+        if astrocyte_indices is not None:
+            ax_ids = df["ax_id"].unique()
+            astrocyte_indices = [ax_ids[i] for i in astrocyte_indices]
+            df = df[df["ax_id"].isin(astrocyte_indices)]
+    elif plot_type == "all":
+        pass
+    else:
+        raise ValueError("Invalid plot_type. Choose 'all', 'axons', or 'astrocytes'.")
 
-    # Filter axons by selected ax_ids
-    df_axons = df.loc[df["type"] == "axon"]
-    df_axons = df_axons.loc[df_axons["ax_id"].isin(ax_ids)]
-
-    # Glial cells selection
-    df_glial = df.loc[df["type"] != "axon"]
-    df = pd.concat([df_axons, df_glial])
-
-
-    # Calculate distance from (0, 0, 0) for sorting purposes
+    if (len(df) == 0):
+        raise ValueError("No data to plot.")
+    # Step 4: Clean and sort data
     df["distance_to_point"] = np.linalg.norm(df[["x", "y", "z"]], axis=1)
     df = df.sort_values(by="distance_to_point")
-
-    if glial_only:
-        df = df.loc[df["type"] != "axon"]
-
-
-    # Ensure marker size is valid
-    df["Rout"] = df["Rout"].fillna(0)  # Replace NaN or missing sizes with a default value
- 
-    # Create a 3D scatter plot
+    df["Rout"] = df["Rout"].fillna(0)  # Handle missing sizes
+    print(df)
+    # Step 5: Create 3D scatter plot
     scatter = go.Scatter3d(
         x=df["x"],
         y=df["y"],
         z=df["z"],
         mode="markers",
-        name="Axons",
+        name="Structures",
         marker=dict(
             sizemode="diameter",
-            size=df["Rout"] * N,  # Scale the marker size
-            color=df["color"],  # Marker color
-            opacity=0.85,  # Slightly lower opacity for a subtle shading effect
-            line = dict(
+            size=df["Rout"] * N,
             color=df["color"],
-            width=0
-            )
+            opacity=0.85,
+            line=dict(color=df["color"], width=0)
         )
-        
     )
 
-    # Layout configuration with a black background
+    # Step 6: Define layout
     layout = go.Layout(
         scene=dict(
-            xaxis=dict(title='X [µm]'),
-            yaxis=dict(title='Y [µm]'),
-            zaxis=dict(title='Z [µm]'),
-            aspectmode="auto"  # Ensure the aspect ratio is set correctly
+            xaxis=dict(title='X [µm]', showbackground=False, showgrid=False, showline=False, showticklabels=False),
+            yaxis=dict(title='Y [µm]', showbackground=False, showgrid=False, showline=False, showticklabels=False),
+            zaxis=dict(title='Z [µm]', showbackground=False, showgrid=False, showline=False, showticklabels=False),
+            aspectmode="auto"
         ),
-        paper_bgcolor="black",  # Black background outside of plot
-        plot_bgcolor="black",  # Black background for the plot itself
+        paper_bgcolor="black",
+        plot_bgcolor="black",
         showlegend=False
     )
 
-    # Create the figure
+    # Step 7: Show the plot
     fig = go.Figure(data=[scatter], layout=layout)
-
-    # Hide grid and axis labels, make background black
-    fig.update_layout(
-        scene=dict(
-            xaxis=dict(showbackground=False, showgrid=False, showline=False, showticklabels=False, title=''),
-            yaxis=dict(showbackground=False, showgrid=False, showline=False, showticklabels=False, title=''),
-            zaxis=dict(showbackground=False, showgrid=False, showline=False, showticklabels=False, title=''),
-        ),
-        showlegend=False
-    )
-
-    # Show the figure
     fig.show()
 
 
@@ -993,16 +990,16 @@ if __name__ == "__main__":
 
     file_path_GM= "/home/localadmin/Documents/CATERPillar/growth_vox_50_factor_4_0.swc"
     file_path_WM = "/home/localadmin/Documents/CATERPillar/growth_vox_50_factor_4_0.swc"
-    file_path = "/home/localadmin/Documents/CATERPillar/maximum_packing/voxel2.swc"
-     #draw_spheres(file_path, 30, 8)
+    file_path = "/home/localadmin/Documents/CATERPillar/test_0.03.swc"
+    # draw_spheres(file_path, 50, 49)
     #tortuosity_plot("/home/localadmin/Documents/CATERPillar/tortuosities")
     # draw_one_glial_pyvista(file_path_GM, chosen_id = 1)
     #draw_spheres_pyvista(file_path, axons = True ,chosen_id = 1)
     #create_subplots(file_path)
     # create_subplots(file_path)
     # draw_axons_with_shading(file_path, glial_only = True)
-    draw_axons_with_shading(file_path, glial_only = False)
-    #draw_spheres(file_path, 50, 32.5)
+    draw_cells(file_path, plot_type="astrocytes", astrocyte_indices=[0])
+    # draw_spheres(file_path, 150, 30)
     #diameter_variation(file_path, num_axons = 10, max_z = 15)
     #mean_dist_between_maxima(file_path)
     

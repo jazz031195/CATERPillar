@@ -35,6 +35,8 @@ public:
     double volume;                                  /*!< Volume of axon */
     double volume_myelin;                           /*!< Volume of myelin */
     int growth_axis;                                /*!< Axis to grow along */
+    double angle;
+    bool outside_voxel;
 
 
     /*!
@@ -44,7 +46,7 @@ public:
 
     ~Axon();
 
-    Axon(const int &id_, const Eigen::Vector3d &begin_, const Eigen::Vector3d &end_, const double &radius_, const double &beading_amplitude_, const bool &myelin_sheath_)
+    Axon(const int &id_, const Eigen::Vector3d &begin_, const Eigen::Vector3d &end_, const double &radius_, const double &beading_amplitude_, const bool &myelin_sheath_, const double& angle_, const bool &outside_voxel_ = false)
     {
         id = id_;
         begin = begin_;
@@ -62,6 +64,9 @@ public:
         volume_myelin = 0.0;
         Eigen::Vector3d growth_direction = end-begin;
         double maxValue = growth_direction.maxCoeff(&growth_axis);
+        growth_axis = growth_axis;
+        angle = angle_;
+        outside_voxel = outside_voxel_;
 
     };
 
@@ -82,6 +87,8 @@ public:
             volume = ax.volume;
             volume_myelin = ax.volume_myelin;
             growth_axis = ax.growth_axis;
+            angle = ax.angle;
+            outside_voxel = ax.outside_voxel;
 
         }
         return *this;

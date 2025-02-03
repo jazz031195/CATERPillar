@@ -44,7 +44,6 @@ public:
     double target_oligodendrocytes_soma_icvf;        /*!< oligodendrocytes Intracellular Compartment Volume Fraction */
     double target_oligodendrocytes_branches_icvf;    /*!< oligodendrocytes Intracellular Compartment Volume Fraction */
     double total_volume; /*!< Total volume of the voxel */
-    double extended_volume; /*!< Extended volume of the voxel */
     double target_axons_icvf;        
 
     double axons_w_myelin_icvf;        /*!< Intracellular Compartment Volume Fraction of axons with myelin */
@@ -69,8 +68,7 @@ public:
 
     Eigen::Vector3d min_limits;         /*!< Voxel min limits (if any) (bottom left corner) */
     Eigen::Vector3d max_limits;         /*!< Voxel max limits (if any) */
-    Eigen::Vector3d extended_min_limits;
-    Eigen::Vector3d extended_max_limits;
+
 
     double min_radius;                  /*!< Minimum radius value of all axons */
     double max_radius;                  /*!< Maximum radius value of all axons */
@@ -144,7 +142,7 @@ public:
      *  \param D Ending point of axon
      *  \brief Gets a position in the plane for the starting point of an axon
      */
-    void get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D, const double &angle);
+    bool get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D, double &angle);
 
     /*!
      *  \param num_axon Number of axons
@@ -202,7 +200,7 @@ public:
         \param new_axons Axons created in batch
      *  \brief Creates a batch of axons by creating their first sphere on a plane
      */
-    void createBatch(const std::vector<double> &radii_, const std::vector<int> &indices, const int &num_subset, const int &first_index_batch, std::vector<Axon> &new_axons, const std::vector<bool> &has_myelin, const std::vector<double> &angles);
+    void createBatch(const std::vector<double> &radii_, const std::vector<int> &indices, const int &num_subset, const int &first_index_batch, std::vector<Axon> &new_axons, const std::vector<bool> &has_myelin, std::vector<double> &angles);
     
     /*!
      *  \param growing_axons Axons that have grown in batch
@@ -234,7 +232,7 @@ public:
      *  \param new_axons Newly placed axons.
      *  \brief Places an axon in voxel.
      */
-    bool PlaceAxon(const int &axon_id, const double &radius_for_axon, const Eigen::Vector3d &Q, const Eigen::Vector3d &D, std::vector<Axon> &new_axons, const bool &has_myelin, const double &angle);
+    bool PlaceAxon(const int &axon_id, const double &radius_for_axon, const Eigen::Vector3d &Q, const Eigen::Vector3d &D, std::vector<Axon> &new_axons, const bool &has_myelin, const double &angle, const bool &outside_voxel);
 
     /*!
      *  \param out Output stream to write SWC data.
@@ -311,7 +309,7 @@ public:
      *  \brief Swell a sphere if possible by increasing its radius by 1%
     */
 
-    void SwellSphere(Sphere &sph, const double &percentage);
+    bool SwellSphere(Sphere &sph, const double &percentage);
 
     /*!
      *  \brief Finds a random point on the opposite plane based on the current point and cosPhiSquared (c2)
@@ -319,7 +317,7 @@ public:
         \param y1 y coordinate of the point
         \param L distance between the two planes
      */
-    Eigen::Vector3d randomPointOnPlane(const Eigen::Vector3d &begin, const Eigen::Vector3d &end, const int &axis1, const int &axis2, const int &axis3, const double &angle);
+    Eigen::Vector3d randomPointOnPlane(const Eigen::Vector3d &begin, const Eigen::Vector3d &end, const int &axis1, const int &axis2, const int &axis3, double &angle, bool &outside_voxel);
 
     double findInnerRadius(const double &outerRadius);
 
@@ -339,7 +337,10 @@ public:
     double draw_angle(double kappa);
     double c2toKappa(double c2, double tol, double kappa_min, double kappa_max);
     std::vector<double> generate_angles(const int &num_samples);
-
+    void processBatchWithThreadPool(int nbr_threads, std::vector<Axon>& axons_to_grow, std::vector<double>& stuck_radii, std::vector<int>& stuck_indices);
+    bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
+    bool pushAxonSpheres(Axon &axon, const Sphere &sph);
+    bool PushOtherAxons(const Sphere &sph);
 };
 
 

@@ -1,16 +1,16 @@
-Duration 18
-Num_axons 192
+Duration 905
+Num_axons 66
 Voxel 50
-Axon icvf 0.437148
-Axon without myelin icvf 0.437148
+Axon icvf 0.129791
+Axon without myelin icvf 0.129791
 Axon with myelin icvf 0
 Myelin icvf 0
-Astrocyte icvf soma 0
-Astrocyte icvf branches 0
+Astrocyte icvf soma 0.0100254
+Astrocyte icvf branches 0.0302637
 Oligodendrocyte icvf soma 0
 Oligodendrocyte icvf branches 0
 Tortuosity (std of gaussians) 0.4
 Beading amplitude 0.3
 Overlapping factor 4
-Total icvf 0.437148
-C2 1
+Total icvf 0.17008
+C2 0.988644

@@ -193,13 +193,21 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         std::cerr << "EMPTY AXON!" << std::endl;
         assert(false); // or return false;
     }
+    
+    bool is_allowed_to_stop_early = axon_to_grow.outside_voxel;
+    
 
     // If the last sphere's center is beyond extended_max_limits, the axon is considered fully grown
     Sphere last_sphere = axon_to_grow.outer_spheres.back();
-    if (last_sphere.center[axon_to_grow.growth_axis] >= extended_max_limits[axon_to_grow.growth_axis]) {
+    if (last_sphere.center[axon_to_grow.growth_axis] >= extended_max_limits[axon_to_grow.growth_axis] && !is_allowed_to_stop_early) {
         finished = true;
         return true; // Axon is done
     }
+    else if (!check_borders(min_limits, max_limits, last_sphere.center, last_sphere.radius) && is_allowed_to_stop_early) {
+        finished = true;
+        return true; // Axon is done
+    }
+    
 
     // Prepare
     double max_radius_ = std::max(radius_, last_sphere.radius);
@@ -236,7 +244,7 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         }
 
         // 2) Check if inside
-        if (!check_borders(extended_min_limits, extended_max_limits, candidate.center, candidate.radius)) {
+        if (!check_borders(extended_min_limits, extended_max_limits, candidate.center, candidate.radius) && !is_allowed_to_stop_early) {
             return false;
         }
 
@@ -292,6 +300,9 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
     if (current_last.center[axon_to_grow.growth_axis] > extended_max_limits[axon_to_grow.growth_axis]) {
         finished = true;
     }
+    else if (!check_borders(min_limits, max_limits, current_last.center, current_last.radius) && is_allowed_to_stop_early) {
+        finished = true;
+    }
     return true;
 }
 
@@ -333,9 +344,11 @@ void AxonGrowth::find_next_center(Sphere &s,  double dist_, const std::vector<Sp
 {
 
     Eigen::Vector3d target_ = target;
-    Eigen::Vector3d additional_vector = Eigen::Vector3d{0, 0, 0};
-    additional_vector[axon_to_grow.growth_axis] = 1;
-    if (is_axon){
+    Eigen::Vector3d additional_vector = axon_to_grow.end - axon_to_grow.begin;
+    additional_vector.normalize();
+    additional_vector = additional_vector * 10;
+
+    if ((target_-spheres[spheres.size() - 1].center).norm()< 10){
         target_ = target_ + additional_vector;
     }
     Eigen::Vector3d vector_to_target = target_ - spheres[spheres.size() - 1].center;

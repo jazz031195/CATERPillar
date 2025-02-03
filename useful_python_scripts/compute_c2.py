@@ -84,7 +84,7 @@ def compute_c2(axon_df, factor, limit=16):
     # Compute the average C2 value
     if len(c2_values) > 0:
         return np.mean(c2_values)
-    return 0.0
+    return np.nan
 
 
 
@@ -92,14 +92,17 @@ def compute_c2_axons(df, factor, limit):
 
     axons_ids = df['ax_id'].unique()
     c2_tot = 0
+    tot_nbr = 0
     for axon_id in axons_ids:
-        print(f"Computing C2 for axon {axon_id}")
+        # print(f"Computing C2 for axon {axon_id}")
         axon_df = df[df['ax_id'] == axon_id]
-        cos2= compute_c2_length(axon_df)
+        cos2= compute_c2(axon_df, factor, limit)
         print("C2 : ", cos2)
-        c2_tot += cos2
+        if cos2 is not np.nan:
+            c2_tot += cos2
+            tot_nbr += 1
 
-    return c2_tot / len(axons_ids)
+    return c2_tot / tot_nbr
 
 def plot_angle_histogram(df, factor, limit):
     axons_ids = df['ax_id'].unique()
@@ -122,9 +125,9 @@ def plot_angle_histogram(df, factor, limit):
 if __name__ == "__main__":
 
     # Path to the sphere file
-    sphere_file = "/home/localadmin/Documents/CATERPillar/maximum_packing/voxel2.swc"
+    sphere_file = "/home/localadmin/Documents/CATERPillar/c2/odf/voxel1.swc"
 
-    factor = 1
+    factor = 4
     limit = 30
 
     # Load sphere data

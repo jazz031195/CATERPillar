@@ -79,7 +79,7 @@ Eigen::Vector3d CellGrowth::generate_random_point_on_sphere(double std) {
 
     // Ensure theta is within the range [0, 2*pi] and phi is within the range [0, pi]
     theta = fmod(theta, 2 * M_PI);
-    phi = clamp(phi, 0.0, M_PI);  // Ensure phi is within [0, pi]
+    phi = clamp(phi, 0.0, M_PI/2);  // Ensure phi is within [0, pi]
 
     // Spherical to Cartesian conversion
     double x = sin(phi) * cos(theta);

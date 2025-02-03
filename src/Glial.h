@@ -46,7 +46,7 @@ class Glial : public Obstacle
         double sph_lowest_z_val = soma.center[2] -soma.radius;
         volume_soma = M_PI*pow(soma.radius, 3)*4/3;
         volume_processes = 0.0;
-        minimum_radius = soma.radius/10.0;;
+        minimum_radius = soma.radius/20.0;;
         //x
         Box.push_back({sph_lowest_x_val, sph_highest_x_val});
         //y

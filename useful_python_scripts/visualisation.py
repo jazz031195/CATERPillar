@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 import pyvista as pv
-from matplotlib import cm  # Updated this import to access colormap from `cm`
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 
@@ -31,22 +31,11 @@ def load_sphere_data(file_path):
     return data
 
 def assign_colors_by_ax_id(data):
-    """
-    Assign a unique color to each unique 'id_ax' (axon ID) using matplotlib colormap.
-    """
-    # Get unique axon IDs
     unique_ax_ids = data['id_ax'].unique()
-
-    # Generate a color map using a colormap from matplotlib.cm
-    cmap = cm.get_cmap('tab20', len(unique_ax_ids))  # Use tab20 for distinct colors
+    cmap = plt.get_cmap('tab20')
     colors = cmap(np.linspace(0, 1, len(unique_ax_ids)))
-
-    # Create a dictionary to map 'id_ax' to a color
     ax_id_to_color = {ax_id: colors[i] for i, ax_id in enumerate(unique_ax_ids)}
-
-    # Assign colors to each row in the DataFrame
     data['color'] = data['id_ax'].apply(lambda ax_id: ax_id_to_color[ax_id])
-
     return data
 
 
@@ -108,15 +97,16 @@ def plot_spheres_black_white(data):
 
 if __name__ == "__main__":
     # Load the data from the file
-    file_path = "/home/localadmin/Documents/CATERPillar/test.swc"  # Replace with your file path
+    file_path = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/overlapping_factor/factor_2.swc"  # Replace with your file path
     data = load_sphere_data(file_path)
 
     # Assign colors based on 'id_ax'
-    data = assign_colors_by_ax_id(data)
+    #data = assign_colors_by_ax_id(data)
+    data["color"] = ["orange"]*len(data)
 
-    data = data.loc[data["Type"] != "axon"]
+    data = data.loc[data["Type"] == "axon"]
 
     data = data.loc[data["id_ax"] == 1]
 
     # Plot the spheres
-    plot_spheres_black_white(data)
+    plot_spheres(data)

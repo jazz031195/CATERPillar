@@ -2,8 +2,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "slidergroup.h"
-#include "../axongammadistribution.h"
-#include "../parameters.h"
+#include "../src/axongammadistribution.h"
+#include "../src/parameters.h"
 #include "ScatterDataModifier.h"
 #include <fstream>
 #include <QFile>
@@ -120,6 +120,7 @@ void Window::createControls(const QString &title)
     nbr_threads_qlabel = new QLabel(tr("Number of Threads:"));
     overlapping_factor_qlabel = new QLabel(tr("Overlapping Factor (R/f):"));
     c2_qlabel = new QLabel(tr("c2*100:"));
+    nbr_axons_populations_qlabel = new QLabel(tr("Number of axons populations:"));
 
     Tortuous = new QCheckBox(tr("Tortuous"));
     Beading = new QCheckBox(tr("Beading"));
@@ -164,6 +165,10 @@ void Window::createControls(const QString &title)
     overlapping_factor_SpinBox->setRange(1, 64);
     overlapping_factor_SpinBox->setSingleStep(1);
 
+    nbr_axons_populations_SpinBox = new QSpinBox;
+    nbr_axons_populations_SpinBox->setRange(1, 3);
+    nbr_axons_populations_SpinBox->setSingleStep(1);
+
     c2_SpinBox = new QSpinBox;
     c2_SpinBox->setRange(0, 100);
     c2_SpinBox->setSingleStep(1);
@@ -180,6 +185,8 @@ void Window::createControls(const QString &title)
     controlsLayout->addWidget(nbr_threads_qlabel, 8, 0);
     controlsLayout->addWidget(overlapping_factor_qlabel, 9, 0);
     controlsLayout->addWidget(c2_qlabel, 10, 0);
+    controlsLayout->addWidget(nbr_axons_populations_qlabel, 11, 0);
+
     controlsLayout->addWidget(axons_icvf_SpinBox, 0, 1);
     controlsLayout->addWidget(axons_w_myelin_icvf_SpinBox, 1, 1);
     controlsLayout->addWidget(astrocyte_soma_icvf_SpinBox, 2, 1);
@@ -191,6 +198,7 @@ void Window::createControls(const QString &title)
     controlsLayout->addWidget(nbr_threads_SpinBox, 8, 1);
     controlsLayout->addWidget(overlapping_factor_SpinBox, 9, 1);
     controlsLayout->addWidget(c2_SpinBox, 10, 1);
+    controlsLayout->addWidget(nbr_axons_populations_qlabel, 11, 1);
 
 
     controlsLayout->addWidget(Tortuous, 0, 2);
@@ -220,6 +228,7 @@ void Window::onSaveButtonClicked()
     voxel_size = voxel_size_SpinBox->value();
     minimum_radius = minimum_radius_SpinBox->value();
     c2 = c2_SpinBox->value();
+    nbr_axons_populations = 1;
 
     // Close the parameter input dialog
     this->close();
@@ -271,6 +280,8 @@ void Window::StartSimulation(){
     double min_radius = minimum_radius*1e-3;
     int ondulation_factor = parameters.ondulation_factor;
     bool can_shrink = parameters.can_shrink;
+    int nbr_axons_populations = parameters.nbr_axons_populations;
+    int crossing_fibers_type = 0;
 
     for (int rep = 0; rep < repetitions; rep++){
         for (unsigned long i = 0; i < vox_sizes.size(); i++){
@@ -284,7 +295,7 @@ void Window::StartSimulation(){
             auto startTime = std::chrono::high_resolution_clock::now();
             cout << "STARTING SIMULATION " << endl;
             // create distribution of axons
-            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, astrocyte_icvf_soma, astrocyte_icvf_branches, oligodendrocyte_icvf_soma, oligodendrocyte_icvf_branches, alpha, beta, min_l, max_l, min_radius, regrow_thr, beading_variation, std_dev, ondulation_factor, beading_period, spheres_overlap_factor, can_shrink, cosphisquared, nbr_threads);
+            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, astrocyte_icvf_soma, astrocyte_icvf_branches, oligodendrocyte_icvf_soma, oligodendrocyte_icvf_branches, alpha, beta, min_l, max_l, min_radius, regrow_thr, beading_variation, std_dev, ondulation_factor, beading_period, spheres_overlap_factor, can_shrink, cosphisquared, nbr_threads, nbr_axons_populations, crossing_fibers_type);
 
             AxonDistribution.createSubstrate();
             // saving spheres

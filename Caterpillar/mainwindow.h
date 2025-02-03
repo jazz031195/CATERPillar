@@ -50,6 +50,7 @@ private:
     QLabel *minimum_radius_qlabel;
     QLabel *nbr_threads_qlabel;
     QLabel *overlapping_factor_qlabel;
+    QLabel *nbr_axons_populations_qlabel;
     QLabel *c2_qlabel;
 
     QCheckBox *Tortuous;
@@ -64,6 +65,7 @@ private:
     QSpinBox *minimum_radius_SpinBox;
     QSpinBox *nbr_threads_SpinBox;
     QSpinBox *overlapping_factor_SpinBox;
+    QSpinBox *nbr_axons_populations_SpinBox;
     QSpinBox *c2_SpinBox;
 
     QBoxLayout *layout;
@@ -89,6 +91,8 @@ private:
     int nbr_threads;
     int overlapping_factor;
     double c2;
+    int nbr_axons_populations;
+    int crossing_fibers_type;
 
     // spheres to plot
     std::vector<std::vector<double>> X_axons;

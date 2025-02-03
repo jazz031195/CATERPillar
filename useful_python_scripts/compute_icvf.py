@@ -43,10 +43,10 @@ def compute_intravolume_fraction(square_bounds, file, factor):
 if __name__ == "__main__":
 
     # Path to the sphere file
-    sphere_file = "/home/localadmin/Documents/CATERPillar/maximum_packing/voxel3.swc"
+    sphere_file = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/overlapping_factor/factor_2.swc"
 
     # Define square bounds (xmin, xmax, ymin, ymax)
-    square_bounds = (0, 30, 0, 30, 0, 30)
+    square_bounds = (0, 150, 0, 150, 0, 150)
 
     factor = 4
 

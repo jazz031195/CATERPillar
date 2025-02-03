@@ -7,7 +7,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11
 
-INCLUDEPATH += ../src/Eigen
+INCLUDEPATH += ../src
+
+INCLUDEPATH += /usr/include/GL
 
 SOURCES += \
     ScatterDataModifier.cpp \
@@ -19,11 +21,14 @@ SOURCES += \
     ../src/axongammadistribution.cpp \
     ../src/Glial.cpp \
     ../src/grow_axons.cpp \
+    ../src/grow_cells.cpp \
+    ../src/grow_glial_cells.cpp \
     ../src/obstacle.cpp \
     ../src/parameters.cpp \
     ../src/sphere.cpp \
     ../src/threads.cpp \
-    qcustomplot-source/qcustomplot.cpp
+    
+SOURCES += qcustomplot-source/qcustomplot.cpp
 
 HEADERS += \
     ScatterDataModifier.h \
@@ -34,6 +39,8 @@ HEADERS += \
     ../src/axongammadistribution.h \
     ../src/Glial.h \
     ../src/grow_axons.h \
+    ../src/grow_cells.h \
+    ../src/grow_glial_cells.h \
     ../src/obstacle.h \
     ../src/parameters.h \
     ../src/sphere.h \
@@ -44,6 +51,8 @@ HEADERS += \
 
 FORMS += \
     mainwindow.ui
+
+LIBS += -lGL -lGLU -lglut
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

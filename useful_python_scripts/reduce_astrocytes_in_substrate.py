@@ -74,11 +74,11 @@ def write_new_swc (path, df):
 if __name__ == "__main__":
 
     # Path to the sphere file
-    desired_astrocyte_processes_icvf = 1
-    desired_soma_icvf = desired_astrocyte_processes_icvf/10
+    desired_astrocyte_processes_icvf = 0.015
+    desired_soma_icvf = desired_astrocyte_processes_icvf/6
     limit = 150
 
-    swc_file = "/home/localadmin/Documents/CATERPillar/example_morphology/astrocytes.swc"
+    swc_file = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/SMI_pred/axons_astrocytes/astrocytes_0.swc"
     new_swc_file = f"/home/localadmin/Documents/CATERPillar/test_{desired_astrocyte_processes_icvf}.swc"
 
     total_volume = (limit)**3
@@ -93,36 +93,40 @@ if __name__ == "__main__":
     df_axons = df[df['type'] == "axon"]
     astrocyte_nbrs = df_astrocytes['ax_id'].unique()
     stop = False
-    while (stop == False):
-        print("Attempting to reach desired ICVF")
-        reached_icvf = 0
-        reached_soma_icvf = 0
-        #shuffle the astrocytes
-        random.shuffle(astrocyte_nbrs)
-        for astrocyte_nbr in astrocyte_nbrs:
-            print(f"Computing ICVF for astrocyte {astrocyte_nbr}")
-            df_astrocyte = df_astrocytes[df_astrocytes['ax_id'] == astrocyte_nbr]
-            soma = df_astrocyte[df_astrocyte['branch_id'] == -1]
-            icvf_soma = compute_icvf_astrocyte_somas(df_astrocyte) / total_volume
-            icvf = compute_icvf_astrocyte_processes(df_astrocyte, limit)/total_volume
-            #if reached_icvf < desired_astrocyte_processes_icvf:
-            reached_icvf += icvf
-            reached_soma_icvf += icvf_soma
-            print(f"ICVF for processes of astrocyte {astrocyte_nbr}: {icvf}, soma radius: {float(soma['Rout'])}")
-            df_astrocytes_to_keep = pd.concat([df_astrocytes_to_keep, df_astrocyte])
-            #else:
-                #break
-        
-        # error margin of 0.0001
-        #if reached_soma_icvf < desired_soma_icvf - 0.0001:
-        #    stop = False
-        #else:
-        #    stop = True
-
-        stop = True
+    if (desired_astrocyte_processes_icvf == 0 and desired_soma_icvf == 0):
+        new_df =df_axons
+        write_new_swc (new_swc_file, new_df)
+    else:
+        while (stop == False):
+            print("Attempting to reach desired ICVF")
+            reached_icvf = 0
+            reached_soma_icvf = 0
+            #shuffle the astrocytes
+            random.shuffle(astrocyte_nbrs)
+            for astrocyte_nbr in astrocyte_nbrs:
+                print(f"Computing ICVF for astrocyte {astrocyte_nbr}")
+                df_astrocyte = df_astrocytes[df_astrocytes['ax_id'] == astrocyte_nbr]
+                soma = df_astrocyte[df_astrocyte['branch_id'] == -1]
+                icvf_soma = compute_icvf_astrocyte_somas(df_astrocyte) / total_volume
+                icvf = compute_icvf_astrocyte_processes(df_astrocyte, limit)/total_volume
+                if reached_icvf < desired_astrocyte_processes_icvf:
+                    reached_icvf += icvf
+                    reached_soma_icvf += icvf_soma
+                    print(f"ICVF for processes of astrocyte {astrocyte_nbr}: {icvf}, soma radius: {float(soma['Rout'])}")
+                    df_astrocytes_to_keep = pd.concat([df_astrocytes_to_keep, df_astrocyte])
+                else:
+                    break
             
-    print(f"Intravolume Fraction for astrocyte somas: {reached_soma_icvf}")
-    print(f"Intravolume Fraction for astrocyte processes: {reached_icvf}")
-    new_df = pd.concat([df_astrocytes_to_keep, df_axons])
+            # error margin of 0.0001
+            #if reached_soma_icvf < desired_soma_icvf - 0.0001:
+            #    stop = False
+            #else:
+            #    stop = True
 
-    #write_new_swc (new_swc_file, new_df)
+            stop = True
+                
+        print(f"Intravolume Fraction for astrocyte somas: {reached_soma_icvf}")
+        print(f"Intravolume Fraction for astrocyte processes: {reached_icvf}")
+        new_df = pd.concat([df_astrocytes_to_keep, df_axons])
+
+        write_new_swc (new_swc_file, new_df)
