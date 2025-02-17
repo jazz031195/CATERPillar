@@ -1,112 +1,91 @@
-import numpy as np
-import pandas as pd
 import pyvista as pv
+import pandas as pd
+import numpy as np
+from simulationgraphs import get_random_element
 import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor
 
-def load_sphere_data(file_path):
+def load_data(file_path):
+    """Load tube data from a text file."""
+    columns = ["id_ax", "id_sph", "id_branch", "Type", "X", "Y", "Z", "Rin", "Rout", "P"]
+    df = pd.read_csv(file_path, delim_whitespace=True, names=columns, comment='#')
+    # delete first row
+    df = df.iloc[1:] 
+    return df
+
+
+def load_spheres_to_dataframe(file_path):
     """
-    Load the data from a text file and return a pandas DataFrame.
-    Ensure the numerical columns are correctly typed.
+    Reads the spheres data from a text file and filters rows where x < 50 and y < 50.
+
+    Args:
+        file_path (str): Path to the spheres file.
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame containing only relevant spheres.
     """
-    # Load the data from the text file into a DataFrame
-    column_names = ["id_ax", "id_sph", "id_branch", "Type", "X", "Y", "Z", "Rin", "Rout", "P"]
+    # Define column names based on the provided data structure
+    col_names = ["id_ax", "id_sph", "id_branch", "Type", "X", "Y", "Z", "Rin", "Rout", "P"]
+    
+    # Load data into a DataFrame
+    df = pd.read_csv(file_path, delim_whitespace=True, names=col_names, skiprows=1)
 
-    # Skip the header if it exists (if there is no header, remove the skiprows argument)
-    data = pd.read_csv(file_path, delim_whitespace=True, names=column_names, skiprows=1, dtype={
-        "id_ax": int,
-        "id_sph": int,
-        "id_branch": int,
-        "Type": str,
-        "X": float,
-        "Y": float,
-        "Z": float,
-        "Rin": float,
-        "Rout": float,
-        "P": float
-    })
+    # Apply filtering (only keep spheres within x < 50 and y < 50)
+    df_filtered = df[(df["X"] < 50) & (df["Y"] < 50)].copy()
 
-    return data
-
-def assign_colors_by_ax_id(data):
-    unique_ax_ids = data['id_ax'].unique()
-    cmap = plt.get_cmap('tab20')
-    colors = cmap(np.linspace(0, 1, len(unique_ax_ids)))
-    ax_id_to_color = {ax_id: colors[i] for i, ax_id in enumerate(unique_ax_ids)}
-    data['color'] = data['id_ax'].apply(lambda ax_id: ax_id_to_color[ax_id])
-    return data
+    return df_filtered
 
 
-def plot_spheres(data):
+def plot_points(file_path):
     """
-    Plot the spheres using PyVista, where each sphere is placed at (X, Y, Z) with radius Rout
-    and colored by 'id_ax'.
+    Reads a file, extracts X, Y, Z, and Rout values, and plots them as a point cloud.
+    
+    Parameters:
+    - file_path (str): Path to the input file.
+
+    Returns:
+    - None (Displays a 3D scatter plot)
     """
-    # Initialize the PyVista plotter
+
+    # Load data into a Pandas DataFrame
+    df = load_spheres_to_dataframe(file_path)
+    colors = mcolors.CSS4_COLORS
+    df["color"] = df["id_ax"].apply(lambda x: get_random_element(colors, seed = x)[1])
+    df["color_rgb"] = df["color"].apply(lambda c: mcolors.to_rgb(c)) 
+
+    # Extract X, Y, Z coordinates and radius (Rout)
+    x_values = df["X"].values
+    y_values = df["Y"].values
+    z_values = df["Z"].values
+    R_values = df["Rout"].values  # Sphere radii
+    cols = df["color_rgb"].values
+
+    # Create a MultiBlock container (to store multiple sphere meshes)
+    spheres = pv.MultiBlock()
+
+    # Generate a sphere for each point
+    for (x, y, z, r,color) in zip(x_values, y_values, z_values, R_values, cols):
+        sphere = pv.Sphere(radius=r, center=(x, y, z),theta_resolution = 1 ,phi_resolution = 1)  # Create sphere at (x, y, z) with radius r
+        spheres.append(sphere)
+
+    # Create a PyVista plotter object
     plotter = pv.Plotter()
+    
+    # Add all spheres to the plot
+    plotter.add_mesh(
+        spheres,
+        opacity=1,
+        show_edges=False,
+        color="blue"
+    )
 
-    # Add progress bar using tqdm to track progress
-    for _, row in tqdm(data.iterrows(), total=len(data), desc="Plotting Spheres", unit="sphere"):
-        
-        center = np.array([row['X'], row['Y'], row['Z']])
-        radius = float(row['Rout'])  # Ensure radius is a float
-        color = row['color']
-
-        # Add a sphere to the plotter
-        plotter.add_mesh(pv.Sphere(radius=radius, center=center), color=mcolors.to_hex(color), opacity=1)
+    # Set camera position for better visualization
+    plotter.view_isometric()
 
     # Show the plot
     plotter.show()
 
-def create_sphere(row):
-    """
-    Create a PyVista sphere mesh for the given row.
-    """
-    center = np.array([row['X'], row['Y'], row['Z']])
-    radius = float(row['Rout'])  # Ensure radius is a float
-    color = 'white'  # Spheres will be white
-    opacity = 0.5    # Transparent white
-
-    # Return the sphere mesh and color/opacity
-    return pv.Sphere(radius=radius, center=center), mcolors.to_hex(color), opacity
-
-def plot_spheres_black_white(data):
-    """
-    Plot the spheres using PyVista, where each sphere is placed at (X, Y, Z) with radius Rout
-    and spheres appear as transparent white with a black background.
-    """
-    # Initialize the PyVista plotter with a black background
-    plotter = pv.Plotter()
-    plotter.set_background('black')  # Set the background to black
-
-    # Prepare spheres in parallel
-    spheres = []
-    with ThreadPoolExecutor() as executor:
-        results = list(tqdm(executor.map(create_sphere, [row for _, row in data.iterrows()]), 
-                            total=len(data), desc="Creating Spheres", unit="sphere"))
-        spheres.extend(results)
-
-    # Add the spheres to the plotter sequentially
-    for sphere, color, opacity in tqdm(spheres, desc="Plotting Spheres", unit="sphere"):
-        plotter.add_mesh(sphere, color=color, opacity=opacity)
-
-    # Show the plot
-    plotter.show()
 
 if __name__ == "__main__":
-    # Load the data from the file
-    file_path = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/overlapping_factor/factor_2.swc"  # Replace with your file path
-    data = load_sphere_data(file_path)
-
-    # Assign colors based on 'id_ax'
-    #data = assign_colors_by_ax_id(data)
-    data["color"] = ["orange"]*len(data)
-
-    data = data.loc[data["Type"] == "axon"]
-
-    data = data.loc[data["id_ax"] == 1]
-
-    # Plot the spheres
-    plot_spheres(data)
+    file_path = "/home/localadmin/Documents/CATERPillar/c2/voxel6.swc"
+    plot_points(file_path)

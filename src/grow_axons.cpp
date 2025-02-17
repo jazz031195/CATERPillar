@@ -159,32 +159,60 @@ double AxonGrowth::myelin_thickness_(const double &inner_radius){
     return (0.35 + 0.006 * 2.0 * inner_radius + 0.024 * log(2.0 * inner_radius));
 }  
 
-double AxonGrowth::originalFunction_(double x, double outerRadius)
-{
+double AxonGrowth::originalFunction_(const double &x, const double &outerRadius) {
     return outerRadius - (myelin_thickness_(x) + x);
 }
-double AxonGrowth::derivative_(double x)
-{
+
+double AxonGrowth::derivative_(double x) {
+    if (x <= 0.0001) return -1.0; // Avoid division by zero
     return -(0.006 * 2.0 + 0.024 / (2.0 * x) + 1);
 }
-double AxonGrowth::findInnerRadius_(const double &outerRadius)
-{
 
-    // Initial guess for innerRadius
-    double guess = outerRadius / 2.0;
+double AxonGrowth::findInnerRadius_(const double &outerRadius) {
+    if (outerRadius <= 0.0) return 0.0;  // Handle invalid inputs
 
-    // Set a tolerance level for the approximation
+    double guess = outerRadius * 0.7;  // Better initial guess
     double tolerance = 1e-3;
+    double step_limit = 0.1 * outerRadius;  // Prevent huge jumps
 
-    // Iterate using Newton's method until the desired accuracy is achieved
-    while (originalFunction_(guess, outerRadius) > tolerance)
-    {
-        guess = guess - originalFunction_(guess, outerRadius) / derivative_(guess);
+    int max_iterations = 100;  // Avoid infinite loops
+    int iterations = 0;
+
+    while (fabs(originalFunction_(guess, outerRadius)) > tolerance) {
+        double step = originalFunction_(guess, outerRadius) / derivative_(guess);
+
+        // Clamp step size to prevent excessive jumps
+        if (fabs(step) > step_limit) {
+            step = (step > 0 ? step_limit : -step_limit);
+        }
+
+        double new_guess = guess - step;
+
+        // Ensure it does not go negative
+        if (new_guess <= 0.0) {
+            new_guess = 0.01; // Prevent invalid radius
+        }
+
+        // Stop if change is very small
+        if (fabs(new_guess - guess) < tolerance) {
+            break;
+        }
+
+        guess = new_guess;
+
+        if (++iterations >= max_iterations) {
+            break; // Prevent infinite loops
+        }
     }
 
-    // Return the approximated value of innerRadius
-    return guess;
+    if (guess/outerRadius < 0.2) {
+        return 0.2*outerRadius;
+    }
+    else{
+        return guess;
+    }
 }
+
 
 bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_straight, const int &factor)
 {

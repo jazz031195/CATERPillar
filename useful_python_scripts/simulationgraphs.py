@@ -552,7 +552,7 @@ def draw_spheres(file_path, limit, z_slice):
     circles = []
 
     axons = df.loc[df["type"] == "axon"]
-    for axon in axons["ax_id"].unique():
+    for axon in axons["id_ax"].unique():
         axon_i = axons.loc[axons["ax_id"] == axon]
 
 
@@ -990,15 +990,15 @@ if __name__ == "__main__":
 
     file_path_GM= "/home/localadmin/Documents/CATERPillar/growth_vox_50_factor_4_0.swc"
     file_path_WM = "/home/localadmin/Documents/CATERPillar/growth_vox_50_factor_4_0.swc"
-    file_path = "/home/localadmin/Documents/CATERPillar/test_0.03.swc"
+    file_path = "/home/localadmin/Documents/CATERPillar/myelin_.swc"
     # draw_spheres(file_path, 50, 49)
     #tortuosity_plot("/home/localadmin/Documents/CATERPillar/tortuosities")
     # draw_one_glial_pyvista(file_path_GM, chosen_id = 1)
     #draw_spheres_pyvista(file_path, axons = True ,chosen_id = 1)
-    #create_subplots(file_path)
+    create_subplots(file_path)
     # create_subplots(file_path)
     # draw_axons_with_shading(file_path, glial_only = True)
-    draw_cells(file_path, plot_type="astrocytes", astrocyte_indices=[0])
+    #draw_cells(file_path, plot_type="astrocytes", astrocyte_indices=[0])
     # draw_spheres(file_path, 150, 30)
     #diameter_variation(file_path, num_axons = 10, max_z = 15)
     #mean_dist_between_maxima(file_path)

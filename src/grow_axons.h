@@ -97,7 +97,7 @@ public:
 
     void find_next_center_straight(double distance, Sphere &s, const std::vector<Sphere> &spheres);
     double myelin_thickness_(const double &inner_radius);
-    double originalFunction_(double x, double outerRadius);
+    double originalFunction_(const double &x, const double &outerRadius);
     double derivative_(double x);
     double findInnerRadius_(const double &outerRadius);
     void find_next_center(Sphere &s,  double dist_, const std::vector<Sphere> &spheres, const Eigen::Vector3d &target, const bool &is_axon);

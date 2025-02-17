@@ -68,18 +68,9 @@ def write_new_swc (path, df):
         file.write(first_line)
         for i in range(len(df)):
             line = df.iloc[i]
-            file.write(f"{line['ax_id']} {line['sph_id']} {line['branch_id']} {line['type']} {line['x']} {line['y']} {line['z']} {line['Rin']} {line['Rout']} {line['P']}\n")
+            file.write(f"{int(line['ax_id'])} {int(line['sph_id'])} {int(line['branch_id'])} {line['type']} {line['x']} {line['y']} {line['z']} {line['Rin']} {line['Rout']} {int(line['P'])}\n")
     
-
-if __name__ == "__main__":
-
-    # Path to the sphere file
-    desired_astrocyte_processes_icvf = 0.015
-    desired_soma_icvf = desired_astrocyte_processes_icvf/6
-    limit = 150
-
-    swc_file = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/SMI_pred/axons_astrocytes/astrocytes_0.swc"
-    new_swc_file = f"/home/localadmin/Documents/CATERPillar/test_{desired_astrocyte_processes_icvf}.swc"
+def create_new_swc_file(desired_astrocyte_processes_icvf, desired_soma_icvf, swc_file, new_swc_file, limit):
 
     total_volume = (limit)**3
 
@@ -127,6 +118,43 @@ if __name__ == "__main__":
                 
         print(f"Intravolume Fraction for astrocyte somas: {reached_soma_icvf}")
         print(f"Intravolume Fraction for astrocyte processes: {reached_icvf}")
-        new_df = pd.concat([df_astrocytes_to_keep, df_axons])
+        new_df = pd.concat([df_axons, df_astrocytes_to_keep])
 
         write_new_swc (new_swc_file, new_df)
+
+def check_icvf(swc_file):
+    # Path to the sphere file
+    limit = 150
+    total_volume = (limit)**3
+
+    df = read_swc_file(swc_file)
+    
+    df_astrocytes = df[df['type'] != "axon"]
+
+    astrocyte_nbrs = df_astrocytes['ax_id'].unique()
+
+    total_icvf = 0
+    for astrocyte_nbr in astrocyte_nbrs:
+        df_astrocyte = df_astrocytes[df_astrocytes['ax_id'] == astrocyte_nbr]
+        icvf = compute_icvf_astrocyte_processes(df_astrocyte, limit)/total_volume
+        total_icvf += icvf
+    
+    print(f"Total ICVF: {total_icvf}")
+
+if __name__ == "__main__":
+
+    # Path to the sphere file
+    desired_astrocyte_processes_icvf = 0.06
+    desired_soma_icvf = desired_astrocyte_processes_icvf/6
+    limit = 150
+    total_volume = (limit)**3
+
+    swc_file = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/SMI_pred/axons_astrocytes/astrocytes_0.015.swc"
+    #new_swc_file = f"/home/localadmin/Documents/MCDS/Permeable_MCDS/output/SMI_pred/axons_astrocytes/astrocytes_0.06_copy.swc"
+
+    check_icvf(swc_file)
+
+
+    
+
+    

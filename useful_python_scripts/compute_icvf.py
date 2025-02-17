@@ -1,6 +1,6 @@
 import numpy as np
 from tqdm import tqdm
-from visualisation import load_sphere_data
+
 
 
 def sphere_within_bounds(sphere, bounds):

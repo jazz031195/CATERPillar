@@ -17,6 +17,7 @@ def calculate_DWI(file, compartment, scheme_path):
 
     DWIs = read_binary_file(file)
 
+
     DWIs =[float(i) for i in DWIs] 
     # calculate angle between direction and vector (0,0,1)
     angles = [ np.arccos(np.dot(x, [0,0,1])/np.linalg.norm(x)) for x in directions]
@@ -24,14 +25,11 @@ def calculate_DWI(file, compartment, scheme_path):
     angles = [ x if x <= np.pi/2 else np.pi-x for x in angles]
 
     df = pd.DataFrame(columns=['angle (rad)', 'b_value', 'DWI'])
+
     df["DWI"] = DWIs
     df["angle (rad)"] = angles
     df["b_value"] = b_values
     df["compartment"] =[compartment]*len(df)
-    print(df.loc[df["b_value"] == 1])
-    print(df.loc[df["b_value"] == 0.2])
-    print(df)
-
 
     return df
 
@@ -40,8 +38,6 @@ def ADC(b0, b1, df):
     df_b0 = df.loc[df["b_value"] == b0]
     df_b1 = df.loc[df["b_value"] == b1]
 
-    print(df_b0)
-    print(df_b1)
     new_df = pd.DataFrame(columns=['angle (rad)', 'ADC'])
     angles = df_b0["angle (rad)"].unique()
     all_angles = []
@@ -83,39 +79,45 @@ def compute_all_icvfs(directory):
 
 def compute_df_no_compartments(directory):
 
-    icvf_df = pd.read_csv(f"{directory}/icvf.csv")
     all_dfs= [] 
+    # read icvf
+    icvf_df = pd.read_csv(f"{directory}/icvf.csv")
+    print(icvf_df)
 
-    folder = f"{directory}/"
-    # find all files in the folder
-    DWI_files = os.listdir(folder)  
-    DWI_filenames =[f for f in DWI_files if "DWI" in f and "img" not in f] 
-    DWI_files = [f"{folder}/{f}" for f in DWI_filenames]
-
-    for i, file in enumerate(DWI_files):
-        print(f"Calculating ADC for {file}")
-        if "iso" in file:
-            scheme_path = "/home/localadmin/Documents/MCDS/Permeable_MCDS/instructions/scheme/iso_waveform_vec_b.txt"
-            sequence = "iso"
-        else:
-            scheme_path = "/home/localadmin/Documents/MCDS/Permeable_MCDS/instructions/scheme/PGSE_21_dir_12_b.scheme"
-            sequence = "pgse"
-        filename = DWI_filenames[i]
-        df = calculate_DWI(file, "", scheme_path).copy()
-        print (df)
-
-        df["sequence"] = [sequence]*len(df)
-        df["swelling"] = [filename.split("voxel_")[1] ]*len(df)
-        all_dfs.append(df)
-    
-    df_total = pd.concat(all_dfs)
-    # add DWI of df with same direction, angle, nbr,  sequence but different compartment 
-    df_total = df_total.groupby(["swelling", 'angle (rad)', 'b_value', "sequence"], as_index=False)['DWI'].sum()
-    df_total["compartment"] = ["all"]*len(df_total)
-    df_total = ADC(0.2, 1, df_total)
-    return df_total
+    for compartment in ["intra", "extra"]:
+        folder = f"{directory}/{compartment}"
+        # find all files in the folder
+        DWI_files = os.listdir(folder)  
+        DWI_filenames =[f for f in DWI_files if "DWI" in f and "img" not in f] 
+        DWI_files = [f"{folder}/{f}" for f in DWI_filenames]
+        
+        for i, file in enumerate(DWI_files):
+            print(f"Calculating ADC for {file}")
+            if "iso" in file:
+                scheme_path = "/home/localadmin/Documents/MCDS/Permeable_MCDS/instructions/scheme/iso_waveform_vec_b.txt"
+                sequence = "iso"
+            
+            else:
+                scheme_path = "/home/localadmin/Documents/MCDS/Permeable_MCDS/instructions/scheme/PGSE_21_dir_12_b.scheme"
+                sequence = "pgse"
+                
+            b0 = 0.2
+            b1 = 1
+            df = calculate_ADC(b0, b1, file, compartment, scheme_path)
+            if sequence == "iso":
+                filename = DWI_filenames[i].split(sequence)[0] [:-1]
+            else:
+                filename = DWI_filenames[i].split(compartment)[0][:-1]
 
 
+            icvf = icvf_df.loc[icvf_df["filename"] == filename, "icvf"].values[0]
+            df["icvf"] = [icvf]*len(df)
+            df["filename"] = [filename]*len(df)
+            df["sequence"] = [sequence]*len(df)
+            df["compartment"] = [compartment]*len(df)
+            all_dfs.append(df)
+
+    return pd.concat(all_dfs)
 
             
 def compute_df_compartment(directory, compartment):
@@ -161,15 +163,17 @@ def analysis(directory):
     df["swelling"] = df["filename"].apply(lambda x: x.split("_")[1])
 
     df_pgse = df.loc[df["sequence"] == "pgse"]
-    df_pgse = df_pgse.groupby('angle (rad)').apply(calculate_relative)
-    df_pgse.to_csv(f"{directory}/{compartment}_pgse.csv", index=False) 
-    sns.lmplot(x='angle (rad)', y='ADC_relative_change', data=df_pgse, hue='swelling')
-    plt.title(f"{compartment} ADC relative change, PGSE")
-    plt.show()
 
-    sns.lmplot(x='angle (rad)', y='ADC', data=df_pgse, hue='swelling')
-    plt.title(f"{compartment} ADC , linear")
-    plt.show()
+    if len(df_pgse) != 0:
+        df_pgse = df_pgse.groupby('angle (rad)').apply(calculate_relative)
+        df_pgse.to_csv(f"{directory}/{compartment}_pgse.csv", index=False) 
+        sns.lmplot(x='angle (rad)', y='ADC_relative_change', data=df_pgse, hue='swelling')
+        plt.title(f"{compartment} ADC relative change, PGSE")
+        plt.show()
+
+        sns.lmplot(x='angle (rad)', y='ADC', data=df_pgse, hue='swelling')
+        plt.title(f"{compartment} ADC , linear")
+        plt.show()
 
 
     df_iso = df.loc[df["sequence"] == "iso"]
@@ -182,14 +186,35 @@ def analysis(directory):
     sns.lmplot(x='angle (rad)', y='ADC', data=df_iso, hue='swelling')
     plt.title(f"{compartment} ADC , ISO")
     plt.show()
-    print(df_iso)
 
 
-    
+def combine_extra_intra(df):
+
+    df_pivot = df.pivot_table(index=["angle (rad)", "sequence", "swelling"], 
+                            columns="compartment", 
+                            values=["ADC", "icvf"]).reset_index()
+
+    # Flatten the column names
+    df_pivot.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df_pivot.columns]
+
+    # rename sequence column
+    df_pivot = df_pivot.rename(columns={"sequence_": "sequence"})
+    df_pivot = df_pivot.rename(columns={"swelling_": "swelling"})
+    df_pivot = df_pivot.rename(columns={"angle (rad)_": "angle (rad)"})
+
+    # Compute the combined ADC
+    df_pivot["ADC"] = df_pivot["icvf_intra"] * df_pivot["ADC_intra"] + (1 - df_pivot["icvf_intra"]) * df_pivot["ADC_extra"]
+
+    # Drop unnecessary columns
+    df_pivot = df_pivot.drop(columns=["icvf_intra", "icvf_extra"])
+
+    return df_pivot
 
 def all_analysis(directory):
     df = compute_df_no_compartments(directory)
-    print(df)
+    df["swelling"] = df["filename"].apply(lambda x: x.split("_")[1])
+    df = combine_extra_intra(df)
+
     df_pgse = df.loc[df["sequence"] == "pgse"]
     df_pgse = df_pgse.groupby('angle (rad)').apply(calculate_relative)
     # to csv
@@ -219,5 +244,5 @@ def all_analysis(directory):
 if __name__ == '__main__':
 
     directory = "/home/localadmin/Documents/CATERPillar/arthurs_analysis"
-    #directory = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/verif_arthurs_analysis"
-    analysis(directory)
+    # directory = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/verif_arthurs_analysis"
+    all_analysis(directory)

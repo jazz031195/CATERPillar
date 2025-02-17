@@ -2436,31 +2436,60 @@ std::vector<double> equallySpacedValues(double start, double end, int n)
     return result;
 }
 
-double originalFunction(double x, double outerRadius)
-{
+
+double originalFunction(const double &x, const double &outerRadius) {
     return outerRadius - (myelin_thickness(x) + x);
 }
-double derivative(double x)
-{
+
+double derivative(double x) {
+    if (x <= 0.0001) return -1.0; // Avoid division by zero
     return -(0.006 * 2.0 + 0.024 / (2.0 * x) + 1);
 }
-double AxonGammaDistribution::findInnerRadius(const double &outerRadius)
-{
 
-    // Initial guess for innerRadius
-    double guess = outerRadius / 2.0;
+double AxonGammaDistribution::findInnerRadius(const double &outerRadius) {
+    if (outerRadius <= 0.0) return 0.0;  // Handle invalid inputs
 
-    // Set a tolerance level for the approximation
+    double guess = outerRadius * 0.7;  // Better initial guess
     double tolerance = 1e-3;
+    double step_limit = 0.1 * outerRadius;  // Prevent huge jumps
 
-    // Iterate using Newton's method until the desired accuracy is achieved
-    while (originalFunction(guess, outerRadius) > tolerance)
-    {
-        guess = guess - originalFunction(guess, outerRadius) / derivative(guess);
+    int max_iterations = 100;  // Avoid infinite loops
+    int iterations = 0;
+
+    while (fabs(originalFunction(guess, outerRadius)) > tolerance) {
+        double step = originalFunction(guess, outerRadius) / derivative(guess);
+
+        // Clamp step size to prevent excessive jumps
+        if (fabs(step) > step_limit) {
+            step = (step > 0 ? step_limit : -step_limit);
+        }
+
+        double new_guess = guess - step;
+
+        // Ensure it does not go negative
+        if (new_guess <= 0.0) {
+            new_guess = 0.01; // Prevent invalid radius
+        }
+
+        // Stop if change is very small
+        if (fabs(new_guess - guess) < tolerance) {
+            break;
+        }
+
+        guess = new_guess;
+
+        if (++iterations >= max_iterations) {
+            break; // Prevent infinite loops
+        }
     }
 
-    // Return the approximated value of innerRadius
-    return guess;
+    if (guess/outerRadius < 0.2) {
+        return 0.2*outerRadius;
+    }
+    else{
+        return guess;
+    }
+
 }
 
 void AxonGammaDistribution::add_Myelin()

@@ -125,7 +125,7 @@ def plot_angle_histogram(df, factor, limit):
 if __name__ == "__main__":
 
     # Path to the sphere file
-    sphere_file = "/home/localadmin/Documents/CATERPillar/c2/odf/voxel1.swc"
+    sphere_file = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/SMI_pred/axons_astrocytes/astrocytes_0.0.swc"
 
     factor = 4
     limit = 30
