@@ -47,6 +47,8 @@ public:
     bool can_shrink = true;
     double cosPhiSquared= 1.0;
     int nbr_threads = 1;
+    double std_glial_process_length;
+    double mean_glial_process_length;
     static int str_dist(std::string s, std::string t);
     void readConfFile(std::string conf_file_path);
 

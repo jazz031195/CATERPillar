@@ -7,11 +7,13 @@
 #include <random>
 
 OpenGLWindow::OpenGLWindow(QWindow *parent)
-    : QOpenGLWindow(NoPartialUpdate, parent)
+    : QOpenGLWindow(NoPartialUpdate, parent),
+      orbitTheta(0.0f), orbitPhi(0.0f), cameraDistance(50.0f)
 {
     connect(&timer, &QTimer::timeout, this, static_cast<void(QWindow::*)()>(&OpenGLWindow::update));
     timer.start(16); // Refresh every ~16 ms (60 FPS)
 }
+
 
 OpenGLWindow::~OpenGLWindow() {}
 
@@ -79,9 +81,9 @@ void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
 
 void OpenGLWindow::resetCamera(){
 
-    spherePositions = initialspherePositions;
-    sphereRadii = initialsphereRadii;
-    axonColors = initialaxonColors;
+    orbitTheta= 0.0f;
+    orbitPhi = 0.0f;
+    cameraDistance = 50.0f;
     update();
 } 
 
@@ -137,88 +139,41 @@ void OpenGLWindow::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Set up the view and projection matrices
+    // Convert spherical coordinates to Cartesian (for camera movement)
+    float radius = cameraDistance;  // Distance from center
+    float radTheta = qDegreesToRadians(orbitTheta);
+    float radPhi = qDegreesToRadians(orbitPhi);
+
+    float x = radius * cos(radPhi) * sin(radTheta);
+    float y = radius * sin(radPhi);
+    float z = radius * cos(radPhi) * cos(radTheta);
+
+    cameraPosition = QVector3D(x, y, z)*zoomFactor;  // Update camera position
+
+    // Set up view matrix
     QMatrix4x4 modelViewMatrix;
     modelViewMatrix.setToIdentity();
+    modelViewMatrix.lookAt(cameraPosition, QVector3D(0, 0, 0), QVector3D(0, 1, 0));
 
-    // Apply the current rotation based on mouse drag
-    modelViewMatrix.rotate(rotationX, 1, 0, 0);  // Rotate around X axis
-    modelViewMatrix.rotate(rotationY, 0, 1, 0);  // Rotate around Y axis
-
-    // Adjust the camera's Z position based on the zoom factor
-    QVector3D zoomedCameraPosition = cameraPosition * zoomFactor;
-
-    modelViewMatrix.lookAt(zoomedCameraPosition, QVector3D(0, 0, 0), QVector3D(0, 1, 0));
-
-    // Combine the projection and model-view matrices
     QMatrix4x4 mvpMatrix = projectionMatrix * modelViewMatrix;
-
-    // Load the combined matrix into OpenGL
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf(mvpMatrix.constData());
 
-    // reorder spherePositions based on camera position
-    std::vector<std::pair<double, size_t>> distances;   
-
+    // Sort and draw spheres
+    std::vector<std::pair<double, size_t>> distances;
     for (size_t i = 0; i < spherePositions.size(); ++i) {
-        QVector3D position = spherePositions[i];
-        QVector3D new_position = rotateAround(position, SphererotationX, SphererotationY);
-        spherePositions[i] = new_position;
         QVector3D diff = spherePositions[i] - cameraPosition;
         distances.push_back(std::make_pair(diff.lengthSquared(), i));
     }
 
-    // sort in descending order
     std::sort(distances.begin(), distances.end(), std::greater<std::pair<double, size_t>>());
 
-    // Draw spheres in order of distance from camera
     for (size_t i = 0; i < spherePositions.size(); ++i) {
         size_t index = distances[i].second;
         drawSphere(spherePositions[index], sphereRadii[index], axonColors[index]);
     }
-
 }
 
-/*
-void OpenGLWindow::drawSphere(const QVector3D &position, double radius, const QColor &color)
-{
-    glPushMatrix();
-    glTranslatef(position.x(), position.y(), position.z());
-    glScalef(radius, radius, radius);
-
-    // Set the color for the sphere
-    glColor3f(color.redF(), color.greenF(), color.blueF());
-
-    static const int slices = 30;
-    static const int stacks = 30;
-
-    for (int i = 0; i <= stacks; ++i) {
-        double lat0 = M_PI * (-0.5 + double(i - 1) / stacks);
-        double z0 = qSin(lat0);
-        double zr0 = qCos(lat0);
-
-        double lat1 = M_PI * (-0.5 + double(i) / stacks);
-        double z1 = qSin(lat1);
-        double zr1 = qCos(lat1);
-
-        glBegin(GL_QUAD_STRIP);
-        for (int j = 0; j <= slices; ++j) {
-            double lng = 2 * M_PI * double(j - 1) / slices;
-            double x = qCos(lng);
-            double y = qSin(lng);
-
-            glNormal3d(x * zr0, y * zr0, z0);
-            glVertex3d(x * zr0, y * zr0, z0);
-
-            glNormal3d(x * zr1, y * zr1, z1);
-            glVertex3d(x * zr1, y * zr1, z1);
-        }
-        glEnd();
-    }
-
-    glPopMatrix();
-}
-*/
 
 void OpenGLWindow::drawSphere(const QVector3D& position, float radius, const QColor& color)
 {
@@ -267,30 +222,25 @@ void OpenGLWindow::mousePressEvent(QMouseEvent *event)
         rightMousePressed = true;  // Right mouse button pressed for panning
     }
 }
-
 void OpenGLWindow::mouseMoveEvent(QMouseEvent *event)
 {
     int deltaX = event->x() - lastMousePosition.x();
     int deltaY = event->y() - lastMousePosition.y();
 
-    float panSpeed = 0.01f;  // Adjust this factor to control panning speed
+    float sensitivity = 0.3f;  // Control speed of rotation
 
-    if (rightMousePressed) {
-        // Rotate the scene if the left mouse button is pressed
-        rotationX += deltaY * 0.5f;  // Adjust the factor (0.5f) to control the speed of rotation
-        rotationY += deltaX * 0.5f;
-    } 
-    else if (leftMousePressed) {
-        // Pan the camera when the right mouse button is pressed
-        SphererotationX = -deltaY * panSpeed;  
-        SphererotationY = -deltaX * panSpeed;
+    if (leftMousePressed) {
+        // Adjust spherical angles
+        orbitTheta += deltaX * sensitivity;
+        orbitPhi += deltaY * sensitivity;
+
+        // Clamp phi to prevent flipping (avoid going over poles)
+        orbitPhi = std::max(-89.0f, std::min(89.0f, orbitPhi));
     }
 
-    lastMousePosition = event->pos();  // Update the last position
-
-    update();  // Redraw the scene with the new rotation or pan
+    lastMousePosition = event->pos();
+    update();
 }
-
 
 
 // Mouse release event - reset the state of the mouse buttons

@@ -90,12 +90,12 @@ def compute_c2(axon_df, factor, limit=16):
 
 def compute_c2_axons(df, factor, limit):
 
-    axons_ids = df['ax_id'].unique()
+    axons_ids = df['id_ax'].unique()
     c2_tot = 0
     tot_nbr = 0
     for axon_id in axons_ids:
         # print(f"Computing C2 for axon {axon_id}")
-        axon_df = df[df['ax_id'] == axon_id]
+        axon_df = df[df['id_ax'] == axon_id]
         cos2= compute_c2(axon_df, factor, limit)
         print("C2 : ", cos2)
         if cos2 is not np.nan:
@@ -105,11 +105,11 @@ def compute_c2_axons(df, factor, limit):
     return c2_tot / tot_nbr
 
 def plot_angle_histogram(df, factor, limit):
-    axons_ids = df['ax_id'].unique()
+    axons_ids = df['id_ax'].unique()
     all_c2 = []
     for axon_id in axons_ids:
         print(f"Computing C2 for axon {axon_id}")
-        axon_df = df[df['ax_id'] == axon_id]
+        axon_df = df[df['id_ax'] == axon_id]
         cos2= compute_c2(axon_df, factor, limit)
         print("C2 : ", cos2)
         all_c2.append(cos2)
@@ -125,10 +125,10 @@ def plot_angle_histogram(df, factor, limit):
 if __name__ == "__main__":
 
     # Path to the sphere file
-    sphere_file = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/SMI_pred/axons_astrocytes/astrocytes_0.0.swc"
+    sphere_file = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/SMI_pred/c2/voxel2.swc"
 
     factor = 4
-    limit = 30
+    limit = 150
 
     # Load sphere data
     df = read_swc_file(sphere_file)

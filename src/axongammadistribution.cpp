@@ -42,7 +42,7 @@ std::vector<std::string> _split_line(const std::string &s, char delim)
 
 AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &astrocytes_icvf_soma_, const double &astrocytes_icvf_branches_, const double &oligodendrocytes_icvf_soma_, const double &oligodendrocytes_icvf_branches_, const double &a, const double &b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
-                                              const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const double &beading_period_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_)
+                                              const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, const double &mean_glial_process_length_, const double &std_glial_process_length_)
 {
     
     num_obstacles = 0;
@@ -77,7 +77,7 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
     beading_variation = beading_variation_;
     std_dev = std_dev_;
     ondulation_factor = ondulation_factor_;
-    beading_period = beading_period_;
+
     factor = factor_;
     axon_can_shrink = can_shrink_;
 
@@ -87,6 +87,9 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
 
     total_volume = (max_l[0] - min_l[0]) * (max_l[1] - min_l[1]) * (max_l[2] - min_l[2]);
     nbr_threads = nbr_threads_;
+
+    mean_glial_process_length = mean_glial_process_length_;
+    std_glial_process_length = std_glial_process_length_;
 
     cdf = {
         {4, 8, 16, 32, 64, 128}, // Kappas
@@ -187,7 +190,7 @@ bool AxonGammaDistribution::growExtraBranchesinGlialCells(Glial &glial_cell, int
     double old_length = (random_sphere.center - glial_cell.soma.center).norm();
     std::random_device rd;
     std::mt19937 generator(rd());
-    std::normal_distribution<double> length_dist(20.0, 1.0);
+    std::normal_distribution<double> length_dist(mean_glial_process_length, std_glial_process_length);
     double length = 0;
     while (length <= old_length) {
         length = length_dist(generator);
@@ -304,7 +307,7 @@ bool AxonGammaDistribution::growProcessFromSoma(Glial &glial_cell, const int &j,
     // Generate length from Gaussian distribution
     std::random_device rd;
     std::mt19937 generator(rd());
-    std::normal_distribution<double> length_dist(20.0, 1.0);
+    std::normal_distribution<double> length_dist(mean_glial_process_length, std_glial_process_length);
     double length = 0;
     while (length < 3) {
         length = length_dist(generator);
@@ -1889,6 +1892,7 @@ void AxonGammaDistribution::growthThread(
     // 1) Possibly vary the radius (beading)
     double varied_radius = (beading_variation > 0)
         ? RandomradiusVariation(axon)
+        //? radiusVariation(axon)
         : axon.radius;
 
     // 2) Attempt to add a sphere (returns true if successful)
@@ -1939,7 +1943,7 @@ void AxonGammaDistribution::growthThread(
             }
         }
         else if (!can_grow && !axon_can_shrink) {
-            if (axon.growth_attempts < 10) {
+            if (axon.growth_attempts < 100) {
                 //cout <<"axon " << axon.id << " only has one sphere" << endl;
                 // Retry with a new attempt
                 axon.keep_one_sphere();  // Revert the last sphere or do whatever keep_one_sphere does
@@ -1971,11 +1975,8 @@ void AxonGammaDistribution::growAxon(std::vector<Axon>& axs, Axon& axon_to_grow,
 
     // Possibly alter the beading amplitude if beading_variation > 0
     if (beading_variation > 0) {
-        std::random_device rd;
-        std::default_random_engine generator(rd());
-        std::normal_distribution<double> distribution(beading_variation, 0.05);
 
-        axon_to_grow.beading_amplitude = distribution(generator);
+        axon_to_grow.beading_amplitude = beading_variation
         // Clamp beading amplitude between 0 and 1
         if (axon_to_grow.beading_amplitude < 0.0) {
             axon_to_grow.beading_amplitude = 0.0;
@@ -1988,12 +1989,16 @@ void AxonGammaDistribution::growAxon(std::vector<Axon>& axs, Axon& axon_to_grow,
     // Initialize a Growth object for this axon
     AxonGrowth growth(axon_to_grow, astrocytes, oligodendrocytes, axs, min_limits, max_limits, min_limits, max_limits, std_dev, min_radius);
 
+    int tries_ = 0;
+    int max_nbr_tries = 100;
     // Keep trying to grow until finished
-    while (finished == 0) {
+    while (finished == 0 && tries_ < max_nbr_tries) {
         if (!axon_to_grow.outer_spheres.empty()) {
             // Attempt a single growth step
             growthThread(axs, axon_to_grow, growth, finished, grow_straight, straight_growths, stuck_radii_, stuck_indices_);
-
+            if (stuck_radii_>0) {
+                tries_ += 1;
+            }
         }
         else {
             //cout <<"finished = 1" << endl;
@@ -2004,6 +2009,12 @@ void AxonGammaDistribution::growAxon(std::vector<Axon>& axs, Axon& axon_to_grow,
     }
     if (axon_to_grow.outer_spheres.size()==1) {
         assert(0);
+    }
+    if (tries_ == max_nbr_tries) {
+        //cout << "axon " << axon_to_grow.id << " is stuck" << endl;
+        axon_to_grow.destroy();
+        stuck_radii_ = axon_to_grow.radius;
+        stuck_indices_ = axon_to_grow.id;
     }
 }
 
@@ -2221,6 +2232,7 @@ double AxonGammaDistribution::radiusVariation(Axon &axon)
     double length = get_axonal_length(axon);
 
     double amplitude = mean_radius * axon.beading_amplitude;
+    double beading_period = 1;
 
     double omega = 2 * M_PI / (beading_period*mean_radius);
 
@@ -2520,19 +2532,17 @@ void AxonGammaDistribution::add_Myelin()
         // ranvier node probability
         int nbr_spheres_to_delete = 1 / axons[index].radius; // a ranvier node is approx 1 um
         nbr_spheres_to_delete = nbr_spheres_to_delete*factor;
-
-        int nbr_spheres_for_ranvier = 200; // a ranvier node is approx every 100*diameter
-        nbr_spheres_for_ranvier = nbr_spheres_for_ranvier*factor;
-
+        double prob_ranvier_node = 600*factor/axons[index].radius;
 
         int ranvier_count = 0;
         bool ranvier = false;
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(0, nbr_spheres_for_ranvier);
+        std::uniform_int_distribution<> dis(0, prob_ranvier_node);
 
         for (long unsigned int i = 0; i < axons[index].outer_spheres.size(); ++i)
         {
+
 
             if (axons[index].myelin_sheath ){
                 innerRadius = findInnerRadius(axons[index].outer_spheres[i].radius);

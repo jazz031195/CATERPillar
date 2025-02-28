@@ -126,6 +126,12 @@ void Parameters::readConfFile(std::string conf_file_path)
         else if (str_dist(tmp,"min_rad") <= 2){
             in >> min_rad;
         }
+        else if (str_dist(tmp,"mean_glial_process_length") <= 2){
+            in >> mean_glial_process_length;
+        }
+        else if (str_dist(tmp,"std_glial_process_length") <= 2){
+            in >> std_glial_process_length;
+        }
         else if ((str_dist(tmp,"<vox_sizes>") == 0)){
             vox_sizes.clear();
 

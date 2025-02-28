@@ -52,6 +52,11 @@ private:
     double maxY;
     double maxZ;
 
+    float orbitTheta;
+    float orbitPhi;
+    float cameraDistance;
+    
+
 
     QMatrix4x4 projectionMatrix;
     QTimer timer;

@@ -22,7 +22,7 @@ from scipy.signal import find_peaks
 
 
 def read_swc_file(file_path):
-    columns = ["ax_id","sph_id", "branch_id", "type", "x", "y", "z", "Rin","Rout", "P"]
+    columns = ["id_ax","sph_id", "branch_id", "type", "x", "y", "z", "Rin","Rout", "P"]
     df = pd.read_csv(file_path, sep=' ', names=columns)
 
     df = df.iloc[1:]
@@ -31,7 +31,7 @@ def read_swc_file(file_path):
     df["z"] = [float(i) for i in list(df["z"])]
     df["Rout"] = [float(i) for i in list(df["Rout"])]
     df["Rin"] = [float(i) for i in list(df["Rin"])]
-    df["ax_id"] = [float(i) for i in list(df["ax_id"])]
+    df["id_ax"] = [float(i) for i in list(df["id_ax"])]
     df["sph_id"] = [float(i) for i in list(df["sph_id"])]
     df["P"] = [float(i) for i in list(df["P"])]
     df["branch_id"] = [float(i) for i in list(df["branch_id"])]
@@ -43,7 +43,7 @@ def read_swc_file(file_path):
 def radius_histogram(df):
     df['R'] = pd.to_numeric(df['R'], errors='coerce')
     df["Diameter"] = df["R"]*2
-    df = df.groupby(by = "ax_id").mean()
+    df = df.groupby(by = "id_ax").mean()
     sns.histplot(data=df, x="Diameter", color='blue', bins=30, kde=True)
     plt.xlabel('Diameter')
     plt.ylabel('Frequency')
@@ -55,14 +55,14 @@ def radius_histogram(df):
 def mean_dist_between_maxima(file_path):
     df = read_swc_file(file_path)
 
-    axon_ids = df['ax_id'].unique()
+    axon_ids = df['id_ax'].unique()
     mean_distances = []
 
     # Step 1: Process each axon to find mean distances between peaks
     for axon_id in axon_ids:
         # Extract radius and z values for the current axon
-        radius = df.loc[df['ax_id'] == axon_id, 'Rin'].values
-        z_values = df.loc[df['ax_id'] == axon_id, 'z'].values
+        radius = df.loc[df['id_ax'] == axon_id, 'Rin'].values
+        z_values = df.loc[df['id_ax'] == axon_id, 'z'].values
 
         # Find local maxima in the radius values
         peaks, _ = find_peaks(radius, distance = 1, prominence=0.5)
@@ -76,8 +76,8 @@ def mean_dist_between_maxima(file_path):
 
     # Step 2: Plot a random radius variation with z and mark the peaks
     random_axon_id = random.choice(axon_ids)  # Pick a random axon ID
-    radius_random = df.loc[df['ax_id'] == random_axon_id, 'Rout'].values
-    z_random = df.loc[df['ax_id'] == random_axon_id, 'z'].values
+    radius_random = df.loc[df['id_ax'] == random_axon_id, 'Rout'].values
+    z_random = df.loc[df['id_ax'] == random_axon_id, 'z'].values
 
     # Find peaks for the random axon
     peaks_random, _ = find_peaks(radius_random)
@@ -110,8 +110,8 @@ def diameter_variation(file_path, num_axons=10, max_z=None):
     plt.figure(figsize=(12, 6))  # Adjust the figure size as needed
 
     # Get the first 'num_axons' axon IDs
-    first_n_axon_ids = df['ax_id'].unique()[:num_axons]
-    df_subset = df[df['ax_id'].isin(first_n_axon_ids)]
+    first_n_axon_ids = df['id_ax'].unique()[:num_axons]
+    df_subset = df[df['id_ax'].isin(first_n_axon_ids)]
 
     # Filter data until the specific 'z' value if provided
     if max_z is not None:
@@ -124,7 +124,7 @@ def diameter_variation(file_path, num_axons=10, max_z=None):
     df_subset['Diameter'] = df_subset['Rin'] * 2
 
     # Plot smooth curves without individual data points
-    sns.lineplot(data=df_subset, x="z", y="Diameter", hue="ax_id", ci=None, legend=False, markers=True)
+    sns.lineplot(data=df_subset, x="z", y="Diameter", hue="id_ax", ci=None, legend=False, markers=True)
     
     plt.xlabel("z")
     plt.ylabel("2r")
@@ -144,14 +144,24 @@ def create_subplots(file_path):
     axons["myelinated"] = axons["Rin"] != axons["Rout"]
     #axons= axons.loc[axons["myelinated"] == False]
     # calculate covariance of Rout of each axon
-    cov_out_mean = axons[["Outer Diameter", "ax_id"]].groupby(by="ax_id").mean()
-    cov_out_std = axons[["Outer Diameter", "ax_id"]].groupby(by="ax_id").std()
+    cov_out_mean = axons[["Outer Diameter", "id_ax"]].groupby(by="id_ax").mean()
+    cov_out_std = axons[["Outer Diameter", "id_ax"]].groupby(by="id_ax").std()
     cov_out = pd.DataFrame()
     cov_out["Coefficient of Variation"] = cov_out_std/cov_out_mean
-    cov_in_mean = axons[["Inner Diameter", "ax_id"]].groupby(by="ax_id").mean()
-    cov_in_std = axons[["Inner Diameter", "ax_id"]].groupby(by="ax_id").std()
+    cov_in_mean = axons[["Inner Diameter", "id_ax"]].groupby(by="id_ax").mean()
+    cov_in_std = axons[["Inner Diameter", "id_ax"]].groupby(by="id_ax").std()
     cov_in = pd.DataFrame()
     cov_in["Coefficient of Variation"] = cov_in_std/cov_in_mean
+    # delete nans
+    cov_in = cov_in.dropna()
+    cov_out = cov_out.dropna()
+
+    print("length cov_out_mean", len(cov_out_mean))
+    print("length cov_out_std", len(cov_out_std))
+    print("length cov_in_mean", len(cov_in_mean))
+    print("length cov_in_std", len(cov_in_std))
+    print("length cov_out", len(cov_out))
+    print("length cov_in", len(cov_in))
 
     # add g-ratio column = Rin/Rout
     axons["g_ratio"] = axons["Rin"]/axons["Rout"]
@@ -160,8 +170,8 @@ def create_subplots(file_path):
     # define figure with 4 subplots
     fig, axs = plt.subplots(2, 2, figsize=(10, 10))
     # plot "Rout" histogram with seaborn
-    sns.histplot(data=cov_out_mean, x="Outer Diameter", color='blue', bins=30, kde=True, ax=axs[0, 0], label="Outer Diameter")
-    sns.histplot(data=cov_in_mean, x="Inner Diameter", color='red', bins=30, kde=True, ax=axs[0, 0], label="Inner Diameter")
+    sns.histplot(data=cov_out_mean, x="Outer Diameter", color='blue',  kde=True, ax=axs[0, 0], label="Outer Diameter", bins=30, binrange = (0, 5))
+    sns.histplot(data=cov_in_mean, x="Inner Diameter", color='red',  kde=True, ax=axs[0, 0], label="Inner Diameter", bins=30, binrange = (0, 5))
     axs[0, 0].legend()
     axs[0, 0].set_title('Diameter Histogram')
     axs[0, 0].set_xlabel('Diameter [µm]')
@@ -178,8 +188,8 @@ def create_subplots(file_path):
 
 
     # plot covariance of Rout
-    sns.histplot(data=cov_out, x= "Coefficient of Variation", color='blue',  kde=True, ax=axs[1, 0], label="Outer Diameter")
-    sns.histplot(data=cov_in, x= "Coefficient of Variation", color='red',  kde=True, ax=axs[1, 0], label="Inner Diameter")
+    sns.histplot(data=cov_out, x= "Coefficient of Variation", color='blue',  kde=True, ax=axs[1, 0], label="Outer Diameter", bins=30, binrange = (0, 1))
+    sns.histplot(data=cov_in, x= "Coefficient of Variation", color='red',  kde=True, ax=axs[1, 0], label="Inner Diameter", bins=30, binrange = (0, 1))
     axs[1, 0].legend()
     axs[1, 0].set_title('Coefficient of Variation of Diameter')
     axs[1, 0].set_xlabel('Coefficient of Variation')
@@ -234,12 +244,12 @@ def tortuosity(df):
         print("No axons found")
         return [], []
 
-    nbr_axons = int(df.iloc[len(df)-1 ]["ax_id"])
+    nbr_axons = int(df.iloc[len(df)-1 ]["id_ax"])
     tortuosities = []
     radii = []
     for axon in range(nbr_axons):
  
-        df_ = df.loc[df["ax_id"]== axon].reset_index()
+        df_ = df.loc[df["id_ax"]== axon].reset_index()
         if(len(df_)== 0):
             continue
         
@@ -278,7 +288,7 @@ def draw_axons(file_path, glial_only = False):
     N = 5
     colors = mcolors._colors_full_map #dictionary of all colors
     df = read_swc_file(file_path)
-    df["color"] = df["ax_id"].apply(lambda x: get_random_element(colors, seed = x)[1])
+    df["color"] = df["id_ax"].apply(lambda x: get_random_element(colors, seed = x)[1])
 
     # distance from x,y,z to point(0,0,0)
     df["distance_to_point"] = np.linalg.norm(df[["x", "y", "z"]], axis=1)
@@ -343,21 +353,21 @@ def draw_cells(file_path, plot_type="all", axon_indices=None, astrocyte_indices=
     df = read_swc_file(file_path)
 
     # Step 2: Assign colors to axons
-    df["color"] = df["ax_id"].apply(lambda x: get_random_element(colors, seed=x)[1])
+    df["color"] = df["id_ax"].apply(lambda x: get_random_element(colors, seed=x)[1])
 
     # Step 3: Prepare data for plotting
     if plot_type == "axons" or (plot_type == "all" and axon_indices):
         df = df[df["type"] == "axon"]
         if axon_indices is not None:
-            ax_ids = df["ax_id"].unique()
-            axon_indices = [ax_ids[i] for i in axon_indices]
-            df = df[df["ax_id"].isin(axon_indices)]
+            id_axs = df["id_ax"].unique()
+            axon_indices = [id_axs[i] for i in axon_indices]
+            df = df[df["id_ax"].isin(axon_indices)]
     elif plot_type == "astrocytes":
         df = df[df["type"] != "axon"]
         if astrocyte_indices is not None:
-            ax_ids = df["ax_id"].unique()
-            astrocyte_indices = [ax_ids[i] for i in astrocyte_indices]
-            df = df[df["ax_id"].isin(astrocyte_indices)]
+            id_axs = df["id_ax"].unique()
+            astrocyte_indices = [id_axs[i] for i in astrocyte_indices]
+            df = df[df["id_ax"].isin(astrocyte_indices)]
     elif plot_type == "all":
         pass
     else:
@@ -415,20 +425,20 @@ def draw_axons_black_white(file_path, glial_only=False):
     df["color"] = "white"
     
     grey_colors = ["#d3d3d3", "#a9a9a9", "#696969", "#808080", "#778899", "#708090", "#2f4f4f", "#708090", "#778899", "#808080", "#696969", "#a9a9a9", "#d3d3d3"]
-    df["color"] = list(map(lambda x, y, z: "white" if x == "axon" else y, list(df["type"]), list(df["color"]), list(df["ax_id"])))
+    df["color"] = list(map(lambda x, y, z: "white" if x == "axon" else y, list(df["type"]), list(df["color"]), list(df["id_ax"])))
 
     # Filter for axons in a specific region
     df_ = df.loc[df["type"] == "axon"]
-    df_ = df_.groupby("ax_id").first().reset_index()
-    ax_ids = df_["ax_id"].unique()
+    df_ = df_.groupby("id_ax").first().reset_index()
+    id_axs = df_["id_ax"].unique()
 
-    # Filter axons by selected ax_ids
+    # Filter axons by selected id_axs
     df_axons = df.loc[df["type"] == "axon"]
-    df_axons = df_axons.loc[df_axons["ax_id"].isin(ax_ids)]
+    df_axons = df_axons.loc[df_axons["id_ax"].isin(id_axs)]
 
     # Glial cells selection
     df_glial = df.loc[df["type"] != "axon"]
-    # df_glial = df_glial.loc[df_glial["ax_id"]==1]
+    # df_glial = df_glial.loc[df_glial["id_ax"]==1]
     df = pd.concat([df_axons, df_glial])
 
     # Calculate distance from (0,0,0) for sorting purposes
@@ -489,18 +499,18 @@ def get_spheres_array(df):
     df['Rout'] = pd.to_numeric(df['Rout'], errors='coerce')
 
     for _, row in df.iterrows(): # loops over each row of the df
-        ax_id = row["ax_id"]
+        id_ax = row["id_ax"]
         x = row["x"]
         y = row["y"]
         z = row["z"]
         r = row["Rout"]  
         type_ = row["type"]
 
-        if ax_id != current_axon_id: # passing to next axon 
+        if id_ax != current_axon_id: # passing to next axon 
             if current_axon_id is not None:
                 axons.append(current_axon) # full list
                 current_axon = [] # emptying list
-            current_axon_id = ax_id # update axon number
+            current_axon_id = id_ax # update axon number
 
         current_axon.append([x, y, z, r, type_])
 
@@ -553,7 +563,7 @@ def draw_spheres(file_path, limit, z_slice):
 
     axons = df.loc[df["type"] == "axon"]
     for axon in axons["id_ax"].unique():
-        axon_i = axons.loc[axons["ax_id"] == axon]
+        axon_i = axons.loc[axons["id_ax"] == axon]
 
 
         axon_in_slice = axon_i.loc[(axon_i["z"]-axon_i["Rin"] < z_slice) & (z_slice < axon_i["z"]+axon_i["Rin"])]
@@ -571,8 +581,8 @@ def draw_spheres(file_path, limit, z_slice):
         
 
     glial_df = df.loc[df["type"] != "axon"]
-    for glial in glial_df["ax_id"].unique():
-        glial_i = glial_df.loc[glial_df["ax_id"] == glial]
+    for glial in glial_df["id_ax"].unique():
+        glial_i = glial_df.loc[glial_df["id_ax"] == glial]
         glial_in_slice = glial_i.loc[(glial_i["z"]-glial_i["Rout"] < z_slice) & (z_slice < glial_i["z"]+glial_i["Rout"])]
         random_key, random_value = get_random_element(colors, seed = axon)
         c = random_value
@@ -690,7 +700,7 @@ def get_swc_from_folder(folder_path, icvf):
 
 def read_swc_file_np(file_path, axon_nbr):
 # Define column names
-    columns = ["ax_id", "sph_id", "branch_id", "type", "x", "y", "z", "Rin", "Rout", "P"]
+    columns = ["id_ax", "sph_id", "branch_id", "type", "x", "y", "z", "Rin", "Rout", "P"]
     
     # Read the file using numpy.genfromtxt to handle non-numeric values
     data_ = np.genfromtxt(file_path, skip_header=1, dtype=None, encoding=None)
@@ -730,8 +740,8 @@ def draw_spheres_pyvista(file_path, axons = True, processes = True, chosen_id = 
     if axons:
         df_axons = df[df["type"] == "axon"]
         if (chosen_id is None):
-            for id in tqdm(df_axons["ax_id"].unique(), desc="Processing"):
-                axon_i = df_axons.loc[df_axons["ax_id"] == id]
+            for id in tqdm(df_axons["id_ax"].unique(), desc="Processing"):
+                axon_i = df_axons.loc[df_axons["id_ax"] == id]
                 N = np.array(axon_i[["x", "y", "z"]].astype(float))
                 Rout = np.array(axon_i["Rout"])
                 Rin = np.array(axon_i["Rin"])
@@ -746,7 +756,7 @@ def draw_spheres_pyvista(file_path, axons = True, processes = True, chosen_id = 
                     else:
                         plotter.add_points(p, render_points_as_spheres=True, point_size=Rout[i]*scale, color=c, opacity = 1)
         else:
-            axon_i = df_axons.loc[df_axons["ax_id"] == chosen_id]
+            axon_i = df_axons.loc[df_axons["id_ax"] == chosen_id]
             N = np.array(axon_i[["x", "y", "z"]].astype(float))
             Rout = np.array(axon_i["Rout"])
             Rin = np.array(axon_i["Rin"])
@@ -765,11 +775,11 @@ def draw_spheres_pyvista(file_path, axons = True, processes = True, chosen_id = 
                     plotter.add_points(p, render_points_as_spheres=True, point_size=Rout[i]*scale, color=c, opacity = 1)
     
     df_glial = df[df["type"] == "glial"]
-    for id in tqdm(df_glial["ax_id"].unique(), desc="Processing"):
+    for id in tqdm(df_glial["id_ax"].unique(), desc="Processing"):
         if chosen_id is not None:
             if id != chosen_id:
                 continue
-        glial_i = df_glial.loc[df_glial["ax_id"] == id]
+        glial_i = df_glial.loc[df_glial["id_ax"] == id]
         N = np.array(glial_i[["x", "y", "z"]].astype(float))
         R = np.array(glial_i["Rout"])
         if chosen_id is not None:
@@ -783,12 +793,12 @@ def draw_spheres_pyvista(file_path, axons = True, processes = True, chosen_id = 
             #plotter.add_mesh(pv.PolyData(p), point_size=R[i]*scale, color=c, render_points_as_spheres=True)
     if processes:
         df_glial_ramification = df[df["type"] == "glialRamification"]
-        for id in tqdm(df_glial_ramification["ax_id"].unique(), desc="Processing"):
+        for id in tqdm(df_glial_ramification["id_ax"].unique(), desc="Processing"):
             if chosen_id is not None:
                 if id != chosen_id:
                     continue
      
-            glial_ramification_i = df_glial_ramification.loc[df_glial_ramification["ax_id"] == id]
+            glial_ramification_i = df_glial_ramification.loc[df_glial_ramification["id_ax"] == id]
             N = np.array(glial_ramification_i[["x", "y", "z"]].astype(float))
             R = np.array(glial_ramification_i["Rout"])
             if chosen_id is not None:
@@ -811,7 +821,7 @@ def draw_one_axon_pyvista(file_path, chosen_id = None):
 
     scale = 150
 
-    axon_i = df_axons.loc[df_axons["ax_id"] == chosen_id]
+    axon_i = df_axons.loc[df_axons["id_ax"] == chosen_id]
 
     N = np.array(axon_i[["x", "y", "z"]].astype(float))
     Rout = np.array(axon_i["Rout"])
@@ -837,7 +847,7 @@ def draw_one_glial_pyvista(file_path, chosen_id = None):
 
     scale = 20
 
-    axon_i = df_axons.loc[df_axons["ax_id"] == chosen_id]
+    axon_i = df_axons.loc[df_axons["id_ax"] == chosen_id]
 
     N = np.array(axon_i[["x", "y", "z"]].astype(float))
     Rout = np.array(axon_i["Rout"])
@@ -857,9 +867,9 @@ def sholl_intersection(file_path):
     sphere_around_soma_radii = [5, 7, 10, 15, 20 , 25, 30, 40, 50, 60, 80]
     intersections_list_all = []
     glial_df = df.loc[df["type"] != "axon"]
-    for glial in glial_df["ax_id"].unique():
+    for glial in glial_df["id_ax"].unique():
         intersections_list = []
-        glial_i = glial_df.loc[glial_df["ax_id"] == glial]
+        glial_i = glial_df.loc[glial_df["id_ax"] == glial]
         soma_glial = glial_i.loc[glial_i["type"] == "glialSoma"]
         print(soma_glial)
         soma_position = np.array(soma_glial[["x", "y", "z"]].astype(float))[0]
@@ -990,7 +1000,7 @@ if __name__ == "__main__":
 
     file_path_GM= "/home/localadmin/Documents/CATERPillar/growth_vox_50_factor_4_0.swc"
     file_path_WM = "/home/localadmin/Documents/CATERPillar/growth_vox_50_factor_4_0.swc"
-    file_path = "/home/localadmin/Documents/CATERPillar/myelin_.swc"
+    file_path = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/time_dependence/f_0.5.swc"
     # draw_spheres(file_path, 50, 49)
     #tortuosity_plot("/home/localadmin/Documents/CATERPillar/tortuosities")
     # draw_one_glial_pyvista(file_path_GM, chosen_id = 1)

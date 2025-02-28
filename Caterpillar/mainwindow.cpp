@@ -109,101 +109,139 @@ void Window::createControls(const QString &title)
 {
     controlsGroup = new QGroupBox(title);
 
+     // --- Create the GroupBoxes ---
+    QGroupBox *generalGroup = new QGroupBox("General Parameters");
+    QGroupBox *axonsGroup = new QGroupBox("Axon Parameters");
+    QGroupBox *glialGroup = new QGroupBox("Glial Cell Parameters");
+
     axons_icvf_qlabel = new QLabel(tr("Axons ICVF (%):"));
     axons_w_myelin_icvf_qlabel = new QLabel(tr("Axons with myelin ICVF (%):"));
     astrocyte_soma_icvf_qlabel = new QLabel(tr("Astrocyte somas ICVF (%):"));
     astrocyte_processes_icvf_qlabel = new QLabel(tr("Astrocyte processes ICVF (%):"));
     oligodendrocyte_soma_icvf_qlabel = new QLabel(tr("Oligodendrocyte somas ICVF (%):"));
     oligodendrocyte_processes_icvf_qlabel = new QLabel(tr("Oligodendrocyte processes ICVF (%):"));
-    voxel_size_qlabel = new QLabel(tr("Voxel Edge Length [um]:"));
-    minimum_radius_qlabel = new QLabel(tr("Minimum Cell Radius [nm]:"));
+    voxel_size_qlabel = new QLabel(tr("Voxel Edge Length (μm):"));
+    minimum_radius_qlabel = new QLabel(tr("Minimum Sphere Radius (μm):"));
     nbr_threads_qlabel = new QLabel(tr("Number of Threads:"));
     overlapping_factor_qlabel = new QLabel(tr("Overlapping Factor (R/f):"));
-    c2_qlabel = new QLabel(tr("c2*100:"));
+    c2_qlabel = new QLabel(tr("c2 (fODF):"));
     nbr_axons_populations_qlabel = new QLabel(tr("Number of axons populations:"));
+    epsilon_qlabel = new QLabel(tr("ε (tortuousity):"));
+    beading_amplitude_qlabel = new QLabel(tr("Beading Amplitude :"));
+    mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
+    std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
 
-    Tortuous = new QCheckBox(tr("Tortuous"));
-    Beading = new QCheckBox(tr("Beading"));
+    beading_amplitude_SpinBox = new QDoubleSpinBox;
+    beading_amplitude_SpinBox->setRange(0, 1);
+    beading_amplitude_SpinBox->setSingleStep(0.1);
 
-    axons_icvf_SpinBox = new QSpinBox;
+    epsilon_SpinBox = new QDoubleSpinBox;
+    epsilon_SpinBox->setRange(0, 2);
+    epsilon_SpinBox->setSingleStep(0.1);
+
+    mean_process_length_SpinBox = new QDoubleSpinBox;
+    mean_process_length_SpinBox->setRange(0, 100);
+    mean_process_length_SpinBox->setSingleStep(1);
+    mean_process_length_SpinBox->setValue(20);
+
+    std_process_length_SpinBox = new QDoubleSpinBox;
+    std_process_length_SpinBox->setRange(0, 100);
+    std_process_length_SpinBox->setSingleStep(1);
+    std_process_length_SpinBox->setValue(10);
+
+    axons_icvf_SpinBox = new QDoubleSpinBox;
     axons_icvf_SpinBox->setRange(0, 100);
     axons_icvf_SpinBox->setSingleStep(1);
 
-    axons_w_myelin_icvf_SpinBox = new QSpinBox;
+    axons_w_myelin_icvf_SpinBox = new QDoubleSpinBox;
     axons_w_myelin_icvf_SpinBox->setRange(0, 100);
     axons_w_myelin_icvf_SpinBox->setSingleStep(1);
 
-    astrocyte_soma_icvf_SpinBox = new QSpinBox;
+    astrocyte_soma_icvf_SpinBox = new QDoubleSpinBox;
     astrocyte_soma_icvf_SpinBox->setRange(0, 100);
     astrocyte_soma_icvf_SpinBox->setSingleStep(1);
 
-    astrocyte_processes_icvf_SpinBox = new QSpinBox;
+    astrocyte_processes_icvf_SpinBox = new QDoubleSpinBox;
     astrocyte_processes_icvf_SpinBox->setRange(0, 100);
     astrocyte_processes_icvf_SpinBox->setSingleStep(1);
 
-    oligodendrocyte_soma_icvf_SpinBox = new QSpinBox;
+    oligodendrocyte_soma_icvf_SpinBox = new QDoubleSpinBox;
     oligodendrocyte_soma_icvf_SpinBox->setRange(0, 100);
     oligodendrocyte_soma_icvf_SpinBox->setSingleStep(1);
 
-    oligodendrocyte_processes_icvf_SpinBox = new QSpinBox;
+    oligodendrocyte_processes_icvf_SpinBox = new QDoubleSpinBox;
     oligodendrocyte_processes_icvf_SpinBox->setRange(0, 100);
     oligodendrocyte_processes_icvf_SpinBox->setSingleStep(1);
 
-    nbr_threads_SpinBox = new QSpinBox;
+    nbr_threads_SpinBox = new QDoubleSpinBox;
     nbr_threads_SpinBox->setRange(1, 1000);
     nbr_threads_SpinBox->setSingleStep(1);
 
-    voxel_size_SpinBox = new QSpinBox;
+    voxel_size_SpinBox = new QDoubleSpinBox;
     voxel_size_SpinBox->setRange(10, 1000);
     voxel_size_SpinBox->setSingleStep(1);
 
-    minimum_radius_SpinBox = new QSpinBox;
-    minimum_radius_SpinBox->setRange(10, 1000);
-    minimum_radius_SpinBox->setSingleStep(1);
+    minimum_radius_SpinBox = new QDoubleSpinBox;
+    minimum_radius_SpinBox->setRange(0.05, 10);
+    minimum_radius_SpinBox->setSingleStep(0.05);
+    minimum_radius_SpinBox->setValue(0.15);
 
-    overlapping_factor_SpinBox = new QSpinBox;
+    overlapping_factor_SpinBox = new QDoubleSpinBox;
     overlapping_factor_SpinBox->setRange(1, 64);
     overlapping_factor_SpinBox->setSingleStep(1);
+    overlapping_factor_SpinBox->setValue(4);
 
-    nbr_axons_populations_SpinBox = new QSpinBox;
+    nbr_axons_populations_SpinBox = new QDoubleSpinBox;
     nbr_axons_populations_SpinBox->setRange(1, 3);
     nbr_axons_populations_SpinBox->setSingleStep(1);
 
-    c2_SpinBox = new QSpinBox;
-    c2_SpinBox->setRange(0, 100);
-    c2_SpinBox->setSingleStep(1);
+    c2_SpinBox = new QDoubleSpinBox;
+    c2_SpinBox->setRange(0, 1);
+    c2_SpinBox->setSingleStep(0.05);
+    c2_SpinBox->setValue(1);
 
     QGridLayout *controlsLayout = new QGridLayout;
-    controlsLayout->addWidget(axons_icvf_qlabel, 0, 0);
-    controlsLayout->addWidget(axons_w_myelin_icvf_qlabel, 1, 0);
-    controlsLayout->addWidget(astrocyte_soma_icvf_qlabel, 2, 0);
-    controlsLayout->addWidget(astrocyte_processes_icvf_qlabel, 3, 0);
-    controlsLayout->addWidget(oligodendrocyte_soma_icvf_qlabel, 4, 0);
-    controlsLayout->addWidget(oligodendrocyte_processes_icvf_qlabel, 5, 0);
-    controlsLayout->addWidget(voxel_size_qlabel, 6, 0);
-    controlsLayout->addWidget(minimum_radius_qlabel, 7, 0);
-    controlsLayout->addWidget(nbr_threads_qlabel, 8, 0);
-    controlsLayout->addWidget(overlapping_factor_qlabel, 9, 0);
-    controlsLayout->addWidget(c2_qlabel, 10, 0);
-    controlsLayout->addWidget(nbr_axons_populations_qlabel, 11, 0);
 
-    controlsLayout->addWidget(axons_icvf_SpinBox, 0, 1);
-    controlsLayout->addWidget(axons_w_myelin_icvf_SpinBox, 1, 1);
-    controlsLayout->addWidget(astrocyte_soma_icvf_SpinBox, 2, 1);
-    controlsLayout->addWidget(astrocyte_processes_icvf_SpinBox, 3, 1);
-    controlsLayout->addWidget(oligodendrocyte_soma_icvf_SpinBox, 4, 1);
-    controlsLayout->addWidget(oligodendrocyte_processes_icvf_SpinBox, 5, 1);
-    controlsLayout->addWidget(voxel_size_SpinBox, 6, 1);
-    controlsLayout->addWidget(minimum_radius_SpinBox, 7, 1);
-    controlsLayout->addWidget(nbr_threads_SpinBox, 8, 1);
-    controlsLayout->addWidget(overlapping_factor_SpinBox, 9, 1);
-    controlsLayout->addWidget(c2_SpinBox, 10, 1);
-    controlsLayout->addWidget(nbr_axons_populations_qlabel, 11, 1);
+    std::vector<QLabel*> general_labels = {voxel_size_qlabel, overlapping_factor_qlabel, minimum_radius_qlabel};
+    std::vector <QDoubleSpinBox*> general_spinBoxes = { voxel_size_SpinBox, overlapping_factor_SpinBox, minimum_radius_SpinBox};
+    
+    std::vector<QLabel*> axons_labels = {axons_w_myelin_icvf_qlabel, axons_icvf_qlabel ,nbr_threads_qlabel, epsilon_qlabel, c2_qlabel, nbr_axons_populations_qlabel, beading_amplitude_qlabel};
+    std::vector <QDoubleSpinBox*> axons_spinBoxes = {axons_w_myelin_icvf_SpinBox, axons_icvf_SpinBox, nbr_threads_SpinBox, epsilon_SpinBox, c2_SpinBox, nbr_axons_populations_SpinBox, beading_amplitude_SpinBox};
+    
+    std::vector<QLabel*> glials_labels = {astrocyte_soma_icvf_qlabel, astrocyte_processes_icvf_qlabel, oligodendrocyte_soma_icvf_qlabel, oligodendrocyte_processes_icvf_qlabel, mean_process_length_qlabel, std_process_length_qlabel};
+    std::vector <QDoubleSpinBox*> glials_spinBoxes = {astrocyte_soma_icvf_SpinBox, astrocyte_processes_icvf_SpinBox, oligodendrocyte_soma_icvf_SpinBox, oligodendrocyte_processes_icvf_SpinBox, mean_process_length_SpinBox, std_process_length_SpinBox};
+    
+    
+    QGridLayout *generalLayout = new QGridLayout;
 
+    for (int i = 0; i < general_labels.size(); i++){
+        generalLayout->addWidget(general_labels[i], i, 0);
+        generalLayout->addWidget(general_spinBoxes[i], i, 1);
+    }
+    generalGroup->setLayout(generalLayout);
 
-    controlsLayout->addWidget(Tortuous, 0, 2);
-    controlsLayout->addWidget(Beading, 1, 2);
-    controlsGroup->setLayout(controlsLayout);
+    QGridLayout *axonsLayout = new QGridLayout;
+    for (int i = 0; i < axons_labels.size(); i++){
+        axonsLayout->addWidget(axons_labels[i], i, 0);
+        axonsLayout->addWidget(axons_spinBoxes[i], i, 1);
+    }
+    axonsGroup->setLayout(axonsLayout);
+
+    QGridLayout *glialLayout = new QGridLayout;
+    for (int i = 0; i < glials_labels.size(); i++){
+        glialLayout->addWidget(glials_labels[i], i, 0);
+        glialLayout->addWidget(glials_spinBoxes[i], i, 1);
+    }
+    glialGroup->setLayout(glialLayout);
+
+    // --- Main Layout ---
+    QVBoxLayout *mainLayout = new QVBoxLayout;
+    mainLayout->addWidget(generalGroup);
+    mainLayout->addWidget(axonsGroup);
+    mainLayout->addWidget(glialGroup);
+
+    controlsGroup->setLayout(mainLayout);
+
 }
 
 
@@ -228,7 +266,12 @@ void Window::onSaveButtonClicked()
     voxel_size = voxel_size_SpinBox->value();
     minimum_radius = minimum_radius_SpinBox->value();
     c2 = c2_SpinBox->value();
-    nbr_axons_populations = 1;
+    nbr_axons_populations = nbr_axons_populations_SpinBox->value();
+    beading_amplitude = beading_amplitude_SpinBox->value();
+    mean_process_length = mean_process_length_SpinBox->value();
+    std_process_length = std_process_length_SpinBox->value();
+    epsilon = epsilon_SpinBox->value();
+
 
     // Close the parameter input dialog
     this->close();
@@ -252,27 +295,11 @@ void Window::StartSimulation(){
     double axons_with_myelin_icvf = axons_w_myelin_icvf/100.0;
     int spheres_overlap_factor = overlapping_factor;
     std::string directory = selectedDirectory.toStdString();
-    double cosphisquared = c2/100.0;
-    double std_dev;
+    double cosphisquared = c2;
+    double std_dev = epsilon;
+    double mean_glial_process_length = mean_process_length;
+    double std_glial_process_length = std_process_length;
 
-    if (Tortuous->isChecked()){
-        std_dev = 0.4;
-    }
-    else{
-        std_dev = 0.0;
-    }
-
-    double beading_period;
-    double beading_variation;
-
-    if (Beading->isChecked()){
-        beading_variation = 0.3;
-        beading_period = 0.5;
-    }
-    else{
-        beading_variation = 0.0;
-        beading_period = 0.0;
-    }
 
     double alpha = parameters.alpha;
     double beta = parameters.beta;
@@ -295,7 +322,7 @@ void Window::StartSimulation(){
             auto startTime = std::chrono::high_resolution_clock::now();
             cout << "STARTING SIMULATION " << endl;
             // create distribution of axons
-            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, astrocyte_icvf_soma, astrocyte_icvf_branches, oligodendrocyte_icvf_soma, oligodendrocyte_icvf_branches, alpha, beta, min_l, max_l, min_radius, regrow_thr, beading_variation, std_dev, ondulation_factor, beading_period, spheres_overlap_factor, can_shrink, cosphisquared, nbr_threads, nbr_axons_populations, crossing_fibers_type);
+            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, astrocyte_icvf_soma, astrocyte_icvf_branches, oligodendrocyte_icvf_soma, oligodendrocyte_icvf_branches, alpha, beta, min_l, max_l, min_radius, regrow_thr, beading_amplitude, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosphisquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, mean_glial_process_length, std_glial_process_length);
 
             AxonDistribution.createSubstrate();
             // saving spheres
@@ -700,6 +727,8 @@ void Window::ShollAnalysis() {
 
         // Display the plot in a dialog window
         QDialog *dialog = new QDialog(this);
+        //adjust size
+        dialog->resize(800, 600);
         QVBoxLayout *layout = new QVBoxLayout;
         layout->addWidget(customPlot);
         dialog->setLayout(layout);

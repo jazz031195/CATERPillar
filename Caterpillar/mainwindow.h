@@ -6,7 +6,7 @@
 #include <QLabel>
 #include <QString>
 #include <QCheckBox>
-#include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QtDataVisualization/Q3DScatter>
 #include "slidergroup.h"
@@ -40,6 +40,13 @@ private:
     SlidersGroup *slidersGroup;
 
     QGroupBox *controlsGroup;
+    QGridLayout *generalLayout;
+    QGridLayout *axonsLayout;
+    QGridLayout *glialLayout;
+    QGroupBox *generalGroup;
+    QGroupBox *axonsGroup;
+    QGroupBox *glialGroup;
+
     QLabel *axons_icvf_qlabel;
     QLabel *axons_w_myelin_icvf_qlabel;
     QLabel *astrocyte_soma_icvf_qlabel;
@@ -52,21 +59,28 @@ private:
     QLabel *overlapping_factor_qlabel;
     QLabel *nbr_axons_populations_qlabel;
     QLabel *c2_qlabel;
+    QLabel *epsilon_qlabel;
+    QLabel *mean_process_length_qlabel;
+    QLabel *std_process_length_qlabel;
+    QLabel *beading_amplitude_qlabel;
 
-    QCheckBox *Tortuous;
-    QCheckBox *Beading;
-    QSpinBox *axons_icvf_SpinBox;
-    QSpinBox *axons_w_myelin_icvf_SpinBox;
-    QSpinBox *astrocyte_soma_icvf_SpinBox;
-    QSpinBox *astrocyte_processes_icvf_SpinBox;
-    QSpinBox *oligodendrocyte_soma_icvf_SpinBox;
-    QSpinBox *oligodendrocyte_processes_icvf_SpinBox;
-    QSpinBox *voxel_size_SpinBox;
-    QSpinBox *minimum_radius_SpinBox;
-    QSpinBox *nbr_threads_SpinBox;
-    QSpinBox *overlapping_factor_SpinBox;
-    QSpinBox *nbr_axons_populations_SpinBox;
-    QSpinBox *c2_SpinBox;
+    QDoubleSpinBox *axons_icvf_SpinBox;
+    QDoubleSpinBox *axons_w_myelin_icvf_SpinBox;
+    QDoubleSpinBox *astrocyte_soma_icvf_SpinBox;
+    QDoubleSpinBox *astrocyte_processes_icvf_SpinBox;
+    QDoubleSpinBox *oligodendrocyte_soma_icvf_SpinBox;
+    QDoubleSpinBox *oligodendrocyte_processes_icvf_SpinBox;
+    QDoubleSpinBox *voxel_size_SpinBox;
+    QDoubleSpinBox *minimum_radius_SpinBox;
+    QDoubleSpinBox *nbr_threads_SpinBox;
+    QDoubleSpinBox *overlapping_factor_SpinBox;
+    QDoubleSpinBox *nbr_axons_populations_SpinBox;
+    QDoubleSpinBox *c2_SpinBox;
+    QDoubleSpinBox *epsilon_SpinBox;
+    QDoubleSpinBox *mean_process_length_SpinBox;
+    QDoubleSpinBox *std_process_length_SpinBox;
+    QDoubleSpinBox *beading_amplitude_SpinBox;
+
 
     QBoxLayout *layout;
     QPushButton *okButton;
@@ -93,6 +107,11 @@ private:
     double c2;
     int nbr_axons_populations;
     int crossing_fibers_type;
+    double mean_process_length;
+    double std_process_length;
+    double beading_amplitude;
+    double epsilon;
+
 
     // spheres to plot
     std::vector<std::vector<double>> X_axons;

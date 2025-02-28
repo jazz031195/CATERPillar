@@ -60,6 +60,8 @@ int main(int argn, char* argv[])
     int nbr_threads = parameters.nbr_threads;
     int nbr_axons_populations = parameters.nbr_axons_populations;
     int crossing_fibers_type = parameters.crossing_fibers_type;
+    double mean_glial_process_length = parameters.mean_glial_process_length;
+    double std_glial_process_length = parameters.std_glial_process_length;
 
     for (int rep = 0; rep < repetitions; rep++) {
         for (int i = 0; i < vox_sizes.size(); i++) {
@@ -74,8 +76,8 @@ int main(int argn, char* argv[])
             AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(
                 axons_wo_myelin_icvf, axons_w_myelin_icvf, astrocytes_icvf_soma, astrocytes_icvf_processes, 
                 oligodendrocytes_icvf_soma, oligodendrocytes_icvf_processes, alpha, beta, min_l, max_l, 
-                min_radius, regrow_thr, beading_variation, std_dev, ondulation_factor, beading_period, 
-                spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type);
+                min_radius, regrow_thr, beading_variation, std_dev, ondulation_factor,
+                spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, mean_glial_process_length, std_glial_process_length);
 
             // Generate unique filenames
             int file_suffix = 0;
