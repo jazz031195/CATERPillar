@@ -1,5 +1,5 @@
 # CATERPillar
-<img src="logo_catrepillar.png" alt="Description" width="200">
+<img src="logo_catrepillar.png" alt="Description" width="300">
 
 
 ## **Introduction**
