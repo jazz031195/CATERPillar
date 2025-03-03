@@ -1,7 +1,3 @@
-/growth_icvf_0.10_cap_20_vox_30_factor_2_0.swc
-/growth_icvf_0.50_cap_20_vox_30_factor_2_0.swc
-/simulation_icvf_0.10_cap_20_vox_30_0.swc
-/simulation_icvf_0.50_cap_20_vox_30_0.swc
 /arthurs_analysis
 /capacity_runtime
 /figures
@@ -16,4 +12,6 @@
 /GUI/qcustomplot-source
 /GUI/New Folder
 /GUI/.gitingore
+/compiler.sh
+/garbage
 
