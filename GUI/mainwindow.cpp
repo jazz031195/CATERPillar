@@ -114,6 +114,8 @@ void Window::createControls(const QString &title)
     QGroupBox *axonsGroup = new QGroupBox("Axon Parameters");
     QGroupBox *glialGroup = new QGroupBox("Glial Cell Parameters");
 
+    // add ticked box
+    visualise_voxel_qlabel = new QLabel(tr("Visualise Voxel:"));
     axons_icvf_qlabel = new QLabel(tr("Axons ICVF (%):"));
     axons_w_myelin_icvf_qlabel = new QLabel(tr("Axons with myelin ICVF (%):"));
     astrocyte_soma_icvf_qlabel = new QLabel(tr("Astrocyte somas ICVF (%):"));
@@ -132,6 +134,9 @@ void Window::createControls(const QString &title)
     std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
     alpha_qlabel = new QLabel(tr("Gamma Distribution for radii α:"));
     beta_qlabel = new QLabel(tr("Gamma Distribution for radii β:"));
+
+    visualise_voxel_checkbox = new QCheckBox;
+    visualise_voxel_checkbox->setChecked(true);
 
     beading_amplitude_SpinBox = new QDoubleSpinBox;
     beading_amplitude_SpinBox->setRange(0, 1);
@@ -245,6 +250,9 @@ void Window::createControls(const QString &title)
         generalLayout->addWidget(general_labels[i], i, 0);
         generalLayout->addWidget(general_spinBoxes[i], i, 1);
     }
+    generalLayout->addWidget(visualise_voxel_qlabel, general_labels.size(), 0);
+    generalLayout->addWidget(visualise_voxel_checkbox, general_labels.size(), 1);
+
     generalGroup->setLayout(generalLayout);
 
     QGridLayout *axonsLayout = new QGridLayout;
@@ -304,6 +312,7 @@ void Window::onSaveButtonClicked()
     minimum_radius = minimum_radius_SpinBox->value();
     alpha = alpha_SpinBox->value();
     beta = beta_SpinBox->value();
+    visualise_voxel = visualise_voxel_checkbox->isChecked();
     
     // Close the parameter input dialog
     this->close();
@@ -459,8 +468,15 @@ void Window::StartSimulation(){
             
         }
     }
-    // After simulation completes, call PlotCells to display the data
-    PlotCells();
+
+    if (visualise_voxel) {
+        // After simulation completes, call PlotCells to display the data
+        PlotCells();
+    }
+    else{
+        // Display a message box to inform the user that the simulation is complete
+        QMessageBox::information(this, "Simulation Complete", "Simulation complete! Please check the output directory for the results.");
+    }
 
 }
 

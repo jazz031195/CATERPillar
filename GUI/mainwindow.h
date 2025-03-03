@@ -51,6 +51,7 @@ private:
     QGroupBox *axonsGroup;
     QGroupBox *glialGroup;
 
+    QLabel *visualise_voxel_qlabel;
     QLabel *axons_icvf_qlabel;
     QLabel *axons_w_myelin_icvf_qlabel;
     QLabel *astrocyte_soma_icvf_qlabel;
@@ -70,6 +71,7 @@ private:
     QLabel *alpha_qlabel;
     QLabel *beta_qlabel;
 
+    QCheckBox *visualise_voxel_checkbox;
     QDoubleSpinBox *axons_icvf_SpinBox;
     QDoubleSpinBox *axons_w_myelin_icvf_SpinBox;
     QDoubleSpinBox *astrocyte_soma_icvf_SpinBox;
@@ -121,6 +123,7 @@ private:
     double epsilon;
     double alpha;
     double beta;
+    bool visualise_voxel;
 
 
     // spheres to plot

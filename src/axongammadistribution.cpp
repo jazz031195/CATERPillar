@@ -2330,7 +2330,7 @@ void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
     final_axons = axons;
 
 
-    out << "id_ax id_sph id_branch Type X Y Z Rin Rout P" << endl;
+    out << "id_cell id_sph id_branch Type X Y Z Rin Rout P" << endl;
     std::sort(final_axons.begin(), final_axons.end(), [](const Axon a, Axon b) -> bool
               { return a.radius < b.radius; }); // sort by size
 
@@ -2369,24 +2369,24 @@ void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
 
     for (auto &glial_cell : astrocytes)
     {
-        out << glial_cell.id << " " << glial_cell.soma.id << " -1 glialSoma " << glial_cell.soma.center[0] << " " << glial_cell.soma.center[1] << " " << glial_cell.soma.center[2] << " " << glial_cell.soma.radius << " " << glial_cell.soma.radius << " " << -1 << endl;
+        out << glial_cell.id << " " << glial_cell.soma.id << " -1 AstrocyteCellSoma " << glial_cell.soma.center[0] << " " << glial_cell.soma.center[1] << " " << glial_cell.soma.center[2] << " " << glial_cell.soma.radius << " " << glial_cell.soma.radius << " " << -1 << endl;
         for (long unsigned int j = 0; j < glial_cell.ramification_spheres.size(); j++)
         {
             for (long unsigned int k = 0; k < glial_cell.ramification_spheres[j].size(); k++)
             {
-                out << glial_cell.id << " " << glial_cell.ramification_spheres[j][k].id << " " << glial_cell.ramification_spheres[j][k].branch_id << " glialRamification " << glial_cell.ramification_spheres[j][k].center[0] << " " << glial_cell.ramification_spheres[j][k].center[1] << " " << glial_cell.ramification_spheres[j][k].center[2] << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].parent_id << endl;
+                out << glial_cell.id << " " << glial_cell.ramification_spheres[j][k].id << " " << glial_cell.ramification_spheres[j][k].branch_id << " AstrocyteProcesses " << glial_cell.ramification_spheres[j][k].center[0] << " " << glial_cell.ramification_spheres[j][k].center[1] << " " << glial_cell.ramification_spheres[j][k].center[2] << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].parent_id << endl;
             }
         }
     }
 
     for (auto &glial_cell : oligodendrocytes)
     {
-        out << glial_cell.id << " " << glial_cell.soma.id << " -1 glialSoma " << glial_cell.soma.center[0] << " " << glial_cell.soma.center[1] << " " << glial_cell.soma.center[2] << " " << glial_cell.soma.radius << " " << glial_cell.soma.radius << " " << -1 << endl;
+        out << glial_cell.id << " " << glial_cell.soma.id << " -1 OligodendrocyteCellSoma " << glial_cell.soma.center[0] << " " << glial_cell.soma.center[1] << " " << glial_cell.soma.center[2] << " " << glial_cell.soma.radius << " " << glial_cell.soma.radius << " " << -1 << endl;
         for (long unsigned int j = 0; j < glial_cell.ramification_spheres.size(); j++)
         {
             for (long unsigned int k = 0; k < glial_cell.ramification_spheres[j].size(); k++)
             {
-                out << glial_cell.id << " " << glial_cell.ramification_spheres[j][k].id << " " << glial_cell.ramification_spheres[j][k].branch_id << " glialRamification " << glial_cell.ramification_spheres[j][k].center[0] << " " << glial_cell.ramification_spheres[j][k].center[1] << " " << glial_cell.ramification_spheres[j][k].center[2] << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].parent_id << endl;
+                out << glial_cell.id << " " << glial_cell.ramification_spheres[j][k].id << " " << glial_cell.ramification_spheres[j][k].branch_id << " OligodendrocyteProcesses " << glial_cell.ramification_spheres[j][k].center[0] << " " << glial_cell.ramification_spheres[j][k].center[1] << " " << glial_cell.ramification_spheres[j][k].center[2] << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].parent_id << endl;
             }
         }
     }
