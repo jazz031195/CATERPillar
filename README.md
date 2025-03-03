@@ -11,11 +11,17 @@ What sets CATERPillar apart is its ability to generate not only realistic **axon
 To run CATERPillar, follow these steps:
 
 1. **Download the code** from the repository.
-2. Navigate to the `GUI` folder using the terminal:
+2. Make sure you have the necessary packages installed by running:
+   ```bash
+   sudo apt update
+   sudo apt install libqt5datavisualization5
+   sudo apt-get install libboost-all-dev
+   ```
+4. Navigate to the `GUI` folder using the terminal:
    ```bash
    cd GUI
    ```
-3. Execute the program by running:
+5. Execute the program by running:
    ```bash
    ./Caterpillar
    ```
