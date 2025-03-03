@@ -1,5 +1,6 @@
 # CATERPillar
-![Alt text](logo_catrepillar.png)
+<img src="logo_catrepillar.png" alt="Description" width="200">
+
 
 ## **Introduction**
 CATERPillar (**Computational Axonal Threading Engine for Realistic Proliferation**) is an advanced computational framework designed to simulate natural axonal growth using overlapping spheres as fundamental building blocks. By employing a biologically inspired approach, CATERPillar enables parallel axon development while effectively preventing collisions, allowing users to control key structural parameters such as **density, tortuosity, and beading**.
