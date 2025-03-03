@@ -34,7 +34,7 @@ This will launch the graphical user interface, allowing users to configure param
 - **Axons with Myelin ICVF (%):** Defines the volume fraction occupied by myelinated axons, including the myelin compartment. The g-ratio for each axon is assigned based on a log-linear relationship between the inner radius and the g-ratio.
 - **Axons ICVF (%):** Specifies the volume fraction of non-myelinated axons within the voxel.
 - **Number of Threads:** Determines the number of axons that can grow simultaneously during the simulation, impacting computational efficiency.
-- **ε (Epsilon):** Represents the standard deviation of the Gaussian distribution governing the 3D positioning of spheres during axonal growth. Higher values result in increased axonal tortuosity.
+- **ε (Tortuosity):** Represents the standard deviation of the Gaussian distribution governing the 3D positioning of spheres during axonal growth. Higher values result in increased axonal tortuosity.
 - **c₂ (Fibre Orientation Dispersion Function - fODF):** Defined as ⟨cos²ψ⟩, where ψ is the angle between the axon growth direction and the z-axis. This parameter quantifies the degree of fibre orientation dispersion within the substrate.
 - **Number of Axon Populations:** Specifies the number of distinct axonal populations that can grow within the substrate, with a range of 1-3. Each population adopts a primary orientation perpendicular to the others. If two populations are selected, users can choose between a **sheet configuration** or an **interwoven configuration**.
 - **Beading Amplitude:** Defines the amplitude of axonal beading as a fraction of the axon's initial radius, influencing morphological variability.
