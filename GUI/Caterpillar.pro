@@ -16,6 +16,7 @@ SOURCES += \
     mainwindow.cpp \
     slidergroup.cpp \
     openglwindow.cpp \
+    ScatterDataModifier.cpp \
     ../src/Axon.cpp \
     ../src/axongammadistribution.cpp \
     ../src/Glial.cpp \
@@ -26,6 +27,7 @@ SOURCES += \
     ../src/parameters.cpp \
     ../src/sphere.cpp \
     ../src/threads.cpp \
+
     
 SOURCES += qcustomplot-source/qcustomplot.cpp
 
@@ -33,6 +35,7 @@ HEADERS += \
     mainwindow.h \
     slidergroup.h \
     openglwindow.h \
+    ScatterDataModifier.h \
     ../src/Axon.h \
     ../src/axongammadistribution.h \
     ../src/Glial.h \
@@ -56,4 +59,3 @@ LIBS += -lGL -lGLU -lglut
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-

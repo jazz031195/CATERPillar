@@ -56,6 +56,7 @@ SOURCES       = main.cpp \
 		mainwindow.cpp \
 		slidergroup.cpp \
 		openglwindow.cpp \
+		ScatterDataModifier.cpp \
 		../src/Axon.cpp \
 		../src/axongammadistribution.cpp \
 		../src/Glial.cpp \
@@ -69,11 +70,13 @@ SOURCES       = main.cpp \
 		qcustomplot-source/qcustomplot.cpp moc_mainwindow.cpp \
 		moc_slidergroup.cpp \
 		moc_openglwindow.cpp \
+		moc_ScatterDataModifier.cpp \
 		moc_qcustomplot.cpp
 OBJECTS       = main.o \
 		mainwindow.o \
 		slidergroup.o \
 		openglwindow.o \
+		ScatterDataModifier.o \
 		Axon.o \
 		axongammadistribution.o \
 		Glial.o \
@@ -88,6 +91,7 @@ OBJECTS       = main.o \
 		moc_mainwindow.o \
 		moc_slidergroup.o \
 		moc_openglwindow.o \
+		moc_ScatterDataModifier.o \
 		moc_qcustomplot.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/unix.conf \
@@ -171,6 +175,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		Caterpillar.pro mainwindow.h \
 		slidergroup.h \
 		openglwindow.h \
+		ScatterDataModifier.h \
 		../src/Axon.h \
 		../src/axongammadistribution.h \
 		../src/Glial.h \
@@ -186,6 +191,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		mainwindow.cpp \
 		slidergroup.cpp \
 		openglwindow.cpp \
+		ScatterDataModifier.cpp \
 		../src/Axon.cpp \
 		../src/axongammadistribution.cpp \
 		../src/Glial.cpp \
@@ -384,8 +390,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents mainwindow.h slidergroup.h openglwindow.h ../src/Axon.h ../src/axongammadistribution.h ../src/Glial.h ../src/grow_axons.h ../src/grow_cells.h ../src/grow_glial_cells.h ../src/obstacle.h ../src/parameters.h ../src/sphere.h ../src/threads.h ../src/constants.h qcustomplot-source/qcustomplot.h $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp mainwindow.cpp slidergroup.cpp openglwindow.cpp ../src/Axon.cpp ../src/axongammadistribution.cpp ../src/Glial.cpp ../src/grow_axons.cpp ../src/grow_cells.cpp ../src/grow_glial_cells.cpp ../src/obstacle.cpp ../src/parameters.cpp ../src/sphere.cpp ../src/threads.cpp qcustomplot-source/qcustomplot.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents mainwindow.h slidergroup.h openglwindow.h ScatterDataModifier.h ../src/Axon.h ../src/axongammadistribution.h ../src/Glial.h ../src/grow_axons.h ../src/grow_cells.h ../src/grow_glial_cells.h ../src/obstacle.h ../src/parameters.h ../src/sphere.h ../src/threads.h ../src/constants.h qcustomplot-source/qcustomplot.h $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp mainwindow.cpp slidergroup.cpp openglwindow.cpp ScatterDataModifier.cpp ../src/Axon.cpp ../src/axongammadistribution.cpp ../src/Glial.cpp ../src/grow_axons.cpp ../src/grow_cells.cpp ../src/grow_glial_cells.cpp ../src/obstacle.cpp ../src/parameters.cpp ../src/sphere.cpp ../src/threads.cpp qcustomplot-source/qcustomplot.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents mainwindow.ui $(DISTDIR)/
 
 
@@ -418,11 +424,13 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 	g++ -pipe -O2 -std=gnu++11 -Wall -Wextra -dM -E -o moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: moc_mainwindow.cpp moc_slidergroup.cpp moc_openglwindow.cpp moc_qcustomplot.cpp
+compiler_moc_header_make_all: moc_mainwindow.cpp moc_slidergroup.cpp moc_openglwindow.cpp moc_ScatterDataModifier.cpp moc_qcustomplot.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_mainwindow.cpp moc_slidergroup.cpp moc_openglwindow.cpp moc_qcustomplot.cpp
+	-$(DEL_FILE) moc_mainwindow.cpp moc_slidergroup.cpp moc_openglwindow.cpp moc_ScatterDataModifier.cpp moc_qcustomplot.cpp
 moc_mainwindow.cpp: mainwindow.h \
 		slidergroup.h \
+		ScatterDataModifier.h \
+		openglwindow.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include mainwindow.h -o moc_mainwindow.cpp
@@ -436,6 +444,12 @@ moc_openglwindow.cpp: openglwindow.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include openglwindow.h -o moc_openglwindow.cpp
+
+moc_ScatterDataModifier.cpp: ScatterDataModifier.h \
+		openglwindow.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ScatterDataModifier.h -o moc_ScatterDataModifier.cpp
 
 moc_qcustomplot.cpp: qcustomplot-source/qcustomplot.h \
 		moc_predefs.h \
@@ -464,11 +478,15 @@ compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_ui
 ####### Compile
 
 main.o: main.cpp mainwindow.h \
-		slidergroup.h
+		slidergroup.h \
+		ScatterDataModifier.h \
+		openglwindow.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
 mainwindow.o: mainwindow.cpp mainwindow.h \
 		slidergroup.h \
+		ScatterDataModifier.h \
+		openglwindow.h \
 		ui_mainwindow.h \
 		../src/axongammadistribution.h \
 		../src/Eigen/Core \
@@ -718,11 +736,17 @@ mainwindow.o: mainwindow.cpp mainwindow.h \
 
 slidergroup.o: slidergroup.cpp mainwindow.h \
 		slidergroup.h \
+		ScatterDataModifier.h \
+		openglwindow.h \
 		ui_mainwindow.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o slidergroup.o slidergroup.cpp
 
 openglwindow.o: openglwindow.cpp openglwindow.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o openglwindow.o openglwindow.cpp
+
+ScatterDataModifier.o: ScatterDataModifier.cpp ScatterDataModifier.h \
+		openglwindow.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ScatterDataModifier.o ScatterDataModifier.cpp
 
 Axon.o: ../src/Axon.cpp ../src/Axon.h \
 		../src/sphere.h \
@@ -2703,6 +2727,9 @@ moc_slidergroup.o: moc_slidergroup.cpp
 
 moc_openglwindow.o: moc_openglwindow.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_openglwindow.o moc_openglwindow.cpp
+
+moc_ScatterDataModifier.o: moc_ScatterDataModifier.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_ScatterDataModifier.o moc_ScatterDataModifier.cpp
 
 moc_qcustomplot.o: moc_qcustomplot.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_qcustomplot.o moc_qcustomplot.cpp
