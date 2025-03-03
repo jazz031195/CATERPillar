@@ -1898,7 +1898,6 @@ void AxonGammaDistribution::growthThread(
     // 2) Attempt to add a sphere (returns true if successful)
     bool can_grow = growth.AddOneSphere(varied_radius, /*create_sphere=*/true, grow_straight, factor);
 
-
     // 3) Sync axon data back
     //    growth.axon_to_grow updated by AddOneSphere
     growth.axon_to_grow.growth_attempts = axon.growth_attempts; 
@@ -1907,6 +1906,7 @@ void AxonGammaDistribution::growthThread(
     if (growth.finished) {
         //cout << "axon " << axon.id << " is finished" << endl;
         finished = 1; 
+        stuck_radii_ = -1;
     }
     else { 
         // The axon is still growing
@@ -1921,14 +1921,14 @@ void AxonGammaDistribution::growthThread(
                     axon.keep_one_sphere();  // Revert the last sphere or do whatever keep_one_sphere does
                     growth.axon_to_grow = axon;
                     finished = 0;
-                    can_grow = false;
+                    stuck_radii_ = -1;
                 }
                 else {
                     //cout <<"axon " << axon.id << " is stuck" << endl;
                     // The axon is stuck
                     axon.destroy(); 
                     finished = 1;
-                    can_grow = false;
+
                     stuck_radii_ = axon.radius;
                     stuck_indices_ = axon.id;
                 }
@@ -1936,30 +1936,31 @@ void AxonGammaDistribution::growthThread(
             else {
                 //cout <<"axon " << axon.id << " shrank successfully" << endl;
                 // We shrank successfully and placed a sphere 
-                can_grow = true;
                 if (growth.finished) {
                     finished = 1;
                 }
             }
         }
         else if (!can_grow && !axon_can_shrink) {
-            if (axon.growth_attempts < 100) {
+            if (axon.growth_attempts < 10) {
                 //cout <<"axon " << axon.id << " only has one sphere" << endl;
                 // Retry with a new attempt
                 axon.keep_one_sphere();  // Revert the last sphere or do whatever keep_one_sphere does
                 growth.axon_to_grow = axon;
                 finished = 0;
-                can_grow = false;
+              
             }
             else {
                 //cout <<"axon " << axon.id << " is stuck" << endl;
                 // The axon is stuck
                 axon.destroy(); 
                 finished = 1;
-                can_grow = false;
                 stuck_radii_ = axon.radius;
                 stuck_indices_ = axon.id;
             }
+        }
+        else if (can_grow) {
+            finished = 0;
         }
     }
 
@@ -1976,7 +1977,7 @@ void AxonGammaDistribution::growAxon(std::vector<Axon>& axs, Axon& axon_to_grow,
     // Possibly alter the beading amplitude if beading_variation > 0
     if (beading_variation > 0) {
 
-        axon_to_grow.beading_amplitude = beading_variation
+        axon_to_grow.beading_amplitude = beading_variation;
         // Clamp beading amplitude between 0 and 1
         if (axon_to_grow.beading_amplitude < 0.0) {
             axon_to_grow.beading_amplitude = 0.0;
@@ -1990,12 +1991,14 @@ void AxonGammaDistribution::growAxon(std::vector<Axon>& axs, Axon& axon_to_grow,
     AxonGrowth growth(axon_to_grow, astrocytes, oligodendrocytes, axs, min_limits, max_limits, min_limits, max_limits, std_dev, min_radius);
 
     int tries_ = 0;
-    int max_nbr_tries = 100;
+    int max_nbr_tries = 10;
     // Keep trying to grow until finished
     while (finished == 0 && tries_ < max_nbr_tries) {
+
         if (!axon_to_grow.outer_spheres.empty()) {
             // Attempt a single growth step
             growthThread(axs, axon_to_grow, growth, finished, grow_straight, straight_growths, stuck_radii_, stuck_indices_);
+
             if (stuck_radii_>0) {
                 tries_ += 1;
             }

@@ -35,6 +35,7 @@ void Axon::keep_one_sphere(){
 void Axon::destroy(){
     outer_spheres.clear();
     Box.clear();
+    growth_attempts = 0;
 }
 
 void Axon::updateBox(){

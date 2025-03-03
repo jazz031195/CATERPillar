@@ -1000,15 +1000,15 @@ if __name__ == "__main__":
 
     file_path_GM= "/home/localadmin/Documents/CATERPillar/growth_vox_50_factor_4_0.swc"
     file_path_WM = "/home/localadmin/Documents/CATERPillar/growth_vox_50_factor_4_0.swc"
-    file_path = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/time_dependence/f_0.5.swc"
+    file_path = "/home/localadmin/Documents/CATERPillar/test.swc"
     # draw_spheres(file_path, 50, 49)
     #tortuosity_plot("/home/localadmin/Documents/CATERPillar/tortuosities")
     # draw_one_glial_pyvista(file_path_GM, chosen_id = 1)
     #draw_spheres_pyvista(file_path, axons = True ,chosen_id = 1)
-    create_subplots(file_path)
+    #create_subplots(file_path)
     # create_subplots(file_path)
-    # draw_axons_with_shading(file_path, glial_only = True)
-    #draw_cells(file_path, plot_type="astrocytes", astrocyte_indices=[0])
+    #draw_axons_with_shading(file_path, glial_only = True)
+    draw_cells(file_path, plot_type="axons")
     # draw_spheres(file_path, 150, 30)
     #diameter_variation(file_path, num_axons = 10, max_z = 15)
     #mean_dist_between_maxima(file_path)
