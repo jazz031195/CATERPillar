@@ -53,12 +53,16 @@ void Window::PlotCells(){
     // Pass the spheres data to the OpenGL window and trigger an update
     std::vector<std::vector<double>> X = X_axons;
     X.insert(X.end(), X_astrocytes.begin(), X_astrocytes.end());
+    X.insert(X.end(), X_oligodendrocytes.begin(), X_oligodendrocytes.end());
     std::vector<std::vector<double>> Y = Y_axons;
     Y.insert(Y.end(), Y_astrocytes.begin(), Y_astrocytes.end());
+    Y.insert(Y.end(), Y_oligodendrocytes.begin(), Y_oligodendrocytes.end());
     std::vector<std::vector<double>> Z = Z_axons;
     Z.insert(Z.end(), Z_astrocytes.begin(), Z_astrocytes.end());
+    Z.insert(Z.end(), Z_oligodendrocytes.begin(), Z_oligodendrocytes.end());
     std::vector<std::vector<double>> R = R_axons;
     R.insert(R.end(), R_astrocytes.begin(), R_astrocytes.end());
+    R.insert(R.end(), R_oligodendrocytes.begin(), R_oligodendrocytes.end());
     openglWindow->setSpheres(X, Y, Z, R);
 
     // This will ensure the window is updated with new data
@@ -134,6 +138,10 @@ void Window::createControls(const QString &title)
     std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
     alpha_qlabel = new QLabel(tr("Gamma Distribution for radii α:"));
     beta_qlabel = new QLabel(tr("Gamma Distribution for radii β:"));
+    astrocyte_radius_mean_qlabel = new QLabel(tr("Astrocyte Radius Mean:"));
+    astrocyte_radius_std_qlabel = new QLabel(tr("Astrocyte Radius Standard Deviation:"));
+    oligodendrocyte_radius_mean_qlabel = new QLabel(tr("Oligodendrocyte Radius Mean:"));
+    oligodendrocyte_radius_std_qlabel = new QLabel(tr("Oligodendrocyte Radius Standard Deviation:"));
 
     visualise_voxel_checkbox = new QCheckBox;
     visualise_voxel_checkbox->setChecked(true);
@@ -211,6 +219,29 @@ void Window::createControls(const QString &title)
     overlapping_factor_SpinBox->setSingleStep(1);
     overlapping_factor_SpinBox->setValue(4);
 
+    astrocyte_radius_mean_SpinBox = new QDoubleSpinBox;
+    astrocyte_radius_mean_SpinBox->setRange(0, 10);
+    astrocyte_radius_mean_SpinBox->setSingleStep(0.1);
+    astrocyte_radius_mean_SpinBox->setValue(5);
+
+    astrocyte_radius_std_SpinBox = new QDoubleSpinBox;
+    astrocyte_radius_std_SpinBox->setRange(0, 10);
+    astrocyte_radius_std_SpinBox->setSingleStep(0.1);
+    astrocyte_radius_std_SpinBox->setValue(0.5);
+
+    oligodendrocyte_radius_mean_SpinBox = new QDoubleSpinBox;
+    oligodendrocyte_radius_mean_SpinBox->setRange(0, 10);
+    oligodendrocyte_radius_mean_SpinBox->setSingleStep(0.1);
+    oligodendrocyte_radius_mean_SpinBox->setValue(5);
+
+    oligodendrocyte_radius_std_SpinBox = new QDoubleSpinBox;
+    oligodendrocyte_radius_std_SpinBox->setRange(0, 10);
+    oligodendrocyte_radius_std_SpinBox->setSingleStep(0.1);
+    oligodendrocyte_radius_std_SpinBox->setValue(0.5);
+
+
+
+
     // --- Configuration ComboBox (Initially Hidden) ---
     configurationComboBox = new QComboBox;
     configurationComboBox->addItem("Sheet Configuration");
@@ -240,8 +271,8 @@ void Window::createControls(const QString &title)
     std::vector<QLabel*> axons_labels = {axons_w_myelin_icvf_qlabel, axons_icvf_qlabel ,nbr_threads_qlabel, epsilon_qlabel, c2_qlabel, nbr_axons_populations_qlabel, beading_amplitude_qlabel, alpha_qlabel, beta_qlabel};
     std::vector <QDoubleSpinBox*> axons_spinBoxes = {axons_w_myelin_icvf_SpinBox, axons_icvf_SpinBox, nbr_threads_SpinBox, epsilon_SpinBox, c2_SpinBox, nbr_axons_populations_SpinBox, beading_amplitude_SpinBox, alpha_SpinBox, beta_SpinBox};
     
-    std::vector<QLabel*> glials_labels = {astrocyte_soma_icvf_qlabel, astrocyte_processes_icvf_qlabel, oligodendrocyte_soma_icvf_qlabel, oligodendrocyte_processes_icvf_qlabel, mean_process_length_qlabel, std_process_length_qlabel};
-    std::vector <QDoubleSpinBox*> glials_spinBoxes = {astrocyte_soma_icvf_SpinBox, astrocyte_processes_icvf_SpinBox, oligodendrocyte_soma_icvf_SpinBox, oligodendrocyte_processes_icvf_SpinBox, mean_process_length_SpinBox, std_process_length_SpinBox};
+    std::vector<QLabel*> glials_labels = {astrocyte_soma_icvf_qlabel, astrocyte_processes_icvf_qlabel, oligodendrocyte_soma_icvf_qlabel, oligodendrocyte_processes_icvf_qlabel, astrocyte_radius_mean_qlabel, astrocyte_radius_std_qlabel, oligodendrocyte_radius_mean_qlabel, oligodendrocyte_radius_std_qlabel, mean_process_length_qlabel, std_process_length_qlabel};
+    std::vector <QDoubleSpinBox*> glials_spinBoxes = {astrocyte_soma_icvf_SpinBox, astrocyte_processes_icvf_SpinBox, oligodendrocyte_soma_icvf_SpinBox, oligodendrocyte_processes_icvf_SpinBox, astrocyte_radius_mean_SpinBox, astrocyte_radius_std_SpinBox, oligodendrocyte_radius_mean_SpinBox, oligodendrocyte_radius_std_SpinBox,  mean_process_length_SpinBox, std_process_length_SpinBox};
     
     
     QGridLayout *generalLayout = new QGridLayout;
@@ -313,6 +344,10 @@ void Window::onSaveButtonClicked()
     alpha = alpha_SpinBox->value();
     beta = beta_SpinBox->value();
     visualise_voxel = visualise_voxel_checkbox->isChecked();
+    astrocyte_radius_mean = astrocyte_radius_mean_SpinBox->value();
+    astrocyte_radius_std = astrocyte_radius_std_SpinBox->value();
+    oligodendrocyte_radius_mean = oligodendrocyte_radius_mean_SpinBox->value();
+    oligodendrocyte_radius_std = oligodendrocyte_radius_std_SpinBox->value();
     
     // Close the parameter input dialog
     this->close();
@@ -368,7 +403,8 @@ void Window::StartSimulation(){
             auto startTime = std::chrono::high_resolution_clock::now();
             cout << "STARTING SIMULATION " << endl;
             // create distribution of axons
-            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, astrocyte_icvf_soma, astrocyte_icvf_branches, oligodendrocyte_icvf_soma, oligodendrocyte_icvf_branches, alpha, beta, min_l, max_l, min_radius, regrow_thr, beading_amplitude, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosphisquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, mean_glial_process_length, std_glial_process_length);
+            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, astrocyte_icvf_soma, astrocyte_icvf_branches, oligodendrocyte_icvf_soma, oligodendrocyte_icvf_branches, alpha, beta, min_l, max_l, min_radius, regrow_thr, beading_amplitude, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosphisquared, nbr_threads, nbr_axons_populations, 
+            crossing_fibers_type, mean_glial_process_length, std_glial_process_length, astrocyte_radius_mean, astrocyte_radius_std, oligodendrocyte_radius_mean, oligodendrocyte_radius_std);
 
             AxonDistribution.createSubstrate();
             // saving spheres
@@ -422,6 +458,42 @@ void Window::StartSimulation(){
                 Z_astrocytes.push_back(z_);
                 R_astrocytes.push_back(r_);
                 Branch_astrocytes.push_back(b_);
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
+                b_.clear();
+            }
+
+            for (unsigned i=0; i< AxonDistribution.oligodendrocytes.size(); ++i){
+                std::vector<double> x_;
+                std::vector<double> y_;
+                std::vector<double> z_;
+                std::vector<double> r_;
+                std::vector<int> b_;
+
+                x_.push_back(AxonDistribution.oligodendrocytes[i].soma.center[0]);
+                y_.push_back(AxonDistribution.oligodendrocytes[i].soma.center[1]);
+                z_.push_back(AxonDistribution.oligodendrocytes[i].soma.center[2]);
+                r_.push_back(AxonDistribution.oligodendrocytes[i].soma.radius);
+                b_.push_back(0);
+
+                for (unsigned j=0; j< AxonDistribution.oligodendrocytes[i].ramification_spheres.size(); ++j){
+
+                    for (unsigned k=0; k< AxonDistribution.oligodendrocytes[i].ramification_spheres[j].size(); ++k){
+                        x_.push_back(AxonDistribution.oligodendrocytes[i].ramification_spheres[j][k].center[0]);
+                        y_.push_back(AxonDistribution.oligodendrocytes[i].ramification_spheres[j][k].center[1]);
+                        z_.push_back(AxonDistribution.oligodendrocytes[i].ramification_spheres[j][k].center[2]);
+                        r_.push_back(AxonDistribution.oligodendrocytes[i].ramification_spheres[j][k].radius);
+                        b_.push_back(j);
+                    }
+                }
+
+                X_oligodendrocytes.push_back(x_);
+                Y_oligodendrocytes.push_back(y_);
+                Z_oligodendrocytes.push_back(z_);
+                R_oligodendrocytes.push_back(r_);
+                Branch_oligodendrocytes.push_back(b_);
                 x_.clear();
                 y_.clear();
                 z_.clear();

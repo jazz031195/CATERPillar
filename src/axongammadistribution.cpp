@@ -42,7 +42,8 @@ std::vector<std::string> _split_line(const std::string &s, char delim)
 
 AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &astrocytes_icvf_soma_, const double &astrocytes_icvf_branches_, const double &oligodendrocytes_icvf_soma_, const double &oligodendrocytes_icvf_branches_, const double &a, const double &b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
-                                              const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, const double &mean_glial_process_length_, const double &std_glial_process_length_)
+                                              const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, const double &mean_glial_process_length_, const double &std_glial_process_length_,
+                                              const double &astrocyte_radius_mean = 5.0, const double &astrocyte_radius_std = 1.0, const double &oligodendrocyte_radius_mean = 5.0, const double &oligodendrocyte_radius_std = 1.0)
 {
     
     num_obstacles = 0;
@@ -293,6 +294,7 @@ bool AxonGammaDistribution::GenerateFirstSphereinProcess(Sphere &first_sphere, E
 
 bool AxonGammaDistribution::growProcessFromSoma(Glial &glial_cell, const int &j, const int &nbr_spheres) {
 
+
     // Ensure vectors have space for branch `j`
     if (glial_cell.principle_processes_lengths.size() <= j) {
         glial_cell.principle_processes_lengths.resize(j + 1, 0);
@@ -356,10 +358,10 @@ bool AxonGammaDistribution::growProcessFromSoma(Glial &glial_cell, const int &j,
 
 
     GlialCellGrowth growth(glial_cell_, astrocytes, oligodendrocytes, axons, min_limits, max_limits, min_limits, max_limits, std_dev, glial_cell_.minimum_radius);
-
+    
     double distance = initial_radius;
     while (can_grow) {
-
+ 
         // Calculate the radius at the current distance
         double R_ = std::exp(-alpha * distance / length) * initial_radius;
         if (R_ < glial_cell_.minimum_radius) {
@@ -980,6 +982,7 @@ void AxonGammaDistribution::ICVF(const std::vector<Axon> &axs, const std::vector
     for (const auto &glial : oligos) {
         oligodendrocytes_branches_icvf += glial.volume_processes;
     }
+
     oligodendrocytes_soma_icvf = 0.0;
     for (const auto &glial : oligos) {
         oligodendrocytes_soma_icvf += glial.volume_soma;
@@ -1458,8 +1461,7 @@ void AxonGammaDistribution::parallelGrowth()
 void AxonGammaDistribution::GrowAllGlialCells() {
 
     // Grow Astrocytes
-    cout << "Astrocytes" << endl;
-    cout << "Astrocytes size :" << astrocytes.size() << endl;
+
     int number_ramification_points = 5;
 
     std::vector<int> nbr_spheres_astrocytes(astrocytes.size(), 0);
@@ -1467,34 +1469,12 @@ void AxonGammaDistribution::GrowAllGlialCells() {
     
     if (target_astrocytes_branches_icvf >0.0){
         // Growing astrocytes and adding them to glial cells
-        /*
-        auto astrocytes_copy = astrocytes;
-        ThreadPool pool(nbr_threads);
-        std::vector<std::future<void>> futures;
-        for (int i = 0; i < astrocytes_copy.size(); i++) // for each axon
-        {
-            futures.emplace_back(pool.enqueueTask(
-                [this, i, &astrocytes_copy, &nbr_spheres_astrocytes, number_ramification_points]() {
-                    growGlialCell(astrocytes_copy[i], number_ramification_points, nbr_spheres_astrocytes[i]);
-                }
-            ));
-        }
 
-        for (auto& future : futures) {
-            future.get();
-        }
-
-        astrocytes = std::move(astrocytes_copy);
-        */
         for (int i = 0; i < astrocytes.size(); i++) // for each axon
         {
             growGlialCell(astrocytes[i], number_ramification_points, nbr_spheres_astrocytes[i]);
         }
         
-        for (int i = 0; i < nbr_spheres_astrocytes.size(); i++)
-        {
-            cout << "Astrocytes " << i << " : " << nbr_spheres_astrocytes[i] << endl;
-        }
         for (int i = 0; i < astrocytes.size(); i++) // for each axon
         {
             astrocytes[i].compute_processes_icvf(factor);
@@ -1503,15 +1483,19 @@ void AxonGammaDistribution::GrowAllGlialCells() {
     }
 
     // Grow Oligodendrocytes
-    
-    cout << "Oligodendrocytes" << endl;
+
     if (target_oligodendrocytes_branches_icvf >0.0){
         for (size_t i = 0; i < oligodendrocytes.size(); i++) {
             growGlialCell(oligodendrocytes[i], number_ramification_points, nbr_spheres_oligo[i]);
+            oligodendrocytes[i].compute_processes_icvf(factor);
         }
+
     }
+
+
     
     ICVF(axons, astrocytes, oligodendrocytes);
+
 
     if (target_astrocytes_branches_icvf >0.0 && astrocytes.size() > 0)
     {   
@@ -1521,12 +1505,12 @@ void AxonGammaDistribution::GrowAllGlialCells() {
     if (target_oligodendrocytes_branches_icvf >0.0 &&  oligodendrocytes.size() > 0)
     {
         // Growing extra branches for oligodendrocytes
-        growOligodendrocytesBranches(oligodendrocytes, astrocytes.size(), nbr_spheres_oligo);
+        growOligodendrocytesBranches(oligodendrocytes, oligodendrocytes.size(), nbr_spheres_oligo);
     }
 }
 
 void AxonGammaDistribution::growExtraBranchesAstrocytes(std::vector<int>& nbr_spheres) {
-    std::cout << "Growing extra branches for astrocytes" << std::endl;
+
     display_progress(astrocytes_branches_icvf, target_astrocytes_branches_icvf);
 
     if (target_astrocytes_branches_icvf <= 0.0) return;
@@ -1584,7 +1568,6 @@ void AxonGammaDistribution::growExtraBranchesAstrocytes(std::vector<int>& nbr_sp
 
     }
 
-    std::cout << "End of growExtraBranchesAstrocytes function" << std::endl;
 }
 
 // Helper function to grow extra branches for oligodendrocytes
@@ -1612,8 +1595,11 @@ void AxonGammaDistribution::growOligodendrocytesBranches(std::vector<Glial>& oli
                 }
 
                 nbr_spheres[i] += oligodendrocytes[i].ramification_spheres.size();
-                
+
+                oligodendrocytes[i].compute_processes_icvf(factor);
+        
             }
+            
             ICVF(axons, astrocytes, oligodendrocytes);
             display_progress(oligodendrocytes_branches_icvf, target_oligodendrocytes_branches_icvf);
         }
@@ -1623,7 +1609,7 @@ void AxonGammaDistribution::growOligodendrocytesBranches(std::vector<Glial>& oli
 void AxonGammaDistribution::PlaceGlialCells() {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis_radius(5, 0.5);
+    std::uniform_real_distribution<> dis_radius(astrocyte_radius_mean, astrocyte_radius_std);
     
     //Astrocytes
     double glial_icvf_ = 0.0;
@@ -1685,7 +1671,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
     //Oligodendrocytes
 
     glial_icvf_ = 0.0;
-    std::uniform_real_distribution<> dis_radius_oligo(4, 0.5);
+    std::uniform_real_distribution<> dis_radius_oligo(oligodendrocyte_radius_mean, oligodendrocyte_radius_std);
 
     while (glial_icvf_ < target_oligodendrocytes_soma_icvf) {
         Sphere s;
@@ -1733,7 +1719,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
         }
     }
     oligodendrocytes_soma_icvf = glial_icvf_;
- 
+
 }
 
 

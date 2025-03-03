@@ -70,6 +70,10 @@ private:
     QLabel *beading_amplitude_qlabel;
     QLabel *alpha_qlabel;
     QLabel *beta_qlabel;
+    QLabel *astrocyte_radius_mean_qlabel;
+    QLabel *astrocyte_radius_std_qlabel;
+    QLabel *oligodendrocyte_radius_mean_qlabel;
+    QLabel *oligodendrocyte_radius_std_qlabel;
 
     QCheckBox *visualise_voxel_checkbox;
     QDoubleSpinBox *axons_icvf_SpinBox;
@@ -90,7 +94,10 @@ private:
     QDoubleSpinBox *beading_amplitude_SpinBox;
     QDoubleSpinBox *alpha_SpinBox;
     QDoubleSpinBox *beta_SpinBox;
-
+    QDoubleSpinBox *astrocyte_radius_mean_SpinBox;
+    QDoubleSpinBox *astrocyte_radius_std_SpinBox;
+    QDoubleSpinBox *oligodendrocyte_radius_mean_SpinBox;
+    QDoubleSpinBox *oligodendrocyte_radius_std_SpinBox;
 
     QBoxLayout *layout;
     QPushButton *okButton;
@@ -124,6 +131,10 @@ private:
     double alpha;
     double beta;
     bool visualise_voxel;
+    double astrocyte_radius_mean;
+    double astrocyte_radius_std;
+    double oligodendrocyte_radius_mean;
+    double oligodendrocyte_radius_std;
 
 
     // spheres to plot
@@ -137,6 +148,13 @@ private:
     std::vector<std::vector<double>> Z_astrocytes;
     std::vector<std::vector<double>> R_astrocytes;
     std::vector<std::vector<int>> Branch_astrocytes;
+
+    std::vector<std::vector<double>> X_oligodendrocytes;
+    std::vector<std::vector<double>> Y_oligodendrocytes;
+    std::vector<std::vector<double>> Z_oligodendrocytes;
+    std::vector<std::vector<double>> R_oligodendrocytes;
+    std::vector<std::vector<int>> Branch_oligodendrocytes;
+
 
     // Member for the 3D scatter plot and modifier
     QtDataVisualization::Q3DScatter *graph;

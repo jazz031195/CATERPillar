@@ -36,6 +36,11 @@ public:
     unsigned num_obstacles;             /*!< Number of axons in the substrate */
     int num_batches;                    /*!< Number of batches of axons */
     int nbr_threads;                   /*!< Number of threads to grow axons */
+    
+    double oligodendrocyte_radius_mean; /*!< Mean radius of oligodendrocytes */
+    double astrocyte_radius_mean;       /*!< Mean radius of astrocytes */
+    double oligodendrocyte_radius_std; /*!< Standard deviation of oligodendrocytes */
+    double astrocyte_radius_std;       /*!< Standard deviation of astrocytes */
 
     double target_axons_w_myelin_icvf;        /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double target_axons_wo_myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons without myelin */
@@ -97,7 +102,8 @@ public:
      */
     AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &astrocytes_icvf_soma_, const double &astrocytes_icvf_branches_, const double &oligodendrocytes_icvf_soma_, const double &oligodendrocytes_icvf_branches_, const double &a, const double &b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
-                                              const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, const double &mean_glial_process_length_, const double &std_glial_process_length_);
+                                              const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
+                                              const double &mean_glial_process_length_, const double &std_glial_process_length_, const double &astrocyte_radius_mean, const double &astrocyte_radius_std, const double &oligodendrocyte_radius_mean, const double &oligodendrocyte_radius_std);
     
     
     /*!
