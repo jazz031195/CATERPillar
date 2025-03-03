@@ -29,7 +29,8 @@ This will launch the graphical user interface, allowing users to configure param
 - **Voxel Edge Length (μm):** Defines the length of the cubic substrate, determining the overall volume of the simulation space.
 - **Overlapping Factor:** Controls the spacing between consecutive spheres during axonal growth. The distance is computed as max(R1, R2) / F, where R1 and R2 are the radii of two consecutive spheres, and F is the chosen overlapping factor. A higher overlapping factor results in closer sphere placement, reducing the gaps between spheres. A recommended value for optimal results is **4**.
 - **Minimum Sphere Radius (μm):** Specifies the smallest allowable sphere radius within the voxel. This constraint helps prevent excessively narrow spaces that could impede Monte Carlo Simulations.
-
+- **Visualise Voxel:** Ticking the box will allow the GUI to plot the substrate generated once the gorwth is completed.
+   
 ### **Axon Parameters:**
 - **Axons with Myelin ICVF (%):** Defines the volume fraction occupied by myelinated axons, including the myelin compartment. The g-ratio for each axon is assigned based on a log-linear relationship between the inner radius and the g-ratio.
 - **Axons ICVF (%):** Specifies the volume fraction of non-myelinated axons within the voxel.
