@@ -64,6 +64,7 @@ void GlialCellGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const 
     }
     sph.id = last_sphere.id + nbr_spheres + 1;
     glial_cell_to_grow.ramification_spheres[index_ram_spheres].push_back(sph); 
+    glial_cell_to_grow.update_Box();
 }
 
 

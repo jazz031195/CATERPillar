@@ -140,7 +140,7 @@ bool CellGrowth::canSpherebePlaced(Sphere sph){
     // check collision other glial cells 
     for (auto &glial : glial_cells)
     {
-        if (sph.object_type == 0 || (sph.object_type == 1 && sph.object_id != glial.id)){
+        if (sph.object_type == 0 || (sph.object_type != 0 && sph.object_id != glial.id) ){
             if (glial.isNearGlialCell(sph.center, 2*sph.radius+1e-6)){
                 if (glial.collides_with_GlialCell(sph)){
                     return false;

@@ -143,17 +143,17 @@ void Parameters::readConfFile(std::string conf_file_path)
             }
         }
         
-        else if ((str_dist(tmp,"astrocyte_icvf_soma") <= 2)){
-            in >> astrocytes_icvf_soma;
+        else if ((str_dist(tmp,"glial_pop1_icvf_soma") <= 2)){
+            in >> glial_pop1_icvf_soma;
         }
-        else if ((str_dist(tmp,"astrocyte_icvf_branches") <= 2)){
-            in >> astrocytes_icvf_processes;
+        else if ((str_dist(tmp,"glial_pop1_icvf_branches") <= 2)){
+            in >> glial_pop1_icvf_processes;
         }
-        else if ((str_dist(tmp,"oligodendrocyte_icvf_soma") <= 2)){
-            in >> oligodendrocytes_icvf_soma;
+        else if ((str_dist(tmp,"glial_pop2_icvf_soma") <= 2)){
+            in >> glial_pop2_icvf_soma;
         }
-        else if ((str_dist(tmp,"oligodendrocyte_icvf_branches") <= 2)){
-            in >> oligodendrocytes_icvf_processes;
+        else if ((str_dist(tmp,"glial_pop2_icvf_branches") <= 2)){
+            in >> glial_pop2_icvf_processes;
         }
         else if ((str_dist(tmp,"axons_without_myelin_icvf") <= 2)){
             in >> axons_wo_myelin_icvf;

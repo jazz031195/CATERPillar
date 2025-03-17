@@ -30,11 +30,12 @@ class Glial : public Obstacle
     double volume_soma;                                  /*!< Volume of glial */
     double volume_processes;                                  /*!< Volume of processes of glial */
     double minimum_radius;
+    bool allow_branching;                          /*!< Allow branching of glial */
     Glial();
 
     ~Glial();
 
-    Glial(const int &id_, const Sphere &soma_)
+    Glial(const int &id_, const Sphere &soma_, const bool &allow_branching_ = true)
     {
         id = id_;
         soma = soma_;
@@ -46,7 +47,9 @@ class Glial : public Obstacle
         double sph_lowest_z_val = soma.center[2] -soma.radius;
         volume_soma = M_PI*pow(soma.radius, 3)*4/3;
         volume_processes = 0.0;
-        minimum_radius = soma.radius/20.0;;
+        minimum_radius = soma.radius/20.0;
+        allow_branching = allow_branching_;
+
         //x
         Box.push_back({sph_lowest_x_val, sph_highest_x_val});
         //y

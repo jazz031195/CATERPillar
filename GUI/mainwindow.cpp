@@ -22,25 +22,26 @@
 Window::Window(QWidget *parent)
     : QWidget(parent)
 {
-    createControls(tr("Parameters"));
-
-    // Create a vertical layout for the entire window
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    setLayout(mainLayout);
-
+    
+    // Get the controlsGroup from createControls() and add it
+    controlsGroup = createControls(tr("Parameters"));
     mainLayout->addWidget(controlsGroup);
 
+    // Buttons
     okButton = new QPushButton("OK", this);
-    selectDirectoryButton = new QPushButton("Select Directory", this); // Create button for selecting directory
+    selectDirectoryButton = new QPushButton("Select Directory", this);
 
     QHBoxLayout *buttonLayout = new QHBoxLayout;
     buttonLayout->addWidget(okButton);
-    buttonLayout->addWidget(selectDirectoryButton); // Add the new button to the layout
+    buttonLayout->addWidget(selectDirectoryButton);
     mainLayout->addLayout(buttonLayout);
 
     connect(okButton, &QPushButton::clicked, this, &Window::onSaveButtonClicked);
-    connect(selectDirectoryButton, &QPushButton::clicked, this, &Window::onSelectDirectoryButtonClicked); // Connect button to slot
+    connect(selectDirectoryButton, &QPushButton::clicked, this, &Window::onSelectDirectoryButtonClicked);
 }
+
+
 void Window::PlotCells(){
     // Plotting cells
     //QtDataVisualization::Q3DScatter *graph = new QtDataVisualization::Q3DScatter();
@@ -52,17 +53,17 @@ void Window::PlotCells(){
 
     // Pass the spheres data to the OpenGL window and trigger an update
     std::vector<std::vector<double>> X = X_axons;
-    X.insert(X.end(), X_astrocytes.begin(), X_astrocytes.end());
-    X.insert(X.end(), X_oligodendrocytes.begin(), X_oligodendrocytes.end());
+    X.insert(X.end(), X_glial_pop1.begin(), X_glial_pop1.end());
+    X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
     std::vector<std::vector<double>> Y = Y_axons;
-    Y.insert(Y.end(), Y_astrocytes.begin(), Y_astrocytes.end());
-    Y.insert(Y.end(), Y_oligodendrocytes.begin(), Y_oligodendrocytes.end());
+    Y.insert(Y.end(), Y_glial_pop1.begin(), Y_glial_pop1.end());
+    Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
     std::vector<std::vector<double>> Z = Z_axons;
-    Z.insert(Z.end(), Z_astrocytes.begin(), Z_astrocytes.end());
-    Z.insert(Z.end(), Z_oligodendrocytes.begin(), Z_oligodendrocytes.end());
+    Z.insert(Z.end(), Z_glial_pop1.begin(), Z_glial_pop1.end());
+    Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
     std::vector<std::vector<double>> R = R_axons;
-    R.insert(R.end(), R_astrocytes.begin(), R_astrocytes.end());
-    R.insert(R.end(), R_oligodendrocytes.begin(), R_oligodendrocytes.end());
+    R.insert(R.end(), R_glial_pop1.begin(), R_glial_pop1.end());
+    R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
     openglWindow->setSpheres(X, Y, Z, R);
 
     // This will ensure the window is updated with new data
@@ -109,23 +110,24 @@ void Window::resetCamera(){
     openglWindow->resetCamera();
 }
 
-void Window::createControls(const QString &title)
+QGroupBox* Window::createControls(const QString &title)
 {
     controlsGroup = new QGroupBox(title);
 
      // --- Create the GroupBoxes ---
     QGroupBox *generalGroup = new QGroupBox("General Parameters");
     QGroupBox *axonsGroup = new QGroupBox("Axon Parameters");
-    QGroupBox *glialGroup = new QGroupBox("Glial Cell Parameters");
+    QGroupBox *glialGroup1 = new QGroupBox("Glial Cell Population 1 Parameters");
+    QGroupBox *glialGroup2 = new QGroupBox("Glial Cell Population 2 Parameters");
 
     // add ticked box
     visualise_voxel_qlabel = new QLabel(tr("Visualise Voxel:"));
     axons_icvf_qlabel = new QLabel(tr("Axons ICVF (%):"));
     axons_w_myelin_icvf_qlabel = new QLabel(tr("Axons with myelin ICVF (%):"));
-    astrocyte_soma_icvf_qlabel = new QLabel(tr("Astrocyte somas ICVF (%):"));
-    astrocyte_processes_icvf_qlabel = new QLabel(tr("Astrocyte processes ICVF (%):"));
-    oligodendrocyte_soma_icvf_qlabel = new QLabel(tr("Oligodendrocyte somas ICVF (%):"));
-    oligodendrocyte_processes_icvf_qlabel = new QLabel(tr("Oligodendrocyte processes ICVF (%):"));
+    glial_pop1_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
+    glial_pop1_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
+    glial_pop2_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
+    glial_pop2_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
     voxel_size_qlabel = new QLabel(tr("Voxel Edge Length (μm):"));
     minimum_radius_qlabel = new QLabel(tr("Minimum Sphere Radius (μm):"));
     nbr_threads_qlabel = new QLabel(tr("Number of Threads:"));
@@ -134,17 +136,29 @@ void Window::createControls(const QString &title)
     nbr_axons_populations_qlabel = new QLabel(tr("Number of axons populations:"));
     epsilon_qlabel = new QLabel(tr("ε (tortuousity):"));
     beading_amplitude_qlabel = new QLabel(tr("Beading Amplitude :"));
-    mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
-    std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
-    alpha_qlabel = new QLabel(tr("Gamma Distribution for radii α:"));
-    beta_qlabel = new QLabel(tr("Gamma Distribution for radii β:"));
-    astrocyte_radius_mean_qlabel = new QLabel(tr("Astrocyte Radius Mean:"));
-    astrocyte_radius_std_qlabel = new QLabel(tr("Astrocyte Radius Standard Deviation:"));
-    oligodendrocyte_radius_mean_qlabel = new QLabel(tr("Oligodendrocyte Radius Mean:"));
-    oligodendrocyte_radius_std_qlabel = new QLabel(tr("Oligodendrocyte Radius Standard Deviation:"));
+    glial_pop1_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
+    glial_pop1_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
+    glial_pop2_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
+    glial_pop2_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
+    alpha_qlabel = new QLabel(tr("Gamma Distribution for inner radii α:"));
+    beta_qlabel = new QLabel(tr("Gamma Distribution for inner radii β:"));
+    glial_pop1_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
+    glial_pop1_radius_std_qlabel = new QLabel(tr("Glial Cell Soma Radius Standard Deviation:"));
+    glial_pop2_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
+    glial_pop2_radius_std_qlabel = new QLabel(tr("Glial Cell Soma Radius Standard Deviation:"));
+    glial_pop1_nbr_primary_processes_qlabel = new QLabel(tr("Number of Primary Processes:"));
+    glial_pop2_nbr_primary_processes_qlabel = new QLabel(tr("Number of Primary Processes:"));
+    glial_pop1_branching_qlabel = new QLabel(tr("Can Glial Cell Population have branching ? "));
+    glial_pop2_branching_qlabel = new QLabel(tr("Can Glial Cell Population have branching ? "));
 
     visualise_voxel_checkbox = new QCheckBox;
     visualise_voxel_checkbox->setChecked(true);
+
+    glial_pop1_branching_checkbox = new QCheckBox;
+    glial_pop1_branching_checkbox->setChecked(true);
+
+    glial_pop2_branching_checkbox = new QCheckBox;
+    glial_pop2_branching_checkbox->setChecked(true);
 
     beading_amplitude_SpinBox = new QDoubleSpinBox;
     beading_amplitude_SpinBox->setRange(0, 1);
@@ -166,15 +180,25 @@ void Window::createControls(const QString &title)
     epsilon_SpinBox->setSingleStep(0.1);
     epsilon_SpinBox->setValue(0.4);
 
-    mean_process_length_SpinBox = new QDoubleSpinBox;
-    mean_process_length_SpinBox->setRange(0, 100);
-    mean_process_length_SpinBox->setSingleStep(1);
-    mean_process_length_SpinBox->setValue(20);
+    glial_pop1_mean_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop1_mean_process_length_SpinBox->setRange(0, 100);
+    glial_pop1_mean_process_length_SpinBox->setSingleStep(1);
+    glial_pop1_mean_process_length_SpinBox->setValue(20);
 
-    std_process_length_SpinBox = new QDoubleSpinBox;
-    std_process_length_SpinBox->setRange(0, 100);
-    std_process_length_SpinBox->setSingleStep(1);
-    std_process_length_SpinBox->setValue(10);
+    glial_pop2_mean_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop2_mean_process_length_SpinBox->setRange(0, 100);
+    glial_pop2_mean_process_length_SpinBox->setSingleStep(1);
+    glial_pop2_mean_process_length_SpinBox->setValue(20);
+
+    glial_pop1_std_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop1_std_process_length_SpinBox->setRange(0, 100);
+    glial_pop1_std_process_length_SpinBox->setSingleStep(1);
+    glial_pop1_std_process_length_SpinBox->setValue(10);
+
+    glial_pop2_std_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop2_std_process_length_SpinBox->setRange(0, 100);
+    glial_pop2_std_process_length_SpinBox->setSingleStep(1);
+    glial_pop2_std_process_length_SpinBox->setValue(10);
 
     axons_icvf_SpinBox = new QDoubleSpinBox;
     axons_icvf_SpinBox->setRange(0, 100);
@@ -184,21 +208,21 @@ void Window::createControls(const QString &title)
     axons_w_myelin_icvf_SpinBox->setRange(0, 100);
     axons_w_myelin_icvf_SpinBox->setSingleStep(1);
 
-    astrocyte_soma_icvf_SpinBox = new QDoubleSpinBox;
-    astrocyte_soma_icvf_SpinBox->setRange(0, 100);
-    astrocyte_soma_icvf_SpinBox->setSingleStep(1);
+    glial_pop1_soma_icvf_SpinBox = new QDoubleSpinBox;
+    glial_pop1_soma_icvf_SpinBox->setRange(0, 100);
+    glial_pop1_soma_icvf_SpinBox->setSingleStep(1);
 
-    astrocyte_processes_icvf_SpinBox = new QDoubleSpinBox;
-    astrocyte_processes_icvf_SpinBox->setRange(0, 100);
-    astrocyte_processes_icvf_SpinBox->setSingleStep(1);
+    glial_pop1_processes_icvf_SpinBox = new QDoubleSpinBox;
+    glial_pop1_processes_icvf_SpinBox->setRange(0, 100);
+    glial_pop1_processes_icvf_SpinBox->setSingleStep(1);
 
-    oligodendrocyte_soma_icvf_SpinBox = new QDoubleSpinBox;
-    oligodendrocyte_soma_icvf_SpinBox->setRange(0, 100);
-    oligodendrocyte_soma_icvf_SpinBox->setSingleStep(1);
+    glial_pop2_soma_icvf_SpinBox = new QDoubleSpinBox;
+    glial_pop2_soma_icvf_SpinBox->setRange(0, 100);
+    glial_pop2_soma_icvf_SpinBox->setSingleStep(1);
 
-    oligodendrocyte_processes_icvf_SpinBox = new QDoubleSpinBox;
-    oligodendrocyte_processes_icvf_SpinBox->setRange(0, 100);
-    oligodendrocyte_processes_icvf_SpinBox->setSingleStep(1);
+    glial_pop2_processes_icvf_SpinBox = new QDoubleSpinBox;
+    glial_pop2_processes_icvf_SpinBox->setRange(0, 100);
+    glial_pop2_processes_icvf_SpinBox->setSingleStep(1);
 
     nbr_threads_SpinBox = new QDoubleSpinBox;
     nbr_threads_SpinBox->setRange(1, 1000);
@@ -219,27 +243,35 @@ void Window::createControls(const QString &title)
     overlapping_factor_SpinBox->setSingleStep(1);
     overlapping_factor_SpinBox->setValue(4);
 
-    astrocyte_radius_mean_SpinBox = new QDoubleSpinBox;
-    astrocyte_radius_mean_SpinBox->setRange(0, 10);
-    astrocyte_radius_mean_SpinBox->setSingleStep(0.1);
-    astrocyte_radius_mean_SpinBox->setValue(5);
+    glial_pop1_radius_mean_SpinBox = new QDoubleSpinBox;
+    glial_pop1_radius_mean_SpinBox->setRange(0, 10);
+    glial_pop1_radius_mean_SpinBox->setSingleStep(0.1);
+    glial_pop1_radius_mean_SpinBox->setValue(5);
 
-    astrocyte_radius_std_SpinBox = new QDoubleSpinBox;
-    astrocyte_radius_std_SpinBox->setRange(0, 10);
-    astrocyte_radius_std_SpinBox->setSingleStep(0.1);
-    astrocyte_radius_std_SpinBox->setValue(0.5);
+    glial_pop1_radius_std_SpinBox = new QDoubleSpinBox;
+    glial_pop1_radius_std_SpinBox->setRange(0, 10);
+    glial_pop1_radius_std_SpinBox->setSingleStep(0.1);
+    glial_pop1_radius_std_SpinBox->setValue(0.5);
 
-    oligodendrocyte_radius_mean_SpinBox = new QDoubleSpinBox;
-    oligodendrocyte_radius_mean_SpinBox->setRange(0, 10);
-    oligodendrocyte_radius_mean_SpinBox->setSingleStep(0.1);
-    oligodendrocyte_radius_mean_SpinBox->setValue(5);
+    glial_pop2_radius_mean_SpinBox = new QDoubleSpinBox;
+    glial_pop2_radius_mean_SpinBox->setRange(0, 10);
+    glial_pop2_radius_mean_SpinBox->setSingleStep(0.1);
+    glial_pop2_radius_mean_SpinBox->setValue(5);
 
-    oligodendrocyte_radius_std_SpinBox = new QDoubleSpinBox;
-    oligodendrocyte_radius_std_SpinBox->setRange(0, 10);
-    oligodendrocyte_radius_std_SpinBox->setSingleStep(0.1);
-    oligodendrocyte_radius_std_SpinBox->setValue(0.5);
+    glial_pop2_radius_std_SpinBox = new QDoubleSpinBox;
+    glial_pop2_radius_std_SpinBox->setRange(0, 10);
+    glial_pop2_radius_std_SpinBox->setSingleStep(0.1);
+    glial_pop2_radius_std_SpinBox->setValue(0.5);
 
+    glial_pop1_nbr_primary_processes_SpinBox = new QDoubleSpinBox;
+    glial_pop1_nbr_primary_processes_SpinBox->setRange(1, 20);
+    glial_pop1_nbr_primary_processes_SpinBox->setSingleStep(1);
+    glial_pop1_nbr_primary_processes_SpinBox->setValue(5);
 
+    glial_pop2_nbr_primary_processes_SpinBox = new QDoubleSpinBox;
+    glial_pop2_nbr_primary_processes_SpinBox->setRange(1, 20);
+    glial_pop2_nbr_primary_processes_SpinBox->setSingleStep(1);
+    glial_pop2_nbr_primary_processes_SpinBox->setValue(5);
 
 
     // --- Configuration ComboBox (Initially Hidden) ---
@@ -271,9 +303,12 @@ void Window::createControls(const QString &title)
     std::vector<QLabel*> axons_labels = {axons_w_myelin_icvf_qlabel, axons_icvf_qlabel ,nbr_threads_qlabel, epsilon_qlabel, c2_qlabel, nbr_axons_populations_qlabel, beading_amplitude_qlabel, alpha_qlabel, beta_qlabel};
     std::vector <QDoubleSpinBox*> axons_spinBoxes = {axons_w_myelin_icvf_SpinBox, axons_icvf_SpinBox, nbr_threads_SpinBox, epsilon_SpinBox, c2_SpinBox, nbr_axons_populations_SpinBox, beading_amplitude_SpinBox, alpha_SpinBox, beta_SpinBox};
     
-    std::vector<QLabel*> glials_labels = {astrocyte_soma_icvf_qlabel, astrocyte_processes_icvf_qlabel, oligodendrocyte_soma_icvf_qlabel, oligodendrocyte_processes_icvf_qlabel, astrocyte_radius_mean_qlabel, astrocyte_radius_std_qlabel, oligodendrocyte_radius_mean_qlabel, oligodendrocyte_radius_std_qlabel, mean_process_length_qlabel, std_process_length_qlabel};
-    std::vector <QDoubleSpinBox*> glials_spinBoxes = {astrocyte_soma_icvf_SpinBox, astrocyte_processes_icvf_SpinBox, oligodendrocyte_soma_icvf_SpinBox, oligodendrocyte_processes_icvf_SpinBox, astrocyte_radius_mean_SpinBox, astrocyte_radius_std_SpinBox, oligodendrocyte_radius_mean_SpinBox, oligodendrocyte_radius_std_SpinBox,  mean_process_length_SpinBox, std_process_length_SpinBox};
+    std::vector<QLabel*> glials_labels1 = {glial_pop1_soma_icvf_qlabel, glial_pop1_processes_icvf_qlabel, glial_pop1_radius_mean_qlabel, glial_pop1_radius_std_qlabel, glial_pop1_mean_process_length_qlabel, glial_pop1_std_process_length_qlabel, glial_pop1_nbr_primary_processes_qlabel};
+    std::vector <QDoubleSpinBox*> glials_spinBoxes1 = {glial_pop1_soma_icvf_SpinBox, glial_pop1_processes_icvf_SpinBox, glial_pop1_radius_mean_SpinBox, glial_pop1_radius_std_SpinBox, glial_pop1_mean_process_length_SpinBox, glial_pop1_std_process_length_SpinBox, glial_pop1_nbr_primary_processes_SpinBox};
     
+    std::vector<QLabel*> glials_labels2 = {glial_pop2_soma_icvf_qlabel, glial_pop2_processes_icvf_qlabel, glial_pop2_radius_mean_qlabel, glial_pop2_radius_std_qlabel, glial_pop2_mean_process_length_qlabel, glial_pop2_std_process_length_qlabel, glial_pop2_nbr_primary_processes_qlabel};
+    std::vector <QDoubleSpinBox*> glials_spinBoxes2 = {glial_pop2_soma_icvf_SpinBox, glial_pop2_processes_icvf_SpinBox, glial_pop2_radius_mean_SpinBox, glial_pop2_radius_std_SpinBox, glial_pop2_mean_process_length_SpinBox, glial_pop2_std_process_length_SpinBox, glial_pop2_nbr_primary_processes_SpinBox};
+
     
     QGridLayout *generalLayout = new QGridLayout;
 
@@ -293,20 +328,37 @@ void Window::createControls(const QString &title)
     }
     axonsGroup->setLayout(axonsLayout);
 
-    QGridLayout *glialLayout = new QGridLayout;
-    for (int i = 0; i < glials_labels.size(); i++){
-        glialLayout->addWidget(glials_labels[i], i, 0);
-        glialLayout->addWidget(glials_spinBoxes[i], i, 1);
+    QGridLayout *glialLayout1 = new QGridLayout;
+    for (int i = 0; i < glials_labels1.size(); i++){
+        glialLayout1->addWidget(glials_labels1[i], i, 0);
+        glialLayout1->addWidget(glials_spinBoxes1[i], i, 1);
     }
-    glialGroup->setLayout(glialLayout);
+    glialLayout1->addWidget(glial_pop1_branching_qlabel, glials_labels1.size(), 0);
+    glialLayout1->addWidget(glial_pop1_branching_checkbox, glials_labels1.size(), 1);
 
-    // --- Main Layout ---
-    QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addWidget(generalGroup);
-    mainLayout->addWidget(axonsGroup);
-    mainLayout->addWidget(glialGroup);
+    glialGroup1->setLayout(glialLayout1);
 
-    controlsGroup->setLayout(mainLayout);
+    QGridLayout *glialLayout2 = new QGridLayout;
+    for (int i = 0; i < glials_labels2.size(); i++){
+        glialLayout2->addWidget(glials_labels2[i], i, 0);
+        glialLayout2->addWidget(glials_spinBoxes2[i], i, 1);
+    }
+    glialLayout2->addWidget(glial_pop2_branching_qlabel, glials_labels2.size(), 0);
+    glialLayout2->addWidget(glial_pop2_branching_checkbox, glials_labels2.size(), 1);
+
+    glialGroup2->setLayout(glialLayout2);
+
+    // Arrange groups in a 2x2 grid within `controlsGroup`
+    QGridLayout *mainControlsLayout = new QGridLayout;
+    mainControlsLayout->addWidget(generalGroup, 0, 0);
+    mainControlsLayout->addWidget(axonsGroup, 0, 1);
+    mainControlsLayout->addWidget(glialGroup1, 1, 0);
+    mainControlsLayout->addWidget(glialGroup2, 1, 1);
+
+    controlsGroup->setLayout(mainControlsLayout);
+
+    return controlsGroup;
+
 
 }
 void Window::updateConfigurationSelectionVisibility(double value)
@@ -326,10 +378,10 @@ void Window::onSaveButtonClicked()
     // Retrieve values from spin boxes and checkboxes
     axons_icvf = axons_icvf_SpinBox->value();
     axons_w_myelin_icvf = axons_w_myelin_icvf_SpinBox->value();
-    astrocyte_soma_icvf = astrocyte_soma_icvf_SpinBox->value();
-    astrocyte_processes_icvf = astrocyte_processes_icvf_SpinBox->value();
-    oligodendrocyte_soma_icvf = oligodendrocyte_soma_icvf_SpinBox->value();
-    oligodendrocyte_processes_icvf = oligodendrocyte_processes_icvf_SpinBox->value();
+    glial_pop1_soma_icvf = glial_pop1_soma_icvf_SpinBox->value();
+    glial_pop1_processes_icvf = glial_pop1_processes_icvf_SpinBox->value();
+    glial_pop2_soma_icvf = glial_pop2_soma_icvf_SpinBox->value();
+    glial_pop2_processes_icvf = glial_pop2_processes_icvf_SpinBox->value();
     nbr_threads = nbr_threads_SpinBox->value();
     overlapping_factor = overlapping_factor_SpinBox->value();
     voxel_size = voxel_size_SpinBox->value();
@@ -337,18 +389,25 @@ void Window::onSaveButtonClicked()
     c2 = c2_SpinBox->value();
     nbr_axons_populations = nbr_axons_populations_SpinBox->value();
     beading_amplitude = beading_amplitude_SpinBox->value();
-    mean_process_length = mean_process_length_SpinBox->value();
-    std_process_length = std_process_length_SpinBox->value();
+    glial_pop1_mean_process_length = glial_pop1_mean_process_length_SpinBox->value();
+    glial_pop1_std_process_length = glial_pop1_std_process_length_SpinBox->value();
+    glial_pop2_mean_process_length = glial_pop2_mean_process_length_SpinBox->value();
+    glial_pop2_std_process_length = glial_pop2_std_process_length_SpinBox->value();
+
     epsilon = epsilon_SpinBox->value();
     minimum_radius = minimum_radius_SpinBox->value();
     alpha = alpha_SpinBox->value();
     beta = beta_SpinBox->value();
     visualise_voxel = visualise_voxel_checkbox->isChecked();
-    astrocyte_radius_mean = astrocyte_radius_mean_SpinBox->value();
-    astrocyte_radius_std = astrocyte_radius_std_SpinBox->value();
-    oligodendrocyte_radius_mean = oligodendrocyte_radius_mean_SpinBox->value();
-    oligodendrocyte_radius_std = oligodendrocyte_radius_std_SpinBox->value();
-    
+    glial_pop1_radius_mean = glial_pop1_radius_mean_SpinBox->value();
+    glial_pop1_radius_std = glial_pop1_radius_std_SpinBox->value();
+    glial_pop2_radius_mean = glial_pop2_radius_mean_SpinBox->value();
+    glial_pop2_radius_std = glial_pop2_radius_std_SpinBox->value();
+    glial_pop1_nbr_primary_processes = glial_pop1_nbr_primary_processes_SpinBox->value();
+    glial_pop2_nbr_primary_processes = glial_pop2_nbr_primary_processes_SpinBox->value();
+    glial_pop1_branching = glial_pop1_branching_checkbox->isChecked();
+    glial_pop2_branching = glial_pop2_branching_checkbox->isChecked();
+
     // Close the parameter input dialog
     this->close();
 
@@ -363,19 +422,18 @@ void Window::StartSimulation(){
 
     int repetitions = parameters.repetitions;
     std::vector<double> vox_sizes = {voxel_size/1.0};
-    double astrocyte_icvf_soma = astrocyte_soma_icvf/100.0;
-    double astrocyte_icvf_branches = astrocyte_processes_icvf/100.0;
-    double oligodendrocyte_icvf_soma = oligodendrocyte_soma_icvf/100.0;
-    double oligodendrocyte_icvf_branches = oligodendrocyte_processes_icvf/100.0;
+    double glial_pop1_icvf_soma = glial_pop1_soma_icvf/100.0;
+    double glial_pop1_icvf_processes = glial_pop1_processes_icvf/100.0;
+    double glial_pop2_icvf_soma = glial_pop2_soma_icvf/100.0;
+    double glial_pop2_icvf_processes = glial_pop2_processes_icvf/100.0;
     double axons_wo_myelin_icvf = axons_icvf/100.0;
     double axons_with_myelin_icvf = axons_w_myelin_icvf/100.0;
     int spheres_overlap_factor = overlapping_factor;
     std::string directory = selectedDirectory.toStdString();
-    double cosphisquared = c2;
+    double cosPhiSquared = c2;
     double std_dev = epsilon;
-    double mean_glial_process_length = mean_process_length;
-    double std_glial_process_length = std_process_length;
     double min_radius = minimum_radius;
+    
 
     int regrow_thr = parameters.regrow_thr;
     int ondulation_factor = parameters.ondulation_factor;
@@ -403,8 +461,10 @@ void Window::StartSimulation(){
             auto startTime = std::chrono::high_resolution_clock::now();
             cout << "STARTING SIMULATION " << endl;
             // create distribution of axons
-            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, astrocyte_icvf_soma, astrocyte_icvf_branches, oligodendrocyte_icvf_soma, oligodendrocyte_icvf_branches, alpha, beta, min_l, max_l, min_radius, regrow_thr, beading_amplitude, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosphisquared, nbr_threads, nbr_axons_populations, 
-            crossing_fibers_type, mean_glial_process_length, std_glial_process_length, astrocyte_radius_mean, astrocyte_radius_std, oligodendrocyte_radius_mean, oligodendrocyte_radius_std);
+            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_w_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, alpha, beta,
+                                             min_l, max_l, min_radius, regrow_thr, beading_amplitude, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
+                                              glial_pop1_mean_process_length, glial_pop1_std_process_length, glial_pop2_mean_process_length, glial_pop2_std_process_length,
+                                              glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, glial_pop1_nbr_primary_processes, glial_pop2_nbr_primary_processes);
 
             AxonDistribution.createSubstrate();
             // saving spheres
@@ -429,35 +489,35 @@ void Window::StartSimulation(){
                 r_.clear();
             }
 
-            for (unsigned i=0; i< AxonDistribution.astrocytes.size(); ++i){
+            for (unsigned i=0; i< AxonDistribution.glial_pop1.size(); ++i){
                 std::vector<double> x_;
                 std::vector<double> y_;
                 std::vector<double> z_;
                 std::vector<double> r_;
                 std::vector<int> b_;
 
-                x_.push_back(AxonDistribution.astrocytes[i].soma.center[0]);
-                y_.push_back(AxonDistribution.astrocytes[i].soma.center[1]);
-                z_.push_back(AxonDistribution.astrocytes[i].soma.center[2]);
-                r_.push_back(AxonDistribution.astrocytes[i].soma.radius);
+                x_.push_back(AxonDistribution.glial_pop1[i].soma.center[0]);
+                y_.push_back(AxonDistribution.glial_pop1[i].soma.center[1]);
+                z_.push_back(AxonDistribution.glial_pop1[i].soma.center[2]);
+                r_.push_back(AxonDistribution.glial_pop1[i].soma.radius);
                 b_.push_back(0);
 
-                for (unsigned j=0; j< AxonDistribution.astrocytes[i].ramification_spheres.size(); ++j){
+                for (unsigned j=0; j< AxonDistribution.glial_pop1[i].ramification_spheres.size(); ++j){
 
-                    for (unsigned k=0; k< AxonDistribution.astrocytes[i].ramification_spheres[j].size(); ++k){
-                        x_.push_back(AxonDistribution.astrocytes[i].ramification_spheres[j][k].center[0]);
-                        y_.push_back(AxonDistribution.astrocytes[i].ramification_spheres[j][k].center[1]);
-                        z_.push_back(AxonDistribution.astrocytes[i].ramification_spheres[j][k].center[2]);
-                        r_.push_back(AxonDistribution.astrocytes[i].ramification_spheres[j][k].radius);
+                    for (unsigned k=0; k< AxonDistribution.glial_pop1[i].ramification_spheres[j].size(); ++k){
+                        x_.push_back(AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[0]);
+                        y_.push_back(AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[1]);
+                        z_.push_back(AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[2]);
+                        r_.push_back(AxonDistribution.glial_pop1[i].ramification_spheres[j][k].radius);
                         b_.push_back(j);
                     }
                 }
 
-                X_astrocytes.push_back(x_);
-                Y_astrocytes.push_back(y_);
-                Z_astrocytes.push_back(z_);
-                R_astrocytes.push_back(r_);
-                Branch_astrocytes.push_back(b_);
+                X_glial_pop1.push_back(x_);
+                Y_glial_pop1.push_back(y_);
+                Z_glial_pop1.push_back(z_);
+                R_glial_pop1.push_back(r_);
+                Branch_glial_pop1.push_back(b_);
                 x_.clear();
                 y_.clear();
                 z_.clear();
@@ -465,35 +525,35 @@ void Window::StartSimulation(){
                 b_.clear();
             }
 
-            for (unsigned i=0; i< AxonDistribution.oligodendrocytes.size(); ++i){
+            for (unsigned i=0; i< AxonDistribution.glial_pop2.size(); ++i){
                 std::vector<double> x_;
                 std::vector<double> y_;
                 std::vector<double> z_;
                 std::vector<double> r_;
                 std::vector<int> b_;
 
-                x_.push_back(AxonDistribution.oligodendrocytes[i].soma.center[0]);
-                y_.push_back(AxonDistribution.oligodendrocytes[i].soma.center[1]);
-                z_.push_back(AxonDistribution.oligodendrocytes[i].soma.center[2]);
-                r_.push_back(AxonDistribution.oligodendrocytes[i].soma.radius);
+                x_.push_back(AxonDistribution.glial_pop2[i].soma.center[0]);
+                y_.push_back(AxonDistribution.glial_pop2[i].soma.center[1]);
+                z_.push_back(AxonDistribution.glial_pop2[i].soma.center[2]);
+                r_.push_back(AxonDistribution.glial_pop2[i].soma.radius);
                 b_.push_back(0);
 
-                for (unsigned j=0; j< AxonDistribution.oligodendrocytes[i].ramification_spheres.size(); ++j){
+                for (unsigned j=0; j< AxonDistribution.glial_pop2[i].ramification_spheres.size(); ++j){
 
-                    for (unsigned k=0; k< AxonDistribution.oligodendrocytes[i].ramification_spheres[j].size(); ++k){
-                        x_.push_back(AxonDistribution.oligodendrocytes[i].ramification_spheres[j][k].center[0]);
-                        y_.push_back(AxonDistribution.oligodendrocytes[i].ramification_spheres[j][k].center[1]);
-                        z_.push_back(AxonDistribution.oligodendrocytes[i].ramification_spheres[j][k].center[2]);
-                        r_.push_back(AxonDistribution.oligodendrocytes[i].ramification_spheres[j][k].radius);
+                    for (unsigned k=0; k< AxonDistribution.glial_pop2[i].ramification_spheres[j].size(); ++k){
+                        x_.push_back(AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[0]);
+                        y_.push_back(AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[1]);
+                        z_.push_back(AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[2]);
+                        r_.push_back(AxonDistribution.glial_pop2[i].ramification_spheres[j][k].radius);
                         b_.push_back(j);
                     }
                 }
 
-                X_oligodendrocytes.push_back(x_);
-                Y_oligodendrocytes.push_back(y_);
-                Z_oligodendrocytes.push_back(z_);
-                R_oligodendrocytes.push_back(r_);
-                Branch_oligodendrocytes.push_back(b_);
+                X_glial_pop2.push_back(x_);
+                Y_glial_pop2.push_back(y_);
+                Z_glial_pop2.push_back(z_);
+                R_glial_pop2.push_back(r_);
+                Branch_glial_pop2.push_back(b_);
                 x_.clear();
                 y_.clear();
                 z_.clear();
@@ -792,73 +852,77 @@ void Window::plotTortuosityDistribution()
 
 void Window::ShollAnalysis() {
 
-    if (X_astrocytes.size() == 0) {
-        QMessageBox::warning(this, "Error", "No Astrocytes to plot!");
+    if (X_glial_pop1.size() == 0) {
+        QMessageBox::warning(this, "Error", "No Glial cells to plot!");
         return;
     }
 
-    for (unsigned long i = 0; i < X_astrocytes.size(); ++i) {
+    // Radii for Sholl analysis
+    std::vector<double> sphere_around_soma_radii = {5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 80};
+    std::vector<double> mean_intersections(sphere_around_soma_radii.size(), 0);
 
-        // Soma position of the current astrocyte
-        Eigen::Vector3d soma_position = {X_astrocytes[i][0], Y_astrocytes[i][0], Z_astrocytes[i][0]};
-
-        // Radii for Sholl analysis
-        std::vector<double> sphere_around_soma_radii = {5, 7, 10, 15, 20 , 25, 30, 40, 50, 60, 80};
+    for (unsigned long i = 0; i < X_glial_pop1.size(); ++i) {
+        // Soma position of the current glial_pop1
+        Eigen::Vector3d soma_position = {X_glial_pop1[i][0], Y_glial_pop1[i][0], Z_glial_pop1[i][0]};
         
-        // Initialize intersections list with zeros
         std::vector<double> intersections_list(sphere_around_soma_radii.size(), 0);
-
         std::vector<int> branches_list;
 
         // Iterate through all spheres (excluding the soma) to compute intersections
         for (unsigned long r = 0; r < sphere_around_soma_radii.size(); ++r) {
-            for (unsigned long j = 1; j < X_astrocytes[i].size(); ++j) {
-                Eigen::Vector3d position = {X_astrocytes[i][j], Y_astrocytes[i][j], Z_astrocytes[i][j]};
+            for (unsigned long j = 1; j < X_glial_pop1[i].size(); ++j) {
+                Eigen::Vector3d position = {X_glial_pop1[i][j], Y_glial_pop1[i][j], Z_glial_pop1[i][j]};
                 double distance = (position - soma_position).norm();
-
-                if (distance < sphere_around_soma_radii[r] + R_astrocytes[i][j] && distance > sphere_around_soma_radii[r] - R_astrocytes[i][j]) {
-                    // check if branch is already in list
-                    if (std::find(branches_list.begin(), branches_list.end(), Branch_astrocytes[i][j]) == branches_list.end()) {
+                
+                if (distance < sphere_around_soma_radii[r] + R_glial_pop1[i][j] && distance > sphere_around_soma_radii[r] - R_glial_pop1[i][j]) {
+                    if (std::find(branches_list.begin(), branches_list.end(), Branch_glial_pop1[i][j]) == branches_list.end()) {
                         intersections_list[r] += 1;
-                        branches_list.push_back(Branch_astrocytes[i][j]);
+                        branches_list.push_back(Branch_glial_pop1[i][j]);
                     }
                 }
             }
             branches_list.clear();
         }
 
-        // Create QCustomPlot for Sholl analysis
-        QCustomPlot *customPlot = new QCustomPlot;
-
-        // Convert the data to QVector for QCustomPlot
-        QVector<double> x = QVector<double>::fromStdVector(sphere_around_soma_radii);
-        QVector<double> y = QVector<double>::fromStdVector(intersections_list);
-
-        // Create a graph and set the data
-        customPlot->addGraph();
-        customPlot->graph(0)->setData(x, y);
-
-        // Set axis labels
-        customPlot->xAxis->setLabel("Distance to Soma (μm)");
-        customPlot->yAxis->setLabel("Number of Intersections");
-
-        // Set axis ranges
-        customPlot->xAxis->setRange(0, *std::max_element(sphere_around_soma_radii.begin(), sphere_around_soma_radii.end()));
-        customPlot->yAxis->setRange(0, *std::max_element(intersections_list.begin(), intersections_list.end()));
-
-        // Add a title
-        customPlot->plotLayout()->insertRow(0);
-        //customPlot->plotLayout()->addElement(0, 0, new QCPPlotTitle(customPlot, "Sholl Analysis"));
-
-        // Display the plot in a dialog window
-        QDialog *dialog = new QDialog(this);
-        //adjust size
-        dialog->resize(800, 600);
-        QVBoxLayout *layout = new QVBoxLayout;
-        layout->addWidget(customPlot);
-        dialog->setLayout(layout);
-        dialog->setWindowTitle("Sholl Analysis for Astrocyte");
-        dialog->exec();
+        // Accumulate values for mean calculation
+        for (size_t r = 0; r < sphere_around_soma_radii.size(); ++r) {
+            mean_intersections[r] += intersections_list[r];
+        }
     }
+
+    // Compute mean intersections
+    for (size_t r = 0; r < mean_intersections.size(); ++r) {
+        mean_intersections[r] /= X_glial_pop1.size();
+    }
+
+    // Create QCustomPlot for mean Sholl analysis
+    QCustomPlot *customPlot = new QCustomPlot;
+
+    // Convert the data to QVector for QCustomPlot
+    QVector<double> x = QVector<double>::fromStdVector(sphere_around_soma_radii);
+    QVector<double> y = QVector<double>::fromStdVector(mean_intersections);
+
+    // Create a graph and set the data
+    customPlot->addGraph();
+    customPlot->graph(0)->setData(x, y);
+    customPlot->graph(0)->setLineStyle(QCPGraph::lsLine);
+    customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
+
+    // Set axis labels
+    customPlot->xAxis->setLabel("Distance to Soma (μm)");
+    customPlot->yAxis->setLabel("Mean Number of Intersections");
+
+    // Set axis ranges
+    customPlot->xAxis->setRange(0, *std::max_element(sphere_around_soma_radii.begin(), sphere_around_soma_radii.end()));
+    customPlot->yAxis->setRange(0, *std::max_element(mean_intersections.begin(), mean_intersections.end()));
+
+    // Display the plot in a dialog window
+    QDialog *dialog = new QDialog(this);
+    dialog->resize(800, 600);
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->addWidget(customPlot);
+    dialog->setLayout(layout);
+    dialog->setWindowTitle("Mean Sholl Analysis for glial_pop1");
+    dialog->exec();
 }
 

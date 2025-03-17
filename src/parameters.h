@@ -26,10 +26,10 @@ public:
     std::vector<double> vox_sizes = {50};
     int repetitions = 1;
     int spheres_overlap_factor = 2;
-    double astrocytes_icvf_soma = 0.0;
-    double astrocytes_icvf_processes = 0.0;
-    double oligodendrocytes_icvf_soma = 0.0;
-    double oligodendrocytes_icvf_processes = 0.0;
+    double glial_pop1_icvf_soma = 0.0;
+    double glial_pop1_icvf_processes = 0.0;
+    double glial_pop2_icvf_soma = 0.0;
+    double glial_pop2_icvf_processes = 0.0;
     int nbr_axons_populations = 1;
     int crossing_fibers_type = 0;
 

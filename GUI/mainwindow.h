@@ -37,7 +37,7 @@ private slots:
     void PlotCells();
 
 private:
-    void createControls(const QString &title);
+    QGroupBox* createControls(const QString &title);
     void resizeEvent(QResizeEvent *e);
     void StartSimulation();
     SlidersGroup *slidersGroup;
@@ -49,15 +49,16 @@ private:
     QGridLayout *glialLayout;
     QGroupBox *generalGroup;
     QGroupBox *axonsGroup;
-    QGroupBox *glialGroup;
+    QGroupBox *glialGroup1;
+    QGroupBox *glialGroup2;
 
     QLabel *visualise_voxel_qlabel;
     QLabel *axons_icvf_qlabel;
     QLabel *axons_w_myelin_icvf_qlabel;
-    QLabel *astrocyte_soma_icvf_qlabel;
-    QLabel *astrocyte_processes_icvf_qlabel;
-    QLabel *oligodendrocyte_soma_icvf_qlabel;
-    QLabel *oligodendrocyte_processes_icvf_qlabel;
+    QLabel *glial_pop1_soma_icvf_qlabel;
+    QLabel *glial_pop1_processes_icvf_qlabel;
+    QLabel *glial_pop2_soma_icvf_qlabel;
+    QLabel *glial_pop2_processes_icvf_qlabel;
     QLabel *voxel_size_qlabel;
     QLabel *minimum_radius_qlabel;
     QLabel *nbr_threads_qlabel;
@@ -65,23 +66,31 @@ private:
     QLabel *nbr_axons_populations_qlabel;
     QLabel *c2_qlabel;
     QLabel *epsilon_qlabel;
-    QLabel *mean_process_length_qlabel;
-    QLabel *std_process_length_qlabel;
+    QLabel *glial_pop1_mean_process_length_qlabel;
+    QLabel *glial_pop1_std_process_length_qlabel;
+    QLabel *glial_pop2_mean_process_length_qlabel;
+    QLabel *glial_pop2_std_process_length_qlabel;
     QLabel *beading_amplitude_qlabel;
     QLabel *alpha_qlabel;
     QLabel *beta_qlabel;
-    QLabel *astrocyte_radius_mean_qlabel;
-    QLabel *astrocyte_radius_std_qlabel;
-    QLabel *oligodendrocyte_radius_mean_qlabel;
-    QLabel *oligodendrocyte_radius_std_qlabel;
+    QLabel *glial_pop1_radius_mean_qlabel;
+    QLabel *glial_pop1_radius_std_qlabel;
+    QLabel *glial_pop2_radius_mean_qlabel;
+    QLabel *glial_pop2_radius_std_qlabel;
+    QLabel *glial_pop1_nbr_primary_processes_qlabel;
+    QLabel *glial_pop2_nbr_primary_processes_qlabel;
+    QLabel *glial_pop1_branching_qlabel;
+    QLabel *glial_pop2_branching_qlabel;
 
     QCheckBox *visualise_voxel_checkbox;
+    QCheckBox *glial_pop1_branching_checkbox;
+    QCheckBox *glial_pop2_branching_checkbox;
     QDoubleSpinBox *axons_icvf_SpinBox;
     QDoubleSpinBox *axons_w_myelin_icvf_SpinBox;
-    QDoubleSpinBox *astrocyte_soma_icvf_SpinBox;
-    QDoubleSpinBox *astrocyte_processes_icvf_SpinBox;
-    QDoubleSpinBox *oligodendrocyte_soma_icvf_SpinBox;
-    QDoubleSpinBox *oligodendrocyte_processes_icvf_SpinBox;
+    QDoubleSpinBox *glial_pop1_soma_icvf_SpinBox;
+    QDoubleSpinBox *glial_pop1_processes_icvf_SpinBox;
+    QDoubleSpinBox *glial_pop2_soma_icvf_SpinBox;
+    QDoubleSpinBox *glial_pop2_processes_icvf_SpinBox;
     QDoubleSpinBox *voxel_size_SpinBox;
     QDoubleSpinBox *minimum_radius_SpinBox;
     QDoubleSpinBox *nbr_threads_SpinBox;
@@ -89,15 +98,19 @@ private:
     QDoubleSpinBox *nbr_axons_populations_SpinBox;
     QDoubleSpinBox *c2_SpinBox;
     QDoubleSpinBox *epsilon_SpinBox;
-    QDoubleSpinBox *mean_process_length_SpinBox;
-    QDoubleSpinBox *std_process_length_SpinBox;
+    QDoubleSpinBox *glial_pop1_mean_process_length_SpinBox;
+    QDoubleSpinBox *glial_pop1_std_process_length_SpinBox;
+    QDoubleSpinBox *glial_pop2_mean_process_length_SpinBox;
+    QDoubleSpinBox *glial_pop2_std_process_length_SpinBox;
     QDoubleSpinBox *beading_amplitude_SpinBox;
     QDoubleSpinBox *alpha_SpinBox;
     QDoubleSpinBox *beta_SpinBox;
-    QDoubleSpinBox *astrocyte_radius_mean_SpinBox;
-    QDoubleSpinBox *astrocyte_radius_std_SpinBox;
-    QDoubleSpinBox *oligodendrocyte_radius_mean_SpinBox;
-    QDoubleSpinBox *oligodendrocyte_radius_std_SpinBox;
+    QDoubleSpinBox *glial_pop1_radius_mean_SpinBox;
+    QDoubleSpinBox *glial_pop1_radius_std_SpinBox;
+    QDoubleSpinBox *glial_pop2_radius_mean_SpinBox;
+    QDoubleSpinBox *glial_pop2_radius_std_SpinBox;
+    QDoubleSpinBox *glial_pop1_nbr_primary_processes_SpinBox;
+    QDoubleSpinBox *glial_pop2_nbr_primary_processes_SpinBox;
 
     QBoxLayout *layout;
     QPushButton *okButton;
@@ -113,10 +126,10 @@ private:
     // Additional member variables to store values
     int axons_icvf;
     int axons_w_myelin_icvf;
-    int astrocyte_soma_icvf;
-    int astrocyte_processes_icvf;
-    int oligodendrocyte_soma_icvf;
-    int oligodendrocyte_processes_icvf;
+    int glial_pop1_soma_icvf;
+    int glial_pop1_processes_icvf;
+    int glial_pop2_soma_icvf;
+    int glial_pop2_processes_icvf;
     int voxel_size;
     double minimum_radius;
     int nbr_threads;
@@ -131,10 +144,18 @@ private:
     double alpha;
     double beta;
     bool visualise_voxel;
-    double astrocyte_radius_mean;
-    double astrocyte_radius_std;
-    double oligodendrocyte_radius_mean;
-    double oligodendrocyte_radius_std;
+    double glial_pop1_radius_mean;
+    double glial_pop1_radius_std;
+    double glial_pop2_radius_mean;
+    double glial_pop2_radius_std;
+    int glial_pop1_nbr_primary_processes;
+    int glial_pop2_nbr_primary_processes;
+    bool glial_pop1_branching;
+    bool glial_pop2_branching;
+    double glial_pop1_mean_process_length;
+    double glial_pop1_std_process_length;
+    double glial_pop2_mean_process_length;
+    double glial_pop2_std_process_length;
 
 
     // spheres to plot
@@ -143,17 +164,17 @@ private:
     std::vector<std::vector<double>> Z_axons;
     std::vector<std::vector<double>> R_axons;
 
-    std::vector<std::vector<double>> X_astrocytes;
-    std::vector<std::vector<double>> Y_astrocytes;
-    std::vector<std::vector<double>> Z_astrocytes;
-    std::vector<std::vector<double>> R_astrocytes;
-    std::vector<std::vector<int>> Branch_astrocytes;
+    std::vector<std::vector<double>> X_glial_pop1;
+    std::vector<std::vector<double>> Y_glial_pop1;
+    std::vector<std::vector<double>> Z_glial_pop1;
+    std::vector<std::vector<double>> R_glial_pop1;
+    std::vector<std::vector<int>> Branch_glial_pop1;
 
-    std::vector<std::vector<double>> X_oligodendrocytes;
-    std::vector<std::vector<double>> Y_oligodendrocytes;
-    std::vector<std::vector<double>> Z_oligodendrocytes;
-    std::vector<std::vector<double>> R_oligodendrocytes;
-    std::vector<std::vector<int>> Branch_oligodendrocytes;
+    std::vector<std::vector<double>> X_glial_pop2;
+    std::vector<std::vector<double>> Y_glial_pop2;
+    std::vector<std::vector<double>> Z_glial_pop2;
+    std::vector<std::vector<double>> R_glial_pop2;
+    std::vector<std::vector<int>> Branch_glial_pop2;
 
 
     // Member for the 3D scatter plot and modifier

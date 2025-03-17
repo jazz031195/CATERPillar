@@ -37,10 +37,10 @@ int main(int argn, char* argv[])
     int repetitions = parameters.repetitions;
     std::vector<double> vox_sizes = parameters.vox_sizes;
 
-    double astrocytes_icvf_soma = parameters.astrocytes_icvf_soma;
-    double astrocytes_icvf_processes = parameters.astrocytes_icvf_processes;
-    double oligodendrocytes_icvf_soma = parameters.oligodendrocytes_icvf_soma;
-    double oligodendrocytes_icvf_processes = parameters.oligodendrocytes_icvf_processes;
+    double glial_pop1_icvf_soma = parameters.glial_pop1_icvf_soma;
+    double glial_pop1_icvf_processes = parameters.glial_pop1_icvf_processes;
+    double glial_pop2_icvf_soma = parameters.glial_pop2_icvf_soma;
+    double glial_pop2_icvf_processes = parameters.glial_pop2_icvf_processes;
     double axons_wo_myelin_icvf = parameters.axons_wo_myelin_icvf;
     double axons_w_myelin_icvf = parameters.axons_w_myelin_icvf;
     int spheres_overlap_factor = parameters.spheres_overlap_factor;
@@ -63,6 +63,15 @@ int main(int argn, char* argv[])
     double mean_glial_process_length = parameters.mean_glial_process_length;
     double std_glial_process_length = parameters.std_glial_process_length;
 
+    double glial_pop1_radius_mean = 5.0;
+    double glial_pop1_radius_std = 0.5;
+    double glial_pop2_radius_mean = 5.0;
+    double glial_pop2_radius_std = 0.5;
+    bool glial_pop1_branching = true;
+    bool glial_pop2_branching = true;
+    int nbr_primary_processes_pop1 = 5;
+    int nbr_primary_processes_pop2 = 5;
+
     for (int rep = 0; rep < repetitions; rep++) {
         for (int i = 0; i < vox_sizes.size(); i++) {
             double vox_size = vox_sizes[i];
@@ -74,10 +83,10 @@ int main(int argn, char* argv[])
             auto startTime = std::chrono::high_resolution_clock::now();
 
             AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(
-                axons_wo_myelin_icvf, axons_w_myelin_icvf, astrocytes_icvf_soma, astrocytes_icvf_processes, 
-                oligodendrocytes_icvf_soma, oligodendrocytes_icvf_processes, alpha, beta, min_l, max_l, 
-                min_radius, regrow_thr, beading_variation, std_dev, ondulation_factor,
-                spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, mean_glial_process_length, std_glial_process_length);
+                axons_wo_myelin_icvf, axons_w_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, alpha, beta,
+                                             min_l, max_l, min_radius, regrow_thr, beading_variation, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
+                                              mean_glial_process_length, std_glial_process_length, mean_glial_process_length, std_glial_process_length,
+                                              glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, nbr_primary_processes_pop1, nbr_primary_processes_pop2);
 
             // Generate unique filenames
             int file_suffix = 0;

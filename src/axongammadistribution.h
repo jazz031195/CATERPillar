@@ -28,8 +28,9 @@ public:
     std::vector<Axon> growing_axons;    /*!< Axons that are growing in threads */
     std::vector<double> stuck_radii;    /*!< Radii of stuck axons, to regrow */
     std::vector<int> stuck_indices;    /*!< Indices of stuck axons, to regrow */
-    std::vector<Glial> astrocytes;     /*!< Vector of astrocytes */
-    std::vector<Glial> oligodendrocytes;    /*!< Vector of oligodendrocytes */
+    std::vector<Glial> glial_pop1;     /*!< Vector of glial_pop1 */
+    std::vector<Glial> glial_pop2;    /*!< Vector of glial_pop2s */
+
     int nbr_axons_populations;                /*!< Number of populations of axons (1-3) */
     int crossing_fibers_type;                /*!< Type of crossing fibers (0 : sheet crossing, 1 : interwoven crossing) */
 
@@ -37,26 +38,28 @@ public:
     int num_batches;                    /*!< Number of batches of axons */
     int nbr_threads;                   /*!< Number of threads to grow axons */
     
-    double oligodendrocyte_radius_mean; /*!< Mean radius of oligodendrocytes */
-    double astrocyte_radius_mean;       /*!< Mean radius of astrocytes */
-    double oligodendrocyte_radius_std; /*!< Standard deviation of oligodendrocytes */
-    double astrocyte_radius_std;       /*!< Standard deviation of astrocytes */
+    double glial_pop2_radius_mean; /*!< Mean radius of glial_pop2 */
+    double glial_pop1_radius_mean;       /*!< Mean radius of glial_pop1 */
+    double glial_pop2_radius_std; /*!< Standard deviation of glial_pop2 */
+    double glial_pop1_radius_std;       /*!< Standard deviation of glial_pop1 */
+    bool glial_pop1_branching;               /*!< If true, the glial_pop1 can branch */
+    bool glial_pop2_branching;               /*!< If true, the glial_pop2 can branch */
 
     double target_axons_w_myelin_icvf;        /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double target_axons_wo_myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons without myelin */
-    double target_astrocytes_soma_icvf;        /*!< Astrocyte Intracellular Compartment Volume Fraction */
-    double target_astrocytes_branches_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
-    double target_oligodendrocytes_soma_icvf;        /*!< oligodendrocytes Intracellular Compartment Volume Fraction */
-    double target_oligodendrocytes_branches_icvf;    /*!< oligodendrocytes Intracellular Compartment Volume Fraction */
+    double target_glial_pop1_soma_icvf;        /*!< Astrocyte Intracellular Compartment Volume Fraction */
+    double target_glial_pop1_branches_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
+    double target_glial_pop2_soma_icvf;        /*!< glial_pop2 Intracellular Compartment Volume Fraction */
+    double target_glial_pop2_branches_icvf;    /*!< glial_pop2 Intracellular Compartment Volume Fraction */
     double total_volume; /*!< Total volume of the voxel */
     double target_axons_icvf;        
 
     double axons_w_myelin_icvf;        /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double axons_wo_myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons without myelin */
-    double astrocytes_soma_icvf;        /*!< Astrocyte Intracellular Compartment Volume Fraction */
-    double astrocytes_branches_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
-    double oligodendrocytes_soma_icvf;        /*!< oligodendrocytes Intracellular Compartment Volume Fraction */
-    double oligodendrocytes_branches_icvf;    /*!< oligodendrocytes Intracellular Compartment Volume Fraction */
+    double glial_pop1_soma_icvf;        /*!< Astrocyte Intracellular Compartment Volume Fraction */
+    double glial_pop1_branches_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
+    double glial_pop2_soma_icvf;        /*!< glial_pop2 Intracellular Compartment Volume Fraction */
+    double glial_pop2_branches_icvf;    /*!< glial_pop2 Intracellular Compartment Volume Fraction */
     double axons_icvf;        /*!< Intracellular Compartment Volume Fraction of axons without myelin */
     double myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double extracellular_icvf;        /*!< Extracellular Compartment Volume Fraction */
@@ -81,8 +84,12 @@ public:
     double beading_variation;              /*!< For beading: percentage of variation between the maximum radius and minimum radius in each axon. If set to 1, there is no "beading" */
     double std_dev;                     /*< Standard deviation for gaussian distribution in generation of directions to grow in */ 
     int ondulation_factor;              /*!< axon ondulation factor : the number of spheres during whoch the axon grows straight before picking a direction from gaussian distribution  */
-    double mean_glial_process_length;   /*!< Mean length of glial processes */
-    double std_glial_process_length;    /*!< Standard deviation of glial processes */
+    double mean_glial_pop1_process_length;   /*!< Mean length of glial processes */
+    double std_glial_pop1_process_length;    /*!< Standard deviation of glial processes */
+    int nbr_primary_processes_pop1;          /*!< Number of primary processes for glial cells */
+    double mean_glial_pop2_process_length;   /*!< Mean length of glial processes */
+    double std_glial_pop2_process_length;    /*!< Standard deviation of glial processes */
+    int nbr_primary_processes_pop2;          /*!< Number of primary processes for glial cells */
 
     struct CDF {
       std::vector<double> kappas;              // Row indices (kappas)
@@ -100,10 +107,11 @@ public:
     /*!
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &astrocytes_icvf_soma_, const double &astrocytes_icvf_branches_, const double &oligodendrocytes_icvf_soma_, const double &oligodendrocytes_icvf_branches_, const double &a, const double &b,
+    AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &glial_pop1_icvf_soma_, const double &glial_pop1_icvf_branches_, const double &glial_pop2_icvf_soma_, const double &glial_pop2_icvf_branches_, const double &a, const double &b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
                                               const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
-                                              const double &mean_glial_process_length_, const double &std_glial_process_length_, const double &astrocyte_radius_mean, const double &astrocyte_radius_std, const double &oligodendrocyte_radius_mean, const double &oligodendrocyte_radius_std);
+                                              const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
+                                              const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_);
     
     
     /*!
@@ -264,10 +272,10 @@ public:
     void PlaceGlialCells();
 
 
-    void growGlialCell(Glial &glial_cell, const int &number_ramification_points, int &nbr_spheres);
+    void growFirstPrimaryBranches(Glial &glial_cell, const int &number_ramification_points, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
 
 
-    bool growExtraBranchesinGlialCells(Glial &glial_cell, int &nbr_spheres);
+    bool growSecondaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
 
     /*!
      *  \brief Add myelin sheath by creating an inner_axonal membrane
@@ -328,17 +336,15 @@ public:
 
     double findInnerRadius(const double &outerRadius);
 
-    bool growProcessFromSoma(Glial &glial_cell, const int &j, const int &nbr_spheres);
+    bool growPrimaryBranch(Glial &glial_cell, const int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
 
     double RandomradiusVariation(Axon &axon);
 
-    void growOligodendrocytesBranches(std::vector<Glial>& oligodendrocytes, size_t astrocytes_size, std::vector<int>& nbr_spheres);
+    void growBranches(std::vector<Glial>& glial_cell_list, const int &population_nbr);
 
-    void growExtraBranchesAstrocytes(std::vector<int>& nbr_spheres);
-
-    void ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &astrocytes, const std::vector<Glial> &oligos);
+    void ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos);
     
-    void process_point(const Eigen::Vector3d &point, const std::vector<Axon> &axs, const std::vector<Glial> &astrocytes, const std::vector<Glial> &oligos, int &axons_count, int &inner_axons_count, int &astrocytes_somas_count, int &astrocytes_process_count, int &oligos_somas_count, int &oligos_process_count, int &extracellular_count);
+    void process_point(const Eigen::Vector3d &point, const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos, int &axons_count, int &inner_axons_count, int &glial_pop1_somas_count, int &glial_pop1_process_count, int &oligos_somas_count, int &oligos_process_count, int &extracellular_count);
     std::vector<Sphere> addIntermediateSpheres(const Sphere &random_sphere, const Sphere &first_sphere, const int &branch_nbr, const int &nbr_spheres, const int &nbr_spheres_between);
     bool GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::Vector3d &attractor, const double &radius, const Sphere &sphere_to_emerge_from, const Eigen::Vector3d &vector_to_prev_center, const int &nbr_spheres, const int &nbr_spheres_between, const int &cell_id, const int &branch_id);
     double draw_angle(double kappa);
