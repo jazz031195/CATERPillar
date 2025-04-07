@@ -83,7 +83,7 @@ void OpenGLWindow::resetCamera(){
 
     orbitTheta= 0.0f;
     orbitPhi = 0.0f;
-    cameraDistance = 50.0f;
+    cameraDistance = maxZ+ 50.0f;
     update();
 } 
 

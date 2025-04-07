@@ -555,13 +555,12 @@ void Window::ReadAxonsFromSWC(const QString& fileName){
         double x, y, z, radius_in, parent, radius_out;
 
         //skip first line
-        if (line[0] == 'i') {
+        if (line[0] == 'i'|| line[0] == 'a') {
             continue;
         }
 
         if (!(iss >> id_cell >> id_sphere >> id_branch >> type >> x >> y >> z >> radius_in >> radius_out >> parent)) {
-            QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format."));
-            assert(0);
+            QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format for Axons."));
             return;
         }
         
@@ -629,7 +628,7 @@ void Window::ReadGlialCellsFromSWC(const QString& fileName){
     while (std::getline(swcFile, line)) {
 
         //skip first line
-        if (line[0] == 'i') {
+        if (line[0] == 'i' || line[0] == 'a') {
             continue;
         }
 
@@ -641,7 +640,7 @@ void Window::ReadGlialCellsFromSWC(const QString& fileName){
         double x, y, z, radius_in, parent, radius_out;
 
         if (!(iss >> id_cell >> id_sphere >> id_branch >> type >> x >> y >> z >> radius_in >> radius_out >> parent)) {
-            QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format."));
+            QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format for Glial Cells."));
             return;
         }
 
@@ -661,13 +660,12 @@ void Window::ReadGlialCellsFromSWC(const QString& fileName){
                 z_.clear();
                 r_.clear();
                 b_.clear();
-
-                x_.push_back(x);
-                y_.push_back(y);
-                z_.push_back(z);
-                r_.push_back(radius_out);
-                b_.push_back(id_branch);
             }
+            x_.push_back(x);
+            y_.push_back(y);
+            z_.push_back(z);
+            r_.push_back(radius_out);
+            b_.push_back(id_branch);
             id_previous_cell = id_cell;
         }
         
