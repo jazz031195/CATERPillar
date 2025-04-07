@@ -1,0 +1,17 @@
+Duration 14
+Num_axons 79
+Voxel 30
+Axon icvf 0.30031
+Axon without myelin icvf 0.30031
+Axon with myelin icvf 0
+Myelin icvf 0
+Glial cell population 1 icvf soma 0
+Glial cell population 1 icvf branches 0
+Glial cell population 2 icvf soma 0
+Glial cell population 2 icvf branches 0
+Tortuosity (std of gaussians) 0.4
+Beading amplitude 0.3
+Overlapping factor 4
+Total icvf 0.30031
+C2 0.977556
+Number of threads 100

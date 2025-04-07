@@ -22,25 +22,74 @@
 Window::Window(QWidget *parent)
     : QWidget(parent)
 {
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    
-    // Get the controlsGroup from createControls() and add it
+        // Inside your Window constructor or init function
+    QVBoxLayout *startupLayout = new QVBoxLayout;
+
+    // 1. Welcome Image
+    QLabel *imageLabel = new QLabel(this);
+    QPixmap image("/home/localadmin/Documents/CATERPillar/logo_catrepillar.png"); // replace with the actual image path in your resource
+    imageLabel->setPixmap(image.scaled(800, 800, Qt::KeepAspectRatio));
+    imageLabel->setAlignment(Qt::AlignCenter);
+    startupLayout->addWidget(imageLabel);
+
+    // 2. Welcome Buttons
+    growButton = new QPushButton("Grow Substrate", this);
+    visualiseButton = new QPushButton("Visualise Substrate", this);
+
+    QHBoxLayout *buttonLayout = new QHBoxLayout;
+    buttonLayout->addWidget(growButton);
+    buttonLayout->addWidget(visualiseButton);
+
+    startupLayout->addLayout(buttonLayout);
+
+    // 3. Central widget stack (to switch between views)
+    QWidget *startupWidget = new QWidget;
+    startupWidget->setLayout(startupLayout);
+
+    QWidget *mainWidget = new QWidget;
+    QVBoxLayout *mainLayout = new QVBoxLayout(mainWidget);
+
+    // Your parameter group
     controlsGroup = createControls(tr("Parameters"));
     mainLayout->addWidget(controlsGroup);
 
-    // Buttons
+    // OK and Select Directory buttons
     okButton = new QPushButton("OK", this);
     selectDirectoryButton = new QPushButton("Select Directory", this);
+    QHBoxLayout *mainButtonLayout = new QHBoxLayout;
+    mainButtonLayout->addWidget(okButton);
+    mainButtonLayout->addWidget(selectDirectoryButton);
+    mainLayout->addLayout(mainButtonLayout);
 
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    buttonLayout->addWidget(okButton);
-    buttonLayout->addWidget(selectDirectoryButton);
-    mainLayout->addLayout(buttonLayout);
+    // 4. Stacked layout to switch views
+    QStackedLayout *stack = new QStackedLayout(this);
+    stack->addWidget(startupWidget); // index 0
+    stack->addWidget(mainWidget);    // index 1
+    this->setLayout(stack);
+
+    // 5. Connections
+    connect(growButton, &QPushButton::clicked, [stack]() {
+        stack->setCurrentIndex(1); // Show parameters layout
+    });
+
+    connect(visualiseButton, &QPushButton::clicked, this, &Window::SelectSWCFileButton);
 
     connect(okButton, &QPushButton::clicked, this, &Window::onSaveButtonClicked);
     connect(selectDirectoryButton, &QPushButton::clicked, this, &Window::onSelectDirectoryButtonClicked);
+
 }
 
+void Window::SelectSWCFileButton() {
+    QString filePath = QFileDialog::getOpenFileName(this, tr("Select SWC File"), "", tr("SWC Files (*.swc)"));
+    
+    if (!filePath.isEmpty()) {
+        SWCFile = filePath;  // Assuming you have a QString member named SWCFile
+        qDebug() << "Selected SWC file:" << SWCFile;
+        ReadAxonsFromSWC(SWCFile);       // Load axons
+        ReadGlialCellsFromSWC(SWCFile);  // Load glial cells
+        PlotCells();              // Visualize
+    }
+}
 
 void Window::PlotCells(){
     // Plotting cells
@@ -475,6 +524,164 @@ void Window::onSaveButtonClicked()
 
     StartSimulation();
 
+}
+
+
+
+void Window::ReadAxonsFromSWC(const QString& fileName){
+
+    if (fileName.isEmpty()) {
+        return; // User canceled the file dialog
+    }
+
+
+    std::ifstream swcFile(fileName.toStdString());
+    if (!swcFile.is_open()) {
+        QMessageBox::warning(this, tr("Error"), tr("Could not open the SWC file."));
+        return;
+    }
+
+    std::vector<double> x_ = {};
+    std::vector<double> y_ = {};
+    std::vector<double> z_ = {};
+    std::vector<double> r_ = {};
+
+    std::string line;
+    while (std::getline(swcFile, line)) {
+        std::istringstream iss(line);
+        int id_branch;
+        double id_cell, id_sphere;
+        std::string type;
+        double x, y, z, radius_in, parent, radius_out;
+
+        //skip first line
+        if (line[0] == 'i') {
+            continue;
+        }
+
+        if (!(iss >> id_cell >> id_sphere >> id_branch >> type >> x >> y >> z >> radius_in >> radius_out >> parent)) {
+            QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format."));
+            assert(0);
+            return;
+        }
+        
+        if (type == "axon") {
+            
+            if (id_sphere == 0) {
+                if (x_.size() > 0) {
+                    X_axons.push_back(x_);
+                    Y_axons.push_back(y_);
+                    Z_axons.push_back(z_);
+                    R_axons.push_back(r_);
+                }
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
+                x_.push_back(x);
+                y_.push_back(y);
+                z_.push_back(z);
+                r_.push_back(radius_out);
+            }
+            else {
+                x_.push_back(x);
+                y_.push_back(y);
+                z_.push_back(z);
+                r_.push_back(radius_out);
+            }
+        }
+    }
+    // Add the last axon
+    if (x_.size() > 0) {
+        X_axons.push_back(x_);
+        Y_axons.push_back(y_);
+        Z_axons.push_back(z_);
+        R_axons.push_back(r_);
+    }
+
+    swcFile.close();
+}
+
+
+void Window::ReadGlialCellsFromSWC(const QString& fileName){
+
+    if (fileName.isEmpty()) {
+        return; // User canceled the file dialog
+    }
+
+    std::ifstream swcFile(fileName.toStdString());
+    if (!swcFile.is_open()) {
+        QMessageBox::warning(this, tr("Error"), tr("Could not open the SWC file."));
+        assert(0);
+        return;
+    }
+
+    int previous_branch_id = -2;
+    int id_previous_cell = -1;
+
+    std::vector<double> x_;
+    std::vector<double> y_;
+    std::vector<double> z_;
+    std::vector<double> r_;
+    std::vector<int> b_;
+
+    std::string line;
+    while (std::getline(swcFile, line)) {
+
+        //skip first line
+        if (line[0] == 'i') {
+            continue;
+        }
+
+        std::istringstream iss(line);
+        double id_cell, id_sphere;
+        int id_branch;
+        std::string type;
+
+        double x, y, z, radius_in, parent, radius_out;
+
+        if (!(iss >> id_cell >> id_sphere >> id_branch >> type >> x >> y >> z >> radius_in >> radius_out >> parent)) {
+            QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format."));
+            return;
+        }
+
+        if (type != "axon") {
+
+            if (id_cell != id_previous_cell) {
+                if (id_previous_cell != -1) {
+                    X_glial_pop1.push_back(x_);
+                    Y_glial_pop1.push_back(y_);
+                    Z_glial_pop1.push_back(z_);
+                    R_glial_pop1.push_back(r_);
+                    Branch_glial_pop1.push_back(b_);
+
+                }
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
+                b_.clear();
+
+                x_.push_back(x);
+                y_.push_back(y);
+                z_.push_back(z);
+                r_.push_back(radius_out);
+                b_.push_back(id_branch);
+            }
+            id_previous_cell = id_cell;
+        }
+        
+    }
+
+    if (!x_.empty()) {
+        X_glial_pop1.push_back(x_);
+        Y_glial_pop1.push_back(y_);
+        Z_glial_pop1.push_back(z_);
+        R_glial_pop1.push_back(r_);
+        Branch_glial_pop1.push_back(b_);
+    }
+
+    swcFile.close();
 }
 
 void Window::StartSimulation(){

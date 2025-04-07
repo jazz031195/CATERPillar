@@ -1977,7 +1977,7 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, double& stuck_radii_, i
     AxonGrowth growth(axon_to_grow, glial_pop1, glial_pop2, axons, min_limits, max_limits, min_limits, max_limits, std_dev, min_radius);
 
     int tries_  = 0;
-    int max_nbr_tries = 100000;
+    int max_nbr_tries = 1e10;
     // Keep trying to grow until finished
     while (finished == 0 && tries_ < max_nbr_tries) {
 

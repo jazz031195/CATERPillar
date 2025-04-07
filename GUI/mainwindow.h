@@ -34,7 +34,10 @@ public:
 private slots:
     void onSaveButtonClicked();
     void onSelectDirectoryButtonClicked(); // Slot for selecting a directory
+    void SelectSWCFileButton();
     void PlotCells();
+    void ReadGlialCellsFromSWC(const QString& filePath);
+    void ReadAxonsFromSWC(const QString& filePath);
 
 private:
     QGroupBox* createControls(const QString &title);
@@ -122,12 +125,15 @@ private:
     QPushButton *okButton;
     QPushButton *selectDirectoryButton; // Button to select directory
     QString selectedDirectory; // String to store the selected directory
+    QString SWCFile;
 
     QPushButton *statisticsButton;
     QPushButton *plotRadiusDistributionButton;
     QPushButton *plotTortuosityDistributionButton;
     QPushButton *plotShollAnalysisButton;
     QPushButton *resetCameraButton;
+    QPushButton *visualiseButton;
+    QPushButton *growButton;
 
     // Additional member variables to store values
     int axons_icvf;
