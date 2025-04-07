@@ -38,7 +38,7 @@ public:
     bool tortuous = true;
     double alpha = 4.0;
     double beta = 0.25;
-    int regrow_thr = 1;
+    int regrow_thr = 10;
     double min_rad = 0.15;
     double std_dev = 0.01;
     int ondulation_factor = 5;
@@ -51,6 +51,10 @@ public:
     double mean_glial_process_length;
     static int str_dist(std::string s, std::string t);
     void readConfFile(std::string conf_file_path);
+
+    double c1 = 0.35;
+    double c2 = 0.006;
+    double c3 = 0.024;
 
 };
 

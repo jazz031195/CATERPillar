@@ -13,8 +13,6 @@ using namespace Eigen;
 using namespace std::chrono;
 
 
-AxonGrowth::AxonGrowth() : CellGrowth(), axon_to_grow(*(Axon*)nullptr)  {}
-
 AxonGrowth::~AxonGrowth() {}
 
 AxonGrowth::AxonGrowth(Axon &axon_to_grow_,
@@ -27,25 +25,27 @@ AxonGrowth::AxonGrowth(Axon &axon_to_grow_,
                        const Eigen::Vector3d &max_limits_,
                        const double &std_dev_,
                        const double &min_radius_)
-  : CellGrowth(axons_, astrocytes, oligodendrocytes,
-               extended_min_limits_, extended_max_limits_,
-               min_limits_, max_limits_,
-               std_dev_, min_radius_),
-    axon_to_grow(axon_to_grow_)
-{}
+    : CellGrowth(axons_, astrocytes, oligodendrocytes,
+                 extended_min_limits_, extended_max_limits_,
+                 min_limits_, max_limits_,
+                 std_dev_, min_radius_),
+      axon_to_grow(axon_to_grow_), modified_axons(axons_),
+      axons(axons_)
+{ ind_axons_pushed.clear(); }
 
 AxonGrowth::AxonGrowth(const AxonGrowth &other)
-  : CellGrowth(other),             // Call the base-class copy constructor
-    axon_to_grow(other.axon_to_grow)  // references must be bound here
-{}
+    : CellGrowth(other), // call base copy constructor
+      axon_to_grow(other.axon_to_grow),
+      axons(other.axons) {}
 
+/*
 bool AxonGrowth::PushOtherAxons(const Sphere &sph) {
-    /*
+    
     if (canSpherebePlaced(sph)){
         cout <<"sphere : " << sph.id << " axon : "<< sph.object_id << " can be placed without push" << endl;
         return true;
     } 
-    */
+    
     //cout <<"------" << endl;
     std::vector<Axon> old_axons = axons;
 
@@ -71,6 +71,7 @@ bool AxonGrowth::PushOtherAxons(const Sphere &sph) {
 
     return true;
 }
+*/
 
 bool AxonGrowth::pushAxonSpheres(Axon &axon, const Sphere &sph) {
 
@@ -96,41 +97,99 @@ bool AxonGrowth::pushAxonSpheres(Axon &axon, const Sphere &sph) {
             
             if (i > 0) {
                 double distance_to_sphere_before = (new_sphere.center - sph_before.center).norm();
-                double new_overlap_with_sphere_before = sph_before.radius + new_sphere.radius + 1e-6 - distance_to_sphere_before;
-                if (new_overlap_with_sphere_before < 1e-6) {
+                if (distance_to_sphere_before > max(sph_before.radius, new_sphere.radius)) {
                     return false;
                 }
             }
 
             if (i < axon.outer_spheres.size() - 1) {
                 double distance_to_sphere_after = (new_sphere.center - sph_after.center).norm();
-                double new_overlap_with_sphere_after = sph_after.radius + new_sphere.radius + 1e-6 - distance_to_sphere_after;
-                if (new_overlap_with_sphere_after < 1e-6) {
+                if (distance_to_sphere_after > max(sph_before.radius, new_sphere.radius)) {
                     return false;
                 }
             }
 
-            if (canSpherebePlaced(new_sphere) && check_borders(extended_min_limits, extended_max_limits, new_sphere.center, new_sphere.radius)) {
+            if (canSpherebePlaced(new_sphere, false) && check_borders(extended_min_limits, extended_max_limits, new_sphere.center, new_sphere.radius)) {
                 axon.outer_spheres[i] = std::move(new_sphere); // Update the sphere
+                //cout <<"sphere : " << new_sphere.id << " axon : "<< new_sphere.object_id << " can be pushed" << endl;
             } 
             else {
                 return false; // Cannot place the sphere
             }
         }
     }
-    /*
-    if (count > 0) {
-        cout << "pushed axon" << endl;
-    }
-    else{
-        cout << "no pushed axon" << endl;
-    }
-    */
-    
+    axon.updateBox();
+
     return true;
 }
 
+bool AxonGrowth::canSpherebePlaced(const Sphere &sph, const bool &with_push){
 
+    std::vector<int> axons_pushed_by_sphere;
+
+
+    for (int i = 0 ; i < axons.size(); i++) {
+
+        if (!(axons[i].id == sph.object_id && sph.object_type == 0))
+        {
+            // Check overlap
+            if (axons[i].isSphereInsideAxon(sph)) 
+            {
+                
+                if (with_push) {
+                    Axon axon_to_push = axons[i];
+                    
+                    bool can_axon_be_pushed = pushAxonSpheres(axon_to_push, sph);
+                    if (!can_axon_be_pushed){
+                        return false;
+                    }
+                    else{
+                        modified_axons[i] = std::move(axon_to_push);
+                        axons_pushed_by_sphere.push_back(i);
+                    }
+                }
+                else{
+                    return false;
+                }
+                
+                return false;
+            }
+        }
+    }
+
+    // check collision other glial cells 
+    for (auto &glial : glial_cells)
+    {
+        if (sph.object_type == 0 || (sph.object_type != 0 && sph.object_id != glial.id) ){
+            if (glial.isNearGlialCell(sph.center, 2*sph.radius+1e-6)){
+                if (glial.collides_with_GlialCell(sph)){
+                    return false;
+                }
+                // check with branches of other glial cells
+                for (long unsigned int i = 0; i < glial.ramification_spheres.size(); i++){
+                    std::vector<Sphere> branch = glial.ramification_spheres[i];
+                    for (long unsigned int k = 0; k < branch.size(); k++){
+                        Sphere sph_ = branch[k];
+                        if (sph_.CollideswithSphere(sph, barrier_tickness)){
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (axons_pushed_by_sphere.size() > 0){
+        for (auto &index : axons_pushed_by_sphere){
+            // if index is not already in the list
+            if (std::find(ind_axons_pushed.begin(), ind_axons_pushed.end(), index) == ind_axons_pushed.end()){
+                ind_axons_pushed.push_back(index);
+            }
+        }    
+    }
+
+    return true;
+} 
 
 bool AxonGrowth::isSphereCollidingwithAxon(Axon ax, Sphere sph){
 
@@ -155,65 +214,6 @@ void AxonGrowth::find_next_center_straight(double distance, Sphere &s, const std
 }
 
 
-double AxonGrowth::myelin_thickness_(const double &inner_radius){
-    return (0.35 + 0.006 * 2.0 * inner_radius + 0.024 * log(2.0 * inner_radius));
-}  
-
-double AxonGrowth::originalFunction_(const double &x, const double &outerRadius) {
-    return outerRadius - (myelin_thickness_(x) + x);
-}
-
-double AxonGrowth::derivative_(double x) {
-    if (x <= 0.0001) return -1.0; // Avoid division by zero
-    return -(0.006 * 2.0 + 0.024 / (2.0 * x) + 1);
-}
-
-double AxonGrowth::findInnerRadius_(const double &outerRadius) {
-    if (outerRadius <= 0.0) return 0.0;  // Handle invalid inputs
-
-    double guess = outerRadius * 0.7;  // Better initial guess
-    double tolerance = 1e-3;
-    double step_limit = 0.1 * outerRadius;  // Prevent huge jumps
-
-    int max_iterations = 100;  // Avoid infinite loops
-    int iterations = 0;
-
-    while (fabs(originalFunction_(guess, outerRadius)) > tolerance) {
-        double step = originalFunction_(guess, outerRadius) / derivative_(guess);
-
-        // Clamp step size to prevent excessive jumps
-        if (fabs(step) > step_limit) {
-            step = (step > 0 ? step_limit : -step_limit);
-        }
-
-        double new_guess = guess - step;
-
-        // Ensure it does not go negative
-        if (new_guess <= 0.0) {
-            new_guess = 0.01; // Prevent invalid radius
-        }
-
-        // Stop if change is very small
-        if (fabs(new_guess - guess) < tolerance) {
-            break;
-        }
-
-        guess = new_guess;
-
-        if (++iterations >= max_iterations) {
-            break; // Prevent infinite loops
-        }
-    }
-
-    if (guess/outerRadius < 0.2) {
-        return 0.2*outerRadius;
-    }
-    else{
-        return guess;
-    }
-}
-
-
 bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_straight, const int &factor)
 {
     // Basic validation
@@ -221,6 +221,8 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         std::cerr << "EMPTY AXON!" << std::endl;
         assert(false); // or return false;
     }
+
+    assert(axon_to_grow.growth_axis >= 0 && axon_to_grow.growth_axis < 3);
     
     bool is_allowed_to_stop_early = axon_to_grow.outside_voxel;
     
@@ -239,11 +241,11 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
 
     // Prepare
     double max_radius_ = std::max(radius_, last_sphere.radius);
-    if (axon_to_grow.myelin_sheath) {
-        max_radius_ = findInnerRadius_(max_radius_);
+    if (axon_to_grow.myelin_sheath && axon_to_grow.inner_radius < max_radius_) {
+        max_radius_ = axon_to_grow.inner_radius;
     }
     double distance = max_radius_;
-    int threshold_tries = (std_dev == 0.0) ? 1 : 100;
+    int threshold_tries = (std_dev == 0.0) ? 1 : 1000;
 
     // New sphere to attempt placing
     Sphere s(axon_to_grow.outer_spheres.size() + factor,
@@ -257,7 +259,7 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
 
     // Helper lambda: tries to place sphere (find next center, check if inside, collision-check).
     // Returns true if placed successfully, false otherwise.
-    auto attemptPlacement = [&](Sphere &candidate, int triesCount) -> bool {
+    auto attemptPlacement = [&](Sphere &candidate, int triesCount, bool with_push) -> bool {
         // 1) Find next center
         if (std_dev != 0.0) {
             // If grow_straight is set, use the straight function, else the normal function
@@ -277,7 +279,7 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         }
 
 
-        bool canPlace = canSpherebePlaced(candidate);
+        bool canPlace = canSpherebePlaced(candidate, with_push);
 
         return canPlace;
         
@@ -287,8 +289,12 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
 
     while (!can_grow_ && tries < threshold_tries)
     {
+        bool with_push = false;
+        if (tries > threshold_tries/2) {
+            with_push = true;
+        }
         // Attempt the main placement
-        bool success = attemptPlacement(s, tries);
+        bool success = attemptPlacement(s, tries, with_push);
         if (success) {
             can_grow_ = true;
             break;
@@ -297,7 +303,7 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         // If still not placed, and we used "grow_straight == 1", then attempt a fallback (non-straight) approach
         if (!can_grow_ && (std_dev != 0.0) && (grow_straight == 1)) {
             grow_straight == 0; // Fallback to normal growth
-            if (attemptPlacement(s, tries)) {
+            if (attemptPlacement(s, tries, with_push)) {
                 can_grow_ = true;
                 break;
             }
@@ -325,7 +331,8 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
 
     // If we reach the edge of voxel after adding the new sphere
     Sphere current_last = axon_to_grow.outer_spheres.back();
-    if (current_last.center[axon_to_grow.growth_axis] > extended_max_limits[axon_to_grow.growth_axis]) {
+    
+    if (current_last.center[axon_to_grow.growth_axis] + current_last.radius > extended_max_limits[axon_to_grow.growth_axis]) {
         finished = true;
     }
     else if (!check_borders(min_limits, max_limits, current_last.center, current_last.radius) && is_allowed_to_stop_early) {
@@ -355,7 +362,7 @@ void AxonGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const int &
             id_ = last_id+ 1;
             Sphere s(id_, sph.object_id, sph.object_type, position, rad, sph.branch_id, sph.parent_id);
             
-            bool can_grow_ = canSpherebePlaced(s);
+            bool can_grow_ = canSpherebePlaced(s, true);
             if(can_grow_){
                 last_id = s.id;
                 axon_to_grow.add_sphere(s);

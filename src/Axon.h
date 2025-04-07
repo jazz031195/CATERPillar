@@ -25,6 +25,7 @@ public:
     std::vector<Sphere> outer_spheres;              /*!< outer spheres in axon */
     std::vector<Sphere> inner_spheres;              /*!< inner spheres in axon */
     double radius;                                  /*!< radius of axon */
+    double inner_radius;                            /*!< inner radius of axon */
     Eigen::Vector3d begin;                          /*!< position of first sphere */
     Eigen::Vector3d end;                            /*!< target position to grow towards */
     std::vector<Eigen::Vector2d> Box;               /*!< Box with <min, max> for each axis (x,y,z) */
@@ -52,6 +53,7 @@ public:
         begin = begin_;
         end = end_;
         radius = radius_;
+        inner_radius = radius_;
         inner_spheres.clear();
         outer_spheres.clear();
         Box.clear();
@@ -64,7 +66,6 @@ public:
         volume_myelin = 0.0;
         Eigen::Vector3d growth_direction = end-begin;
         double maxValue = growth_direction.maxCoeff(&growth_axis);
-        growth_axis = growth_axis;
         angle = angle_;
         outside_voxel = outside_voxel_;
 
@@ -89,6 +90,7 @@ public:
             growth_axis = ax.growth_axis;
             angle = ax.angle;
             outside_voxel = ax.outside_voxel;
+            inner_radius = ax.inner_radius;
 
         }
         return *this;

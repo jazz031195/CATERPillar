@@ -81,6 +81,9 @@ private:
     QLabel *glial_pop2_nbr_primary_processes_qlabel;
     QLabel *glial_pop1_branching_qlabel;
     QLabel *glial_pop2_branching_qlabel;
+    QLabel *k1_qlabel;
+    QLabel *k2_qlabel;
+    QLabel *k3_qlabel;
 
     QCheckBox *visualise_voxel_checkbox;
     QCheckBox *glial_pop1_branching_checkbox;
@@ -111,6 +114,9 @@ private:
     QDoubleSpinBox *glial_pop2_radius_std_SpinBox;
     QDoubleSpinBox *glial_pop1_nbr_primary_processes_SpinBox;
     QDoubleSpinBox *glial_pop2_nbr_primary_processes_SpinBox;
+    QDoubleSpinBox *k1_SpinBox;
+    QDoubleSpinBox *k2_SpinBox;
+    QDoubleSpinBox *k3_SpinBox;
 
     QBoxLayout *layout;
     QPushButton *okButton;
@@ -156,6 +162,9 @@ private:
     double glial_pop1_std_process_length;
     double glial_pop2_mean_process_length;
     double glial_pop2_std_process_length;
+    double k1;
+    double k2;
+    double k3;
 
 
     // spheres to plot

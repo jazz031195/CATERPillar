@@ -13,20 +13,6 @@ using namespace Eigen;
 using namespace std::chrono;
 
 
-CellGrowth::CellGrowth()
-      : std_dev(0.0),
-        min_radius(0.0),
-        grow_straight(0),
-        finished(false)
-    {
-        // Possibly set limits to zero vectors or something minimal
-        min_limits = Eigen::Vector3d::Zero();
-        max_limits = Eigen::Vector3d::Zero();
-        extended_min_limits = Eigen::Vector3d::Zero();
-        extended_max_limits = Eigen::Vector3d::Zero();
-        // axons, glial_cells remain empty
-    }
-
 CellGrowth::~CellGrowth() {}
 
 CellGrowth::CellGrowth(const CellGrowth &other)
@@ -123,7 +109,9 @@ Eigen::Vector3d CellGrowth::apply_bias_toward_target(const Eigen::Vector3d &poin
 
 
 
-bool CellGrowth::canSpherebePlaced(Sphere sph){
+
+
+bool CellGrowth::canSpherebePlaced(const Sphere &sph){
 
     for (auto &axon : axons)
     {
@@ -132,7 +120,9 @@ bool CellGrowth::canSpherebePlaced(Sphere sph){
             // Check overlap
             if (axon.isSphereInsideAxon(sph)) 
             {
+
                 return false;
+                
             }
         }
     }

@@ -25,7 +25,6 @@ class AxonGammaDistribution
 public:
     std::vector<Axon> axons;            /*!< Vector of axons */
     std::vector<double> radii;          /*!< Axon radii */
-    std::vector<Axon> growing_axons;    /*!< Axons that are growing in threads */
     std::vector<double> stuck_radii;    /*!< Radii of stuck axons, to regrow */
     std::vector<int> stuck_indices;    /*!< Indices of stuck axons, to regrow */
     std::vector<Glial> glial_pop1;     /*!< Vector of glial_pop1 */
@@ -91,6 +90,10 @@ public:
     double std_glial_pop2_process_length;    /*!< Standard deviation of glial processes */
     int nbr_primary_processes_pop2;          /*!< Number of primary processes for glial cells */
 
+    double c1;                              /*!< First coefficient of the Myelin thickness */
+    double c2;                              /*!< Second coefficient of the Myelin thickness */
+    double c3;                              /*!< Third coefficient of the Myelin thickness */
+
     struct CDF {
       std::vector<double> kappas;              // Row indices (kappas)
       std::vector<double> angles;              // Column indices (angles)
@@ -111,7 +114,8 @@ public:
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
                                               const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
                                               const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
-                                              const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_);
+                                              const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_,
+                                              const double &c1_, const double &c2_, const double &c3_);
     
     
     /*!
@@ -200,7 +204,7 @@ public:
      * \param gls Glial cells to check overlapping with
      *  \brief Checks if a sphere overlaps with any of the axons in axs
      */
-    bool canSpherebePlaced(const Sphere &sph, const std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos) const;
+    bool canSpherebePlaced(const Sphere &sph, std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos, const bool &with_push);
 
     /*!
      *  \param axs Axons to check overlapping with
@@ -216,7 +220,8 @@ public:
      *  \brief Creates a batch of axons by creating their first sphere on a plane
      */
     void createBatch(const std::vector<double> &radii_, const std::vector<int> &indices, const int &num_subset, const int &first_index_batch, std::vector<Axon> &new_axons, const std::vector<bool> &has_myelin, std::vector<double> &angles);
-    
+
+    void createBatches(std::vector<double> &radii_, std::vector<int> &indices, std::vector<Axon> &new_axons, std::vector<bool> &has_myelin, std::vector<double> &angles);
     /*!
      *  \param growing_axons Axons that have grown in batch
        *\param stuck_radii_ radii of axons that got stuck
@@ -231,7 +236,7 @@ public:
      *  \param stuck_indices_ indices of axons that got stuck
      *  \brief Grows the entire axon
      */
-    void growAxon(std::vector <Axon> &axs, Axon& axon_to_grow, double &stuck_radii_, int &stuck_indices_);
+    void growAxon(Axon& axon_to_grow, double &stuck_radii_, int &stuck_indices_, std::vector<int>& ind_axons_pushed, std::vector<Axon> &axons_pushed);
 
     /*!
      *  \param pos Position
@@ -247,7 +252,7 @@ public:
      *  \param new_axons Newly placed axons.
      *  \brief Places an axon in voxel.
      */
-    bool PlaceAxon(const int &axon_id, const double &radius_for_axon, const Eigen::Vector3d &Q, const Eigen::Vector3d &D, std::vector<Axon> &new_axons, const bool &has_myelin, const double &angle, const bool &outside_voxel);
+    bool PlaceAxon(const int &axon_id, const double &radius_for_axon, const Eigen::Vector3d &Q, const Eigen::Vector3d &D, std::vector<Axon> &new_axons, const bool &has_myelin, const double &angle, const bool &outside_voxel, const bool &push_axons);
 
     /*!
      *  \param out Output stream to write SWC data.
@@ -350,10 +355,13 @@ public:
     double draw_angle(double kappa);
     double c2toKappa(double c2, double tol, double kappa_min, double kappa_max);
     std::vector<double> generate_angles(const int &num_samples);
-    void processBatchWithThreadPool(int nbr_threads, std::vector<Axon>& axons_to_grow, std::vector<double>& stuck_radii, std::vector<int>& stuck_indices);
+    void processBatchWithThreadPool(std::vector<Axon>& axons_to_grow, std::vector<double>& stuck_radii, std::vector<int>& stuck_indices, std::vector<std::vector<int>> &ind_axons_pushed, std::vector<std::vector<Axon>> &axons_pushed);
     bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
-    bool pushAxonSpheres(Axon &axon, const Sphere &sph);
-    bool PushOtherAxons(const Sphere &sph);
+    bool pushAxonSpheres(std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos, Axon &axon, const Sphere &sph);
+    void ModifyAxonsStartingPoint(const std::vector<int> &stuck_indices);
+    double originalFunction(const double &x, const double &outerRadius);
+    double derivative(const double &x);
+    double myelin_thickness(const double &inner_radius);
 };
 
 

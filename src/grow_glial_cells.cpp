@@ -12,7 +12,6 @@ using namespace std;
 using namespace Eigen;
 using namespace std::chrono;
 
-GlialCellGrowth::GlialCellGrowth() : CellGrowth(), glial_cell_to_grow(*(Glial*)nullptr)  {}
 
 GlialCellGrowth::~GlialCellGrowth() {}
 
@@ -106,7 +105,7 @@ bool GlialCellGrowth::AddOneSphere(const double &radius_, const bool &create_sph
             }
             else
             {
-                find_next_center(s, distance, glial_cell_to_grow.ramification_spheres[i], destination, false);
+                find_next_center(s, distance, glial_cell_to_grow.ramification_spheres[i], destination);
             }
             // check if there is a collision
             if (check_collision_with_branches){
@@ -120,7 +119,7 @@ bool GlialCellGrowth::AddOneSphere(const double &radius_, const bool &create_sph
         {
             cout << "no std dev" << endl;
             assert(0);  
-            find_next_center(s, distance, glial_cell_to_grow.ramification_spheres[i], destination, false);
+            find_next_center(s, distance, glial_cell_to_grow.ramification_spheres[i], destination);
             if (check_collision_with_branches){
                 can_grow_ = canSpherebePlaced(s) && !collideswithOtherBranches(s);
             }
@@ -195,7 +194,7 @@ void GlialCellGrowth::find_next_center_straight(double distance, Sphere &s, cons
     s.center = new_center;
 }
 
-void GlialCellGrowth::find_next_center(Sphere &s,  double dist_, const std::vector<Sphere> &spheres, const Eigen::Vector3d &target, const bool &is_axon)
+void GlialCellGrowth::find_next_center(Sphere &s,  double dist_, const std::vector<Sphere> &spheres, const Eigen::Vector3d &target)
 {
 
     Eigen::Vector3d target_ = target;

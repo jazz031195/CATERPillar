@@ -72,6 +72,10 @@ int main(int argn, char* argv[])
     int nbr_primary_processes_pop1 = 5;
     int nbr_primary_processes_pop2 = 5;
 
+    double c1 = 0.35;
+    double c2 = 0.006;
+    double c3 = 0.024;
+
     for (int rep = 0; rep < repetitions; rep++) {
         for (int i = 0; i < vox_sizes.size(); i++) {
             double vox_size = vox_sizes[i];
@@ -86,7 +90,7 @@ int main(int argn, char* argv[])
                 axons_wo_myelin_icvf, axons_w_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, alpha, beta,
                                              min_l, max_l, min_radius, regrow_thr, beading_variation, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
                                               mean_glial_process_length, std_glial_process_length, mean_glial_process_length, std_glial_process_length,
-                                              glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, nbr_primary_processes_pop1, nbr_primary_processes_pop2);
+                                              glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, nbr_primary_processes_pop1, nbr_primary_processes_pop2, c1, c2, c3);
 
             // Generate unique filenames
             int file_suffix = 0;

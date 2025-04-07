@@ -124,6 +124,9 @@ QGroupBox* Window::createControls(const QString &title)
     visualise_voxel_qlabel = new QLabel(tr("Visualise Voxel:"));
     axons_icvf_qlabel = new QLabel(tr("Axons ICVF (%):"));
     axons_w_myelin_icvf_qlabel = new QLabel(tr("Axons with myelin ICVF (%):"));
+    k1_qlabel = new QLabel(tr("K1 :"));
+    k2_qlabel = new QLabel(tr("K2 :"));
+    k3_qlabel = new QLabel(tr("K3 :"));
     glial_pop1_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
     glial_pop1_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
     glial_pop2_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
@@ -133,15 +136,15 @@ QGroupBox* Window::createControls(const QString &title)
     nbr_threads_qlabel = new QLabel(tr("Number of Threads:"));
     overlapping_factor_qlabel = new QLabel(tr("Overlapping Factor (R/f):"));
     c2_qlabel = new QLabel(tr("c2 (fODF):"));
-    nbr_axons_populations_qlabel = new QLabel(tr("Number of axons populations:"));
+    nbr_axons_populations_qlabel = new QLabel(tr("Number of populations:"));
     epsilon_qlabel = new QLabel(tr("ε (tortuousity):"));
     beading_amplitude_qlabel = new QLabel(tr("Beading Amplitude :"));
     glial_pop1_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
     glial_pop1_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
     glial_pop2_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
     glial_pop2_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
-    alpha_qlabel = new QLabel(tr("Gamma Distribution for inner radii α:"));
-    beta_qlabel = new QLabel(tr("Gamma Distribution for inner radii β:"));
+    alpha_qlabel = new QLabel(tr("α:"));
+    beta_qlabel = new QLabel(tr("β:"));
     glial_pop1_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
     glial_pop1_radius_std_qlabel = new QLabel(tr("Glial Cell Soma Radius Standard Deviation:"));
     glial_pop2_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
@@ -272,6 +275,24 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop2_nbr_primary_processes_SpinBox->setRange(1, 20);
     glial_pop2_nbr_primary_processes_SpinBox->setSingleStep(1);
     glial_pop2_nbr_primary_processes_SpinBox->setValue(5);
+    
+    k1_SpinBox = new QDoubleSpinBox;
+    k1_SpinBox->setRange(0, 10);
+    k1_SpinBox->setSingleStep(0.05);
+    k1_SpinBox->setValue(0.35);
+    k1_SpinBox->setDecimals(3); // Set at least 3 decimals
+
+    k2_SpinBox = new QDoubleSpinBox;
+    k2_SpinBox->setRange(0, 10);
+    k2_SpinBox->setSingleStep(0.001);
+    k2_SpinBox->setValue(0.006);
+    k2_SpinBox->setDecimals(4); // Needed for values like 0.006
+
+    k3_SpinBox = new QDoubleSpinBox;
+    k3_SpinBox->setRange(0, 10);
+    k3_SpinBox->setSingleStep(0.001);
+    k3_SpinBox->setValue(0.024);
+    k3_SpinBox->setDecimals(4); // Shows 0.024 cleanly
 
 
     // --- Configuration ComboBox (Initially Hidden) ---
@@ -289,7 +310,6 @@ QGroupBox* Window::createControls(const QString &title)
             this, &Window::updateConfigurationSelectionVisibility);
 
 
-
     c2_SpinBox = new QDoubleSpinBox;
     c2_SpinBox->setRange(0, 1);
     c2_SpinBox->setSingleStep(0.05);
@@ -300,8 +320,8 @@ QGroupBox* Window::createControls(const QString &title)
     std::vector<QLabel*> general_labels = {voxel_size_qlabel, overlapping_factor_qlabel, minimum_radius_qlabel};
     std::vector <QDoubleSpinBox*> general_spinBoxes = { voxel_size_SpinBox, overlapping_factor_SpinBox, minimum_radius_SpinBox};
     
-    std::vector<QLabel*> axons_labels = {axons_w_myelin_icvf_qlabel, axons_icvf_qlabel ,nbr_threads_qlabel, epsilon_qlabel, c2_qlabel, nbr_axons_populations_qlabel, beading_amplitude_qlabel, alpha_qlabel, beta_qlabel};
-    std::vector <QDoubleSpinBox*> axons_spinBoxes = {axons_w_myelin_icvf_SpinBox, axons_icvf_SpinBox, nbr_threads_SpinBox, epsilon_SpinBox, c2_SpinBox, nbr_axons_populations_SpinBox, beading_amplitude_SpinBox, alpha_SpinBox, beta_SpinBox};
+    std::vector<QLabel*> axons_labels = {axons_w_myelin_icvf_qlabel, k1_qlabel, k2_qlabel, k3_qlabel, axons_icvf_qlabel ,nbr_threads_qlabel, epsilon_qlabel, c2_qlabel, nbr_axons_populations_qlabel, beading_amplitude_qlabel, alpha_qlabel, beta_qlabel};
+    std::vector <QDoubleSpinBox*> axons_spinBoxes = {axons_w_myelin_icvf_SpinBox, k1_SpinBox, k2_SpinBox, k3_SpinBox, axons_icvf_SpinBox, nbr_threads_SpinBox, epsilon_SpinBox, c2_SpinBox, nbr_axons_populations_SpinBox, beading_amplitude_SpinBox, alpha_SpinBox, beta_SpinBox};
     
     std::vector<QLabel*> glials_labels1 = {glial_pop1_soma_icvf_qlabel, glial_pop1_processes_icvf_qlabel, glial_pop1_radius_mean_qlabel, glial_pop1_radius_std_qlabel, glial_pop1_mean_process_length_qlabel, glial_pop1_std_process_length_qlabel, glial_pop1_nbr_primary_processes_qlabel};
     std::vector <QDoubleSpinBox*> glials_spinBoxes1 = {glial_pop1_soma_icvf_SpinBox, glial_pop1_processes_icvf_SpinBox, glial_pop1_radius_mean_SpinBox, glial_pop1_radius_std_SpinBox, glial_pop1_mean_process_length_SpinBox, glial_pop1_std_process_length_SpinBox, glial_pop1_nbr_primary_processes_SpinBox};
@@ -322,9 +342,48 @@ QGroupBox* Window::createControls(const QString &title)
     generalGroup->setLayout(generalLayout);
 
     QGridLayout *axonsLayout = new QGridLayout;
-    for (int i = 0; i < axons_labels.size(); i++){
-        axonsLayout->addWidget(axons_labels[i], i, 0);
-        axonsLayout->addWidget(axons_spinBoxes[i], i, 1);
+    int row = 0;
+
+    for (int i = 0; i < axons_labels.size(); i++) {
+        if (i == 1) {
+            // K1, K2, K3 all in the same row
+            axonsLayout->addWidget(axons_labels[1], row, 0); // K1
+            axonsLayout->addWidget(axons_spinBoxes[1], row, 1);
+
+            axonsLayout->addWidget(axons_labels[2], row, 2); // K2
+            axonsLayout->addWidget(axons_spinBoxes[2], row, 3);
+
+            axonsLayout->addWidget(axons_labels[3], row, 4); // K3
+            axonsLayout->addWidget(axons_spinBoxes[3], row, 5);
+
+            row++;
+
+            // Add formula below
+            QLabel *formulaLabel = new QLabel("Myelin thickness = K1 + K2 × Inner diameter + K3 × log(Inner diameter)");
+            QFont formulaFont = formulaLabel->font();
+            formulaFont.setItalic(true);
+            formulaLabel->setFont(formulaFont);
+            formulaLabel->setAlignment(Qt::AlignCenter);
+            axonsLayout->addWidget(formulaLabel, row, 0, 1, 6); // Span all 6 columns
+            row++;
+            i = 3; // Skip already handled K1, K2, K3
+        } 
+        else if (i == axons_labels.size()-2) {
+            QLabel *formulaLabel = new QLabel("Gamma Distribution parameters for inner radii : ");
+            QFont formulaFont = formulaLabel->font();
+            formulaLabel->setFont(formulaFont);
+            axonsLayout->addWidget(formulaLabel, row, 0, 1, 6); // Span all 6 columns
+            row++;
+            axonsLayout->addWidget(axons_labels[i], row, 0);
+            axonsLayout->addWidget(axons_spinBoxes[i], row, 1);
+            row++;
+        }
+        
+        else {
+            axonsLayout->addWidget(axons_labels[i], row, 0);
+            axonsLayout->addWidget(axons_spinBoxes[i], row, 1);
+            row++;
+        }
     }
     axonsGroup->setLayout(axonsLayout);
 
@@ -378,6 +437,9 @@ void Window::onSaveButtonClicked()
     // Retrieve values from spin boxes and checkboxes
     axons_icvf = axons_icvf_SpinBox->value();
     axons_w_myelin_icvf = axons_w_myelin_icvf_SpinBox->value();
+    k1 = k1_SpinBox->value();
+    k2 = k2_SpinBox->value();
+    k3 = k3_SpinBox->value();
     glial_pop1_soma_icvf = glial_pop1_soma_icvf_SpinBox->value();
     glial_pop1_processes_icvf = glial_pop1_processes_icvf_SpinBox->value();
     glial_pop2_soma_icvf = glial_pop2_soma_icvf_SpinBox->value();
@@ -412,7 +474,6 @@ void Window::onSaveButtonClicked()
     this->close();
 
     StartSimulation();
-
 
 }
 
@@ -464,7 +525,7 @@ void Window::StartSimulation(){
             AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_w_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, alpha, beta,
                                              min_l, max_l, min_radius, regrow_thr, beading_amplitude, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
                                               glial_pop1_mean_process_length, glial_pop1_std_process_length, glial_pop2_mean_process_length, glial_pop2_std_process_length,
-                                              glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, glial_pop1_nbr_primary_processes, glial_pop2_nbr_primary_processes);
+                                              glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, glial_pop1_nbr_primary_processes, glial_pop2_nbr_primary_processes, k1, k2, k3);
 
             AxonDistribution.createSubstrate();
             // saving spheres
@@ -864,7 +925,6 @@ void Window::ShollAnalysis() {
     for (unsigned long i = 0; i < X_glial_pop1.size(); ++i) {
         // Soma position of the current glial_pop1
         Eigen::Vector3d soma_position = {X_glial_pop1[i][0], Y_glial_pop1[i][0], Z_glial_pop1[i][0]};
-        
         std::vector<double> intersections_list(sphere_around_soma_radii.size(), 0);
         std::vector<int> branches_list;
 
