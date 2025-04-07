@@ -27,7 +27,7 @@ Window::Window(QWidget *parent)
 
     // 1. Welcome Image
     QLabel *imageLabel = new QLabel(this);
-    QPixmap image("/home/localadmin/Documents/CATERPillar/logo_catrepillar.png"); // replace with the actual image path in your resource
+    QPixmap image("../logo_catrepillar.png"); // replace with the actual image path in your resource
     imageLabel->setPixmap(image.scaled(800, 800, Qt::KeepAspectRatio));
     imageLabel->setAlignment(Qt::AlignCenter);
     startupLayout->addWidget(imageLabel);
