@@ -222,6 +222,11 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         assert(false); // or return false;
     }
 
+    if (axon_to_grow.outer_spheres.size() > (max_limits-min_limits).norm()*factor/(axon_to_grow.radius)*100) {
+        finished = true;
+        return false; // Axon has grown too long
+    }
+
     assert(axon_to_grow.growth_axis >= 0 && axon_to_grow.growth_axis < 3);
     
     bool is_allowed_to_stop_early = axon_to_grow.outside_voxel;
@@ -245,7 +250,7 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         max_radius_ = axon_to_grow.inner_radius;
     }
     double distance = max_radius_;
-    int threshold_tries = (std_dev == 0.0) ? 1 : 1000;
+    int threshold_tries = (std_dev == 0.0) ? 1 : 100; // tries 100 times to place sphere
 
     // New sphere to attempt placing
     Sphere s(axon_to_grow.outer_spheres.size() + factor,
@@ -290,9 +295,10 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
     while (!can_grow_ && tries < threshold_tries)
     {
         bool with_push = false;
-        if (tries > threshold_tries/2) {
+        if (tries > 0.75*threshold_tries) {
             with_push = true;
         }
+        //cout <<"axon : "<< axon_to_grow.id <<" with push : " << with_push << endl;
         // Attempt the main placement
         bool success = attemptPlacement(s, tries, with_push);
         if (success) {

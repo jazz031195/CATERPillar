@@ -345,29 +345,78 @@ bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l,
     return true; // Point is inside the dilated box
 }
 
-
+/*
 void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits){
-
     double new_volume = 0.0;
-    for (auto i = factor; i < outer_spheres.size(); i+= factor) {
-        Sphere current_sphere = outer_spheres[i];
-        Sphere last_sphere = outer_spheres[i-factor];
 
-        bool current_sphere_within_boundaries = check_borders(min_limits, max_limits, current_sphere.center, barrier_tickness);
-        bool last_sphere_within_boundaries = check_borders(min_limits, max_limits, last_sphere.center, barrier_tickness);
+    for (size_t i = 1; i < outer_spheres.size(); ++i) {
+        const Sphere &last_sphere = outer_spheres[i - 1];
+        const Sphere &current_sphere = outer_spheres[i];
+
         double distance = (current_sphere.center - last_sphere.center).norm();
-        double volume_cone = M_PI * distance *
-                            (current_sphere.radius * current_sphere.radius +
-                             last_sphere.radius * last_sphere.radius +
-                             current_sphere.radius * last_sphere.radius) / 3;
-        if (current_sphere_within_boundaries && last_sphere_within_boundaries){
-            new_volume += volume_cone;
+
+        // Volume of truncated cone
+        double segment_volume = M_PI * distance * (
+            current_sphere.radius * current_sphere.radius +
+            last_sphere.radius * last_sphere.radius +
+            current_sphere.radius * last_sphere.radius) / 3.0;
+
+        bool current_in_bounds = check_borders(min_limits, max_limits, current_sphere.center, barrier_tickness);
+        bool last_in_bounds = check_borders(min_limits, max_limits, last_sphere.center, barrier_tickness);
+
+        if (current_in_bounds && last_in_bounds) {
+            new_volume += segment_volume;
+        } else if (current_in_bounds || last_in_bounds) {
+            new_volume += segment_volume / 2.0;
         }
-        else if (current_sphere_within_boundaries || last_sphere_within_boundaries){ 
-            new_volume += volume_cone/2;
-        } 
+        // If both are out of bounds, add nothing
     }
+
     volume = new_volume;
+}
+*/
 
-} 
 
+double sphereVolume(double radius) {
+    return (4.0 / 3.0) * M_PI * std::pow(radius, 3);
+}
+
+double overlapVolume(double r1, double r2, double d) {
+    if (d >= r1 + r2) return 0.0; // No overlap
+
+    double part1 = (r1 + r2 - d) * (r1 + r2 - d);
+    double part2 = d * d + 2 * d * (r1 + r2) - 3 * (r1 - r2) * (r1 - r2);
+    return (M_PI * part1 * part2) / (12.0 * d);
+}
+
+void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits) {
+    double new_volume = 0.0;
+
+    // Step 1: Add full sphere volumes
+    for (const auto& sphere : outer_spheres) {
+        if (check_borders(min_limits, max_limits, sphere.center, barrier_tickness)) {
+            new_volume += sphereVolume(sphere.radius);
+        }
+    }
+
+    // Step 2: Subtract overlapping volume between adjacent spheres
+    for (size_t i = 1; i < outer_spheres.size(); ++i) {
+        const Sphere &last_sphere = outer_spheres[i - 1];
+        const Sphere &current_sphere = outer_spheres[i];
+
+        double d = (current_sphere.center - last_sphere.center).norm();
+        double r1 = current_sphere.radius;
+        double r2 = last_sphere.radius;
+
+        bool current_in_bounds = check_borders(min_limits, max_limits, current_sphere.center, barrier_tickness);
+        bool last_in_bounds = check_borders(min_limits, max_limits, last_sphere.center, barrier_tickness);
+
+        double ov = overlapVolume(r1, r2, d);
+        if (current_in_bounds && last_in_bounds) {
+            new_volume -= ov;
+        } 
+
+    }
+
+    volume = new_volume;
+}

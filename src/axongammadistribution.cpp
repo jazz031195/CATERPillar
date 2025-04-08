@@ -584,7 +584,6 @@ void AxonGammaDistribution::generate_radii(std::vector<double> &radii_, std::vec
 
     double icvf_to_reach = target_axons_wo_myelin_icvf + target_axons_w_myelin_icvf;
 
-
     if (icvf_to_reach > 0)
     {
 
@@ -605,30 +604,25 @@ void AxonGammaDistribution::generate_radii(std::vector<double> &radii_, std::vec
             double jkr = distribution(generator);
 
             // generates the radii in a list
-            if (jkr > min_radius && jkr < 2)
+            if (jkr > min_radius && jkr < 5)
             {
                 if (target_axons_w_myelin_icvf > 0){   
 
                     if (axons_w_myelin_icvf < target_axons_w_myelin_icvf){
-                        has_myelin.push_back(true);
-                        jkr += myelin_thickness(jkr);
+                        double thickness = myelin_thickness(jkr);
+                        jkr = jkr + thickness;
                         axons_w_myelin_icvf += (jkr * jkr * M_PI * (max_limits[2] - min_limits[2]))/total_volume;
+                        has_myelin.push_back(true);
                     } 
                     else if (axons_wo_myelin_icvf < target_axons_wo_myelin_icvf){
                         axons_wo_myelin_icvf += (jkr * jkr * M_PI * (max_limits[2] - min_limits[2]))/total_volume;
                         has_myelin.push_back(false);
                     }
-                    else{
-                        break;
-                    } 
                 }
                 else{
                     if (axons_wo_myelin_icvf < target_axons_wo_myelin_icvf){
                         axons_wo_myelin_icvf += (jkr * jkr * M_PI * (max_limits[2] - min_limits[2]))/total_volume;
                         has_myelin.push_back(false);
-                    }
-                    else{
-                        break;
                     }
                 }  
                 radii_.push_back(jkr);
@@ -686,6 +680,7 @@ void AxonGammaDistribution::generate_radii(std::vector<double> &radii_, std::vec
     {
         num_obstacles = 0;
     }
+
 }
 
 bool AxonGammaDistribution::PlaceAxon(const int &axon_id, const double &radius_for_axon, const Eigen::Vector3d &Q, const Eigen::Vector3d &D, std::vector<Axon> &new_axons, const bool &has_myelin, const double &angle_, const bool &outside_voxel, const bool &push_axons)
@@ -1201,7 +1196,7 @@ void calculate_c2(std::vector<double> &angles) {
 
 void AxonGammaDistribution::createBatches(std::vector<double> &radii_, std::vector<int> &indices, std::vector<Axon> &new_axons, std::vector<bool> &has_myelin, std::vector<double> &angles)
 {
-    long int tries_threshold = (max_limits[0]- min_limits[0]) * (max_limits[1]-min_limits[1]) * 500;
+    long int tries_threshold = (max_limits[0]- min_limits[0]) * (max_limits[1]-min_limits[1]) * 10;
     new_axons.clear();
 
     double angle_;
@@ -1224,7 +1219,7 @@ void AxonGammaDistribution::createBatches(std::vector<double> &radii_, std::vect
             angle_ = angles[indices[i]];
             outside_voxel = !get_begin_end_point(Q, D, angle_);
             bool has_myelin_ = has_myelin[indices[i]];
-            if (tries> tries_threshold/2) {
+            if (tries> 0.75*tries_threshold) {
                 next = PlaceAxon(index_of_axon, radii_[indices[i]], Q, D, new_axons, has_myelin_, angle_, outside_voxel, true);
 
             }
@@ -1240,7 +1235,7 @@ void AxonGammaDistribution::createBatches(std::vector<double> &radii_, std::vect
         }
         if (tries >= tries_threshold)
         {
-            cout << "Tries exceeded threshold" << endl;
+            cout << "Could not place an initial sphere on plane, axon discarded" << endl;
             indices_to_erase.push_back(i);
         }
     }
@@ -1371,7 +1366,7 @@ void AxonGammaDistribution::GrowAllAxons(){
 
             
             int nbr_attempts = 0;
-            double percentage_swelling = 0.5;
+            double percentage_swelling = 0.1;
             double minimum_percentage_swelling = 1e-6;
 
             while (axons_icvf < target_axons_icvf && nbr_attempts < 1000)
@@ -1379,7 +1374,7 @@ void AxonGammaDistribution::GrowAllAxons(){
                 double old_icvf = axons_icvf;
                 SwellAxons(percentage_swelling);
                 cout << "new ICVF " << axons_icvf  << " old icvf : "<< old_icvf <<" percentage swelling :"<< percentage_swelling<< endl;
-                if ((axons_icvf - old_icvf) < 1e-6 && percentage_swelling >= minimum_percentage_swelling)
+                if ((axons_icvf - old_icvf) < 1e-5 && percentage_swelling >= minimum_percentage_swelling)
                 {
                     percentage_swelling = percentage_swelling/3;
                 }
@@ -1389,6 +1384,7 @@ void AxonGammaDistribution::GrowAllAxons(){
                 }
                 nbr_attempts += 1;
             }
+            
             
             stop = true;
             
@@ -1441,14 +1437,9 @@ void AxonGammaDistribution::SwellAxons(const double &percentage){
         SwellAxon(axon, percentage);
         axon.update_Volume(factor, min_limits, max_limits);
         axon.updateBox();
-        // check ICVF 
-        ICVF(axons, glial_pop1, glial_pop2);
-        
-        if (axons_icvf > target_axons_icvf)
-        {
-            break;
-        }
     }
+    // check ICVF 
+    ICVF(axons, glial_pop1, glial_pop2);
 
 }
 
@@ -1907,6 +1898,7 @@ void AxonGammaDistribution::growthThread(
                     growth.axon_to_grow = axon;
                     finished = 0;
                     stuck_radii_ = -1;
+                    //cout << "axon " << axon.id << " is stuck, growth attempts : "<<  axon.growth_attempts<< " center : (" << axon.begin[0] << ", " << axon.begin[1]<< ", "<< axon.begin[2] << ")" << endl;
                 }
                 else {
                     //cout <<"axon " << axon.id << " is stuck" << endl;
@@ -1916,6 +1908,7 @@ void AxonGammaDistribution::growthThread(
                     finished = 1;
                     stuck_radii_ = axon.radius;
                     stuck_indices_ = axon.id;
+                    //cout <<"try axon in different position" << endl;
                 }
             }
             else {
@@ -1928,8 +1921,7 @@ void AxonGammaDistribution::growthThread(
         }
         else if (!can_grow && !axon_can_shrink) {
             if (axon.growth_attempts < 10) {
-                //cout <<"axon " << axon.id << " only has one sphere" << endl;
-                // Retry with a new attempt
+                // Retry at same positions 10 times
                 axon.keep_one_sphere();  // Revert the last sphere or do whatever keep_one_sphere does
                 growth.axon_to_grow = axon;
                 finished = 0;
@@ -1942,6 +1934,7 @@ void AxonGammaDistribution::growthThread(
                 finished = 1;
                 stuck_radii_ = axon.radius;
                 stuck_indices_ = axon.id;
+
             }
         }
         else if (can_grow) {
@@ -1977,7 +1970,7 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, double& stuck_radii_, i
     AxonGrowth growth(axon_to_grow, glial_pop1, glial_pop2, axons, min_limits, max_limits, min_limits, max_limits, std_dev, min_radius);
 
     int tries_  = 0;
-    int max_nbr_tries = 1e10;
+    int max_nbr_tries = 1e10; // growth class stops itself anyway
     // Keep trying to grow until finished
     while (finished == 0 && tries_ < max_nbr_tries) {
 
@@ -2444,7 +2437,7 @@ bool AxonGammaDistribution::shrinkRadius(AxonGrowth &growth, const double &radiu
     double rad = radius_to_shrink;
     double initial_rad = radius_to_shrink;
     bool can_grow_min_rad = growth.AddOneSphere(min_radius, false, 0, factor);
-    double intervals = (initial_rad) / 10;
+    double intervals = (initial_rad-min_radius) / 10;
 
     if(!axon_can_shrink){
         return false;
