@@ -392,30 +392,33 @@ double overlapVolume(double r1, double r2, double d) {
 void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits) {
     double new_volume = 0.0;
 
-    // Step 1: Add full sphere volumes
-    for (const auto& sphere : outer_spheres) {
-        if (check_borders(min_limits, max_limits, sphere.center, barrier_tickness)) {
-            new_volume += sphereVolume(sphere.radius);
-        }
-    }
+    if (outer_spheres.empty())
+        return;
 
-    // Step 2: Subtract overlapping volume between adjacent spheres
-    for (size_t i = 1; i < outer_spheres.size(); ++i) {
-        const Sphere &last_sphere = outer_spheres[i - 1];
+    for (size_t i = 0; i < outer_spheres.size(); ++i) {
         const Sphere &current_sphere = outer_spheres[i];
 
-        double d = (current_sphere.center - last_sphere.center).norm();
-        double r1 = current_sphere.radius;
-        double r2 = last_sphere.radius;
-
         bool current_in_bounds = check_borders(min_limits, max_limits, current_sphere.center, barrier_tickness);
-        bool last_in_bounds = check_borders(min_limits, max_limits, last_sphere.center, barrier_tickness);
 
-        double ov = overlapVolume(r1, r2, d);
-        if (current_in_bounds && last_in_bounds) {
-            new_volume -= ov;
-        } 
+        if (!current_in_bounds) {
+            continue; // Skip this sphere if it's out of bounds
+        }
+        
+        // Always add volume of current sphere
+        new_volume += sphereVolume(current_sphere.radius);
 
+        // If not the first, subtract overlapping volume with previous sphere (if both in bounds)
+        if (i > 0) {
+            const Sphere &prev_sphere = outer_spheres[i - 1];
+
+            bool prev_in_bounds = check_borders(min_limits, max_limits, prev_sphere.center, barrier_tickness);
+
+            if (current_in_bounds && prev_in_bounds) {
+                double d = (current_sphere.center - prev_sphere.center).norm();
+                double ov = overlapVolume(current_sphere.radius, prev_sphere.radius, d);
+                new_volume -= ov;
+            }
+        }
     }
 
     volume = new_volume;

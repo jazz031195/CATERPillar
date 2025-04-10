@@ -530,6 +530,11 @@ void Window::onSaveButtonClicked()
 
 void Window::ReadAxonsFromSWC(const QString& fileName){
 
+    X_axons.clear();
+    Y_axons.clear();
+    Z_axons.clear();
+    R_axons.clear();
+
     if (fileName.isEmpty()) {
         return; // User canceled the file dialog
     }
@@ -603,6 +608,12 @@ void Window::ReadAxonsFromSWC(const QString& fileName){
 
 
 void Window::ReadGlialCellsFromSWC(const QString& fileName){
+
+    X_glial_pop1.clear();
+    Y_glial_pop1.clear();
+    Z_glial_pop1.clear();
+    R_glial_pop1.clear();
+    Branch_glial_pop1.clear();
 
     if (fileName.isEmpty()) {
         return; // User canceled the file dialog
@@ -942,7 +953,7 @@ void Window::plotRadiusDistribution()
     std::sort(meanRadii.begin(), meanRadii.end());
 
     // Calculate the histogram (binning)
-    int binCount = 10;  // Number of bins, adjust this as needed
+    int binCount = 50;  // Number of bins, adjust this as needed
     double minRadius = *std::min_element(meanRadii.begin(), meanRadii.end());
     double maxRadius = *std::max_element(meanRadii.begin(), meanRadii.end());
 

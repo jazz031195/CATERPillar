@@ -32,8 +32,7 @@ public:
 
     int nbr_axons_populations;                /*!< Number of populations of axons (1-3) */
     int crossing_fibers_type;                /*!< Type of crossing fibers (0 : sheet crossing, 1 : interwoven crossing) */
-
-    unsigned num_obstacles;             /*!< Number of axons in the substrate */
+    
     int num_batches;                    /*!< Number of batches of axons */
     int nbr_threads;                   /*!< Number of threads to grow axons */
     
@@ -128,7 +127,7 @@ public:
          * \param stuck_indices_ indices of axons that got stuck
      *  \brief Grows a single sphere for each axon
      */
-    void growthThread(std::vector <Axon> &axs, Axon &axon, AxonGrowth &growth, int &finished, int &grow_straight, int &straight_growths, double &stuck_radii_, int &stuck_indices_);
+    void growthThread(std::vector <Axon> &axs, Axon &axon, AxonGrowth &growth, int &finished, int &grow_straight, int &straight_growths, double &stuck_radius, int &stuck_index);
 
     /*!
      *  \param axon Axon to modify
@@ -154,7 +153,7 @@ public:
       *  \param num_subsets_ List of number of axons in each batch
      *  \brief Creates a parallel growth of a batch of axons
      */
-    void growBatches(std::vector<double> &radii_, std::vector<int> &indices, std::vector<int> &num_subsets_, std::vector<bool> &has_myelin, std::vector<double> &angles);
+    void growBatches(std::vector<double> &radii_, std::vector<int> &num_subsets_, std::vector<bool> &has_myelin, std::vector<double> &angles);
     
     /*!
      *  \param Q Starting point of axon
@@ -221,7 +220,7 @@ public:
      */
     void createBatch(const std::vector<double> &radii_, const std::vector<int> &indices, const int &num_subset, const int &first_index_batch, std::vector<Axon> &new_axons, const std::vector<bool> &has_myelin, std::vector<double> &angles);
 
-    void createBatches(std::vector<double> &radii_, std::vector<int> &indices, std::vector<Axon> &new_axons, std::vector<bool> &has_myelin, std::vector<double> &angles);
+    void createBatches(std::vector<double> &radii_, std::vector<Axon> &new_axons, std::vector<bool> &has_myelin, std::vector<double> &angles);
     /*!
      *  \param growing_axons Axons that have grown in batch
        *\param stuck_radii_ radii of axons that got stuck
@@ -236,7 +235,7 @@ public:
      *  \param stuck_indices_ indices of axons that got stuck
      *  \brief Grows the entire axon
      */
-    void growAxon(Axon& axon_to_grow, double &stuck_radii_, int &stuck_indices_, std::vector<int>& ind_axons_pushed, std::vector<Axon> &axons_pushed);
+    void growAxon(Axon& axon_to_grow, int& index, double& stuck_radius, int& stuck_index);
 
     /*!
      *  \param pos Position
@@ -355,10 +354,10 @@ public:
     double draw_angle(double kappa);
     double c2toKappa(double c2, double tol, double kappa_min, double kappa_max);
     std::vector<double> generate_angles(const int &num_samples);
-    void processBatchWithThreadPool(std::vector<Axon>& axons_to_grow, std::vector<double>& stuck_radii, std::vector<int>& stuck_indices, std::vector<std::vector<int>> &ind_axons_pushed, std::vector<std::vector<Axon>> &axons_pushed);
+    void processBatchWithThreadPool(std::vector<Axon>& axons_to_grow, std::vector<int> &indices, std::vector<double>& stuck_radii, std::vector<int>& stuck_indices);
     bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
     bool pushAxonSpheres(std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos, Axon &axon, const Sphere &sph);
-    void ModifyAxonsStartingPoint(const std::vector<int> &stuck_indices);
+    void ModifyAxonsStartingPoint(std::vector<int> &stuck_indices);
     double originalFunction(const double &x, const double &outerRadius);
     double derivative(const double &x);
     double myelin_thickness(const double &inner_radius);

@@ -49,7 +49,6 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
                                               const double &c1_, const double &c2_, const double &c3_)
 {
     
-    num_obstacles = 0;
     target_axons_wo_myelin_icvf = axons_wo_myelin_icvf_;
     target_axons_w_myelin_icvf = axons_w_myelin_icvf_;
     target_axons_icvf = axons_wo_myelin_icvf_ + axons_w_myelin_icvf_;
@@ -667,18 +666,12 @@ void AxonGammaDistribution::generate_radii(std::vector<double> &radii_, std::vec
         }
         // cout << "Maximum radius :" << max_radius << endl;
 
-        num_obstacles = radii_.size();
-
-        std::cout << "Number of axons :" << num_obstacles << endl;
+        std::cout << "Number of axons :" << radii_.size() << endl;
         std::cout <<"initial icvf axons without myelin :" << axons_wo_myelin_icvf << endl;
         std::cout <<"initial icvf axons with myelin :" << axons_w_myelin_icvf << endl;
         axons_wo_myelin_icvf = 0.0;
         axons_w_myelin_icvf = 0.0;
 
-    }
-    else
-    {
-        num_obstacles = 0;
     }
 
 }
@@ -1194,77 +1187,51 @@ void calculate_c2(std::vector<double> &angles) {
 
 
 
-void AxonGammaDistribution::createBatches(std::vector<double> &radii_, std::vector<int> &indices, std::vector<Axon> &new_axons, std::vector<bool> &has_myelin, std::vector<double> &angles)
+void AxonGammaDistribution::createBatches(std::vector<double> &radii_, std::vector<Axon> &new_axons, std::vector<bool> &has_myelin, std::vector<double> &angles)
 {
-    long int tries_threshold = (max_limits[0]- min_limits[0]) * (max_limits[1]-min_limits[1]) * 10;
+    const long int tries_threshold = static_cast<long int>((max_limits[0] - min_limits[0]) * (max_limits[1] - min_limits[1]) * 10);
     new_axons.clear();
+    new_axons.reserve(radii_.size());
 
-    double angle_;
-    bool outside_voxel = false;
+    std::vector<int> indices_to_erase;
+    int axon_index = 0;
 
-    std::vector<int> indices_to_erase = {};
-
-    for (long unsigned int i = 0; i < indices.size(); ++i) // create axon for each radius
-    {
-        // std::cout << "radii created :" << i << "/" << batch_radii.size() << endl;
-        bool next = false;
+    for (size_t i = 0; i < radii_.size(); ++i) {
+        bool placed = false;
         int tries = 0;
 
-        while (!next && tries < tries_threshold)
-        {
-            
+        const double radius = radii_[i];
+        const bool has_myelin_ = has_myelin[i];
+        double angle = angles[i];
+
+        while (!placed && tries < tries_threshold) {
             Vector3d Q, D;
-            
-            int index_of_axon = indices[i];
-            angle_ = angles[indices[i]];
-            outside_voxel = !get_begin_end_point(Q, D, angle_);
-            bool has_myelin_ = has_myelin[indices[i]];
-            if (tries> 0.75*tries_threshold) {
-                next = PlaceAxon(index_of_axon, radii_[indices[i]], Q, D, new_axons, has_myelin_, angle_, outside_voxel, true);
+            bool outside_voxel = !get_begin_end_point(Q, D, angle);
 
-            }
-            else{
-                next = PlaceAxon(index_of_axon, radii_[indices[i]], Q, D, new_axons, has_myelin_, angle_, outside_voxel, false);
-            }
-            //cout << "Q : " << Q << endl;
-            if (!next)
-            {
-                tries += 1;
-                
+            const bool allow_shrink = tries > 0.75 * tries_threshold;
+            placed = PlaceAxon(axon_index, radius, Q, D, new_axons, has_myelin_, angle, outside_voxel, allow_shrink);
+
+            if (!placed) {
+                ++tries;
             }
         }
-        if (tries >= tries_threshold)
-        {
-            cout << "Could not place an initial sphere on plane, axon discarded" << endl;
-            indices_to_erase.push_back(i);
+
+        if (tries >= tries_threshold) {
+            std::cout << "Could not place an initial sphere on plane, axon discarded" << std::endl;
+            indices_to_erase.push_back(static_cast<int>(i));
+        } else {
+            ++axon_index;
         }
     }
 
-    for (long unsigned int i = 0; i < indices_to_erase.size(); i++)
-    {
-        indices.erase(indices.begin() + indices_to_erase[i]);
-        radii.erase(radii.begin() + indices_to_erase[i]);
-        has_myelin.erase(has_myelin.begin() + indices_to_erase[i]);
-        angles.erase(angles.begin() + indices_to_erase[i]);
+    // Erase in reverse order to avoid index shifting
+    for (auto it = indices_to_erase.rbegin(); it != indices_to_erase.rend(); ++it) {
+        radii_.erase(radii_.begin() + *it);
+        has_myelin.erase(has_myelin.begin() + *it);
+        angles.erase(angles.begin() + *it);
     }
-
-    // check if number of new axons is same as number of indices
-    if (indices.size() != new_axons.size())
-    {
-        cout << "Number of axons created is not equal to number of indices" << endl;
-        assert(indices.size() == new_axons.size());
-    }
-    /*
-    for (long unsigned int i = 0; i < new_axons.size(); i++)
-    {
-        //cout <<" (" << new_axons[i].radius << "," << new_axons[i].begin[0] << "," << new_axons[i].begin[1] << ")," << endl;
-        cout <<"axon.id :  "<< new_axons[i].id << endl;
-    }
-    assert(0);
-    */
-    
-
 }
+
 
 
 void AxonGammaDistribution::setBatches(const int &num_axons, std::vector<int> &subsets)
@@ -1318,23 +1285,17 @@ void AxonGammaDistribution::GrowAllAxons(){
     // generate radii with gamma distribution
     std::vector<bool> has_myelin = {};
     generate_radii(radii, has_myelin);
-    std::vector<double> angles(num_obstacles, 0.0);
+    std::vector<double> angles(radii.size(), 0.0);
     
     if (cosPhiSquared != 1.0){
-        angles = generate_angles(num_obstacles);
+        angles = generate_angles(radii.size());
     } 
 
     cout <<"number of threads :" << nbr_threads << endl;
 
     calculate_c2(angles);
 
-    if (num_obstacles != 0){
-        // indices for axons
-        std::vector<int> indices;
-        for (unsigned i = 0; i < num_obstacles; i++)
-        {
-            indices.push_back(i);
-        }
+    if (radii.size() != 0){
         // std::cout << "Parallel growth simulation" << endl;
 
         bool stop = false;
@@ -1342,22 +1303,22 @@ void AxonGammaDistribution::GrowAllAxons(){
         while (!stop)
         {
 
-            num_obstacles = radii.size();
-
-            if (num_obstacles == 0)
+            if (radii.size() == 0)
             {
                 stop = true;
                 break;
             }
             std::vector<int> subsets; // depending on which batch
-            // std::cout << "radii size =" << num_obstacles << endl;
+
+            createBatches(radii, axons, has_myelin, angles);
+            int num_obstacles = radii.size();
+
             //  divides obstacles into subsets
             setBatches(num_obstacles, subsets);
 
-            createBatches(radii, indices, axons, has_myelin, angles);
 
             // cout << " length of subsets :" << subsets.size() << endl;
-            growBatches(radii, indices, subsets, has_myelin, angles); // grows all axons, fills list of stuck radii, deletes empty axons
+            growBatches(radii, subsets, has_myelin, angles); // grows all axons, fills list of stuck radii, deletes empty axons
             std::vector<double> radii_to_regrow = stuck_radii;
             std::vector<int> indices_to_regrow = stuck_indices;
 
@@ -1413,14 +1374,20 @@ bool AxonGammaDistribution::SwellSphere(Sphere &sph, const double &percentage){
 void AxonGammaDistribution::SwellAxon(Axon &ax, const double &percentage) {
 
     // Enqueue tasks for each sphere
+    std::vector<Sphere> new_spheres;
     for (size_t i = 0; i < ax.outer_spheres.size(); i++) {
         
         Sphere sph = ax.outer_spheres[i];
         bool can_swell = SwellSphere(sph, percentage);
         if (can_swell){
-            ax.outer_spheres[i] = sph;
+            new_spheres.push_back(sph);
+        }
+        else{
+            // if cannot swell, push the sphere back to the axon
+            new_spheres.push_back(ax.outer_spheres[i]);
         }
     }
+    ax.outer_spheres = new_spheres;
 }
 
 
@@ -1756,69 +1723,73 @@ bool AxonGammaDistribution::FinalCheck(std::vector<Axon> &axs, std::vector<doubl
 
     return not_collide;
 }
-
-bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons, std::vector<double> &stuck_radii_, std::vector<int> &stuck_indices_) {
-    
-    std::vector<double> results(growing_axons.size(), -1);
+bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons,
+                                        std::vector<double>& stuck_radii_,
+                                        std::vector<int>& stuck_indices_) {
+    std::unordered_set<int> collided_ids;
     std::vector<Axon> axons_to_check_collision_with = growing_axons;
 
-    for (long unsigned int j = 0; j < growing_axons.size(); ++j) {
+    if (growing_axons.size() <=1) {
+        return true;  // No axons to check
+    }
 
-        results[j] = -1;
-        if (growing_axons[j].outer_spheres.size() > 0) {
-            for (unsigned k = 0; k < growing_axons[j].outer_spheres.size(); ++k) {
-                Sphere last_sphere = growing_axons[j].outer_spheres[k];
+    int nbr_empty_spheres = 0;
+    for (auto& axon : growing_axons) {
+        if (axon.outer_spheres.empty()) {
+            nbr_empty_spheres++;
+        }
+    }
+    if (nbr_empty_spheres == growing_axons.size()) {
+        return true;  // No axons to check
+    }
 
-                if (!canSpherebePlaced(last_sphere, axons_to_check_collision_with, glial_pop1, glial_pop2, false)) {
-                    results[j] = growing_axons[j].id;
+    // generate random number between 0 and growing_axons.size()
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, growing_axons.size() );
+    int random_index = dis(gen);
 
-                    auto foundObject = std::find_if(axons_to_check_collision_with.begin(), axons_to_check_collision_with.end(),
-                        [j, &growing_axons](const Axon& ax) {
-                            return ax.id == growing_axons[j].id;
-                        });
+    // check if this axon has spheres
+    while (growing_axons[random_index].outer_spheres.size() <= 1) {
+        random_index = dis(gen);
+    }
 
-                    if (foundObject != axons_to_check_collision_with.end()) {
-                        axons_to_check_collision_with.erase(
-                            std::remove_if(axons_to_check_collision_with.begin(), axons_to_check_collision_with.end(),
-                                [j, &growing_axons](const Axon& ax) {
-                                    return ax.id == growing_axons[j].id;
-                                }),
-                            axons_to_check_collision_with.end()
-                        );
-                    }
+    for (size_t i = 0; i < growing_axons.size(); ++i) {  // Start from second axon
 
-                    //std::cout << "Sanity check: axon " << growing_axons[j].id << " collides with environment" << std::endl;
-                }
+        if (i == random_index) continue;  // Skip the randomly selected axon
+
+        const auto& axon = growing_axons[i];
+
+        if (axon.outer_spheres.empty()) continue;
+
+        for (const auto& sphere : axon.outer_spheres) {
+            if (!canSpherebePlaced(sphere, axons_to_check_collision_with, glial_pop1, glial_pop2, false)) {
+                collided_ids.insert(axon.id);
+                axons_to_check_collision_with.erase(
+                    std::remove_if(axons_to_check_collision_with.begin(), axons_to_check_collision_with.end(),
+                                   [&axon](const Axon& a) { return a.id == axon.id; }),
+                    axons_to_check_collision_with.end()
+                );
+                break;
             }
         }
     }
 
-    bool not_collide = true;
-    std::vector<int> positions_to_destroy;
-    for (double result : results) {
-        if (result >= 0) {
-            not_collide = false;
+    bool all_clear = collided_ids.empty();
 
-            auto foundObject = std::find_if(growing_axons.begin(), growing_axons.end(), [result](const Axon& ax) {
-                return ax.id == result;
-            });
-
-            if (foundObject != growing_axons.end()) {
-                positions_to_destroy.push_back(std::distance(growing_axons.begin(), foundObject));
-            } else {
-                assert(0);
-            }
+    for (auto& axon : growing_axons) {
+        if (collided_ids.count(axon.id)) {
+            stuck_radii_.push_back(axon.radius);
+            stuck_indices_.push_back(axon.id);
+            axon.destroy();
+            axon.update_Volume(factor, min_limits, max_limits);
+            axon.updateBox();
         }
     }
 
-    for (int pos : positions_to_destroy) {
-        growing_axons[pos].destroy();
-        stuck_radii_.push_back(growing_axons[pos].radius);
-        stuck_indices_.push_back(growing_axons[pos].id);
-    }
-
-    return not_collide;
+    return all_clear;
 }
+
 
 void update_straight(bool can_grow_, int &grow_straight, int &straight_growths, int ondulation_factor)
 {
@@ -1861,8 +1832,8 @@ void AxonGammaDistribution::growthThread(
     int& finished,
     int& grow_straight,
     int& straight_growths,
-    double& stuck_radii_,
-    int& stuck_indices_
+    double& stuck_radius,
+    int& stuck_index
 ) {
    
     // 1) Possibly vary the radius (beading)
@@ -1881,7 +1852,8 @@ void AxonGammaDistribution::growthThread(
     if (growth.finished) {
         //cout << "axon " << axon.id << " is finished" << endl;
         finished = 1; 
-        stuck_radii_ = -1;
+        stuck_radius = -1;
+        stuck_index = -1;
     }
     else { 
         // The axon is still growing
@@ -1897,7 +1869,8 @@ void AxonGammaDistribution::growthThread(
                     growth.ind_axons_pushed.clear();
                     growth.axon_to_grow = axon;
                     finished = 0;
-                    stuck_radii_ = -1;
+                    stuck_radius = -1;
+                    stuck_index = -1;
                     //cout << "axon " << axon.id << " is stuck, growth attempts : "<<  axon.growth_attempts<< " center : (" << axon.begin[0] << ", " << axon.begin[1]<< ", "<< axon.begin[2] << ")" << endl;
                 }
                 else {
@@ -1906,8 +1879,8 @@ void AxonGammaDistribution::growthThread(
                     axon.destroy(); 
                     growth.ind_axons_pushed.clear();
                     finished = 1;
-                    stuck_radii_ = axon.radius;
-                    stuck_indices_ = axon.id;
+                    stuck_radius = axon.radius;
+                    stuck_index = axon.id;
                     //cout <<"try axon in different position" << endl;
                 }
             }
@@ -1932,8 +1905,8 @@ void AxonGammaDistribution::growthThread(
                 // The axon is stuck
                 axon.destroy(); 
                 finished = 1;
-                stuck_radii_ = axon.radius;
-                stuck_indices_ = axon.id;
+                stuck_radius = axon.radius;
+                stuck_index = axon.id;
 
             }
         }
@@ -1947,7 +1920,7 @@ void AxonGammaDistribution::growthThread(
 }
 
 
-void AxonGammaDistribution::growAxon(Axon& axon_to_grow, double& stuck_radii_, int& stuck_indices_, std::vector<int>& ind_axons_pushed, std::vector<Axon> &axons_pushed) {
+void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stuck_radius, int& stuck_index) {
     int finished = 0;
     int grow_straight = 0;
     int straight_growths = 0;
@@ -1976,9 +1949,9 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, double& stuck_radii_, i
 
         if (!axon_to_grow.outer_spheres.empty()) {
             // Attempt a single growth step
-            growthThread(axons, axon_to_grow, growth, finished, grow_straight, straight_growths, stuck_radii_, stuck_indices_);
+            growthThread(axons, axon_to_grow, growth, finished, grow_straight, straight_growths, stuck_radius, stuck_index);
 
-            if (stuck_radii_>0) {
+            if (stuck_radius>0) {
                 tries_ += 1;
             }
         }
@@ -1996,21 +1969,24 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, double& stuck_radii_, i
     else if (tries_ == max_nbr_tries) {
         //cout << "axon " << axon_to_grow.id << " is stuck" << endl;
         axon_to_grow.destroy();
-        stuck_radii_ = axon_to_grow.radius;
-        stuck_indices_ = axon_to_grow.id;
-        ind_axons_pushed = {};
+        stuck_radius = axon_to_grow.radius;
+        stuck_index = axon_to_grow.id;
+        //ind_axons_pushed = {};
     }
+    /*
     else{
         ind_axons_pushed =  growth.ind_axons_pushed;
         for (int i : ind_axons_pushed) {
             axons_pushed.push_back(growth.modified_axons[i]);
         }
     }
+    */
 }
 void AxonGammaDistribution::processBatchWithThreadPool(
     std::vector<Axon>& axons_to_grow,
+    std::vector<int>& indices,
     std::vector<double>& stuck_radii,
-    std::vector<int>& stuck_indices, std::vector<std::vector<int>> &ind_axons_pushed, std::vector<std::vector<Axon>> &axons_pushed) 
+    std::vector<int>& stuck_indices) 
 {
     ThreadPool pool(nbr_threads);
 
@@ -2018,8 +1994,8 @@ void AxonGammaDistribution::processBatchWithThreadPool(
 
     for (size_t i = 0; i < axons_to_grow.size(); ++i) {
         futures.emplace_back(pool.enqueueTask(
-            [this, &axons_to_grow, &stuck_radii, &stuck_indices, &ind_axons_pushed, &axons_pushed, i]() {
-                growAxon(axons_to_grow[i], stuck_radii[i], stuck_indices[i], ind_axons_pushed[i], axons_pushed[i]);
+            [this, &axons_to_grow, &stuck_radii, &stuck_indices, &indices, i]() {
+                growAxon(axons_to_grow[i], indices[i], stuck_radii[i], stuck_indices[i]);
             }
         ));
     }
@@ -2068,12 +2044,13 @@ std::vector<int> removeOverlappingVectors(
     return toErase;
 }
 
-void AxonGammaDistribution::ModifyAxonsStartingPoint(const std::vector<int> &stuck_indices){
+void AxonGammaDistribution::ModifyAxonsStartingPoint(std::vector<int> &stuck_indices){
+
+    std::vector<int> new_stuck_indices;
     for (int i = 0; i < axons.size(); i++) {
 
         if (std::find(stuck_indices.begin(), stuck_indices.end(), axons[i].id) != stuck_indices.end()) {
             Vector3d Q, D;
-            int index_of_axon = axons[i].id;
             double angle_ = axons[i].angle;
             bool outside_voxel = !get_begin_end_point(Q, D, angle_);
             Sphere sphere = Sphere(0, axons[i].id, 0, Q, axons[i].radius);
@@ -2092,10 +2069,15 @@ void AxonGammaDistribution::ModifyAxonsStartingPoint(const std::vector<int> &stu
                 axons[i].end = D;
                 axons[i].outside_voxel = outside_voxel;
                 axons[i].angle = angle_;
-                break;
+                axons[i].begin = Q;
+                new_stuck_indices.push_back(axons[i].id);
+            }
+            else{
+                axons[i].destroy();
             }
         }
     }
+    stuck_indices = new_stuck_indices;
 }
 
 void AxonGammaDistribution::createBatch(const std::vector<double> &radii_, const std::vector<int> &indices, const int &num_subset, const int &first_index_batch, std::vector<Axon> &new_axons, const std::vector<bool> &has_myelin, std::vector<double> &angles)
@@ -2155,31 +2137,34 @@ void AxonGammaDistribution::growBatch(int &number_axons_to_grow, std::vector<dou
 
     std::vector<Axon> batch_growing_axons(growing_axons.begin() + first_index_batch,
                                       growing_axons.begin() + first_index_batch + number_axons_to_grow);
+                                    
 
-    cout <<"growing axons from : " << batch_growing_axons[0].id << "to " << batch_growing_axons[number_axons_to_grow-1].id << endl;
     //vector full of -1 with size of number of axons
     std::vector<double> all_stuck_radii(number_axons_to_grow, -1);  
 
     std::vector<int> all_stuck_indices(number_axons_to_grow, -1);   
 
-    std::vector<std::vector<int>> ind_axons_pushed;  
+    //std::vector<std::vector<int>> ind_axons_pushed;  
 
-    std::vector<std::vector<Axon>> axons_pushed;   
+    //std::vector<std::vector<Axon>> axons_pushed;   
 
-    ind_axons_pushed.resize(number_axons_to_grow);
-    axons_pushed.resize(number_axons_to_grow); 
+    //ind_axons_pushed.resize(number_axons_to_grow);
+    //axons_pushed.resize(number_axons_to_grow); 
 
-    processBatchWithThreadPool(batch_growing_axons, all_stuck_radii, all_stuck_indices, ind_axons_pushed, axons_pushed);
+    processBatchWithThreadPool(batch_growing_axons, indices, all_stuck_radii, all_stuck_indices);
 
 
     for (int i = 0; i < number_axons_to_grow; i++) // for each axon
     {
+        
         if (all_stuck_radii[i] > 0)
         {
             stuck_radii_.push_back(all_stuck_radii[i]);
             stuck_indices_.push_back(all_stuck_indices[i]);
         }
     }
+
+    /*
     
     std::vector<int> ind_growing_axons_to_remove = removeOverlappingVectors(ind_axons_pushed, axons_pushed);
     
@@ -2207,29 +2192,40 @@ void AxonGammaDistribution::growBatch(int &number_axons_to_grow, std::vector<dou
     for (const auto& group : axons_pushed) {
         batch_growing_axons.insert(batch_growing_axons.end(), group.begin(), group.end());
     }
+    */
     
-    cout <<"number of axons to check in sanity check : " << batch_growing_axons.size() << endl;
+    cout <<"number of axons to check in batch_growing_axons : " << batch_growing_axons.size() << endl;
+
 
     SanityCheck(batch_growing_axons, stuck_radii_, stuck_indices_);
-    
+        
     cout << stuck_radii_.size() << " axons are stuck" << endl;
 
     // add axons in batch that worked in axons
-    for (long unsigned int i = 0; i < batch_growing_axons.size(); i++)
+    for (int i = 0; i < batch_growing_axons.size(); i++)
     {
-        //cout << "growing_axons["<<growing_axons[i].id <<"].outer_spheres.size(): " << growing_axons[i].outer_spheres.size() << endl;
-        if (batch_growing_axons[i].outer_spheres.size() > 0)
+        
+        int index = batch_growing_axons[i].id;
+        // if index not in stuck indices
+        if (std::find(stuck_indices_.begin(), stuck_indices_.end(), index) == stuck_indices_.end())
         {
-            for (long unsigned int j = 0; j < axons.size(); j++) {
-                if (axons[j].id == batch_growing_axons[i].id) {
-                    // erase axon from axons
+            if (batch_growing_axons[i].outer_spheres.size() == 0)
+            {
+                cout << "batch_growing_axons[i].id :"<< batch_growing_axons[i].id<< " has 0 spheres but is not in stuck_indices_" << endl;
+                continue;
+            }
+            for (int j = 0; j < axons.size(); j++)
+            {
+                if (axons[j].id == index)
+                {
                     axons[j] = std::move(batch_growing_axons[i]);
                 }
-            }
-        }
+            }     
+        }  
     }
 
     /*
+
     bool no_collision = FinalCheck(axons, stuck_radii_, stuck_indices_);
     if (!no_collision)
     {
@@ -2242,12 +2238,16 @@ void AxonGammaDistribution::growBatch(int &number_axons_to_grow, std::vector<dou
     */
     
     
+    
     //cout << "axons.size() after check: " << axons.size() << endl;
 }
 
-void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector<int> &indices, std::vector<int> &subsets_, std::vector<bool> &has_myelin, std::vector<double> &angles)
+void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector<int> &subsets_, std::vector<bool> &has_myelin, std::vector<double> &angles)
 {
 
+    // indices for axons
+    std::vector<int> indices(radii_.size());
+    std::iota(indices.begin(), indices.end(), 0);
     
     stuck_radii.clear();
 
@@ -2287,7 +2287,7 @@ void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector
             new_stuck_indices_.clear();
             //cout << " Regrow " << stuck_radii_.size() << " axons" << endl;
             int number_axons_to_grow = stuck_radii_.size();
-            ModifyAxonsStartingPoint(stuck_indices_);
+            ModifyAxonsStartingPoint(stuck_indices_); 
             stuck_axons.reserve(stuck_indices_.size());
             for (unsigned i = 0; i < stuck_indices_.size(); i++)
             {
@@ -2326,7 +2326,7 @@ void AxonGammaDistribution::growBatches(std::vector<double> &radii_, std::vector
 
     int counts = 0;
     for (int i = axons.size() - 1; i >= 0; --i) {
-        if (axons[i].outer_spheres.size() == 1) {
+        if (axons[i].outer_spheres.size() <= 1) {
             axons.erase(axons.begin() + i);
             counts++;
         }

@@ -295,9 +295,11 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
     while (!can_grow_ && tries < threshold_tries)
     {
         bool with_push = false;
+        /*
         if (tries > 0.75*threshold_tries) {
             with_push = true;
         }
+        */
         //cout <<"axon : "<< axon_to_grow.id <<" with push : " << with_push << endl;
         // Attempt the main placement
         bool success = attemptPlacement(s, tries, with_push);
