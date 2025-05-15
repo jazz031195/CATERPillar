@@ -38,7 +38,7 @@ public:
     bool tortuous = true;
     double alpha = 4.0;
     double beta = 0.25;
-    int regrow_thr = 20;
+    int regrow_thr = 10;
     double min_rad = 0.15;
     double std_dev = 0.01;
     int ondulation_factor = 5;

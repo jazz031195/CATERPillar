@@ -24,8 +24,8 @@ class Glial : public Obstacle
     Sphere soma;                                    /*!< soma of glial */
 
     std::vector<std::vector<Sphere>> ramification_spheres; /*!< ramification spheres of glial */
+    std::vector<std::vector<double>> lengths_branches;               /*!< lengths of branches */
     std::vector<Eigen::Vector2d> Box;               /*!< Box with <min, max> for each axis (x,y,z) */
-    std::vector<double> principle_processes_lengths; /*!< lengths of principle processes */
     std::vector<Eigen::Vector3d> attractors;        /*!< Attractors for the glial cell */
     double volume_soma;                                  /*!< Volume of glial */
     double volume_processes;                                  /*!< Volume of processes of glial */
@@ -47,7 +47,7 @@ class Glial : public Obstacle
         double sph_lowest_z_val = soma.center[2] -soma.radius;
         volume_soma = M_PI*pow(soma.radius, 3)*4/3;
         volume_processes = 0.0;
-        minimum_radius = soma.radius/20.0;
+        minimum_radius = soma.radius/10.0;
         allow_branching = allow_branching_;
 
         //x
@@ -59,7 +59,8 @@ class Glial : public Obstacle
 
         ramification_spheres.clear();
         attractors.clear();
-        
+        lengths_branches.clear();
+
     }
 
 
@@ -69,11 +70,12 @@ class Glial : public Obstacle
             soma = other.soma;
             ramification_spheres = other.ramification_spheres;
             Box = other.Box;
-            principle_processes_lengths = other.principle_processes_lengths;
             volume_soma = other.volume_soma;
             volume_processes = other.volume_processes;
             minimum_radius = other.minimum_radius;
             attractors = other.attractors;
+            lengths_branches = other.lengths_branches;
+            allow_branching = other.allow_branching;
             
         }
         return *this;

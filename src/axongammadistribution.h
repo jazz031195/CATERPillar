@@ -133,7 +133,7 @@ public:
      *  \param axon Axon to modify
      *  \brief Causes sinusoidal fluctuation of the radii
      */
-    double radiusVariation(Axon &axon);
+    double radiusVariation(const Axon &axon);
 
     /*!
      *  \brief Creates a parallel growth of all axons
@@ -203,7 +203,7 @@ public:
      * \param gls Glial cells to check overlapping with
      *  \brief Checks if a sphere overlaps with any of the axons in axs
      */
-    bool canSpherebePlaced(const Sphere &sph, std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos, const bool &with_push);
+    bool canSpherebePlaced(const Sphere &sph, const std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos);
 
     /*!
      *  \param axs Axons to check overlapping with
@@ -251,7 +251,7 @@ public:
      *  \param new_axons Newly placed axons.
      *  \brief Places an axon in voxel.
      */
-    bool PlaceAxon(const int &axon_id, const double &radius_for_axon, const Eigen::Vector3d &Q, const Eigen::Vector3d &D, std::vector<Axon> &new_axons, const bool &has_myelin, const double &angle, const bool &outside_voxel, const bool &push_axons);
+    bool PlaceAxon(const int &axon_id, const double &radius_for_axon, const Eigen::Vector3d &Q, const Eigen::Vector3d &D, std::vector<Axon> &new_axons, const bool &has_myelin, const double &angle, const bool &outside_voxel);
 
     /*!
      *  \param out Output stream to write SWC data.
@@ -342,7 +342,7 @@ public:
 
     bool growPrimaryBranch(Glial &glial_cell, const int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
 
-    double RandomradiusVariation(Axon &axon);
+    double RandomradiusVariation(const Axon &axon);
 
     void growBranches(std::vector<Glial>& glial_cell_list, const int &population_nbr);
 
@@ -356,11 +356,11 @@ public:
     std::vector<double> generate_angles(const int &num_samples);
     void processBatchWithThreadPool(std::vector<Axon>& axons_to_grow, std::vector<int> &indices, std::vector<double>& stuck_radii, std::vector<int>& stuck_indices);
     bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
-    bool pushAxonSpheres(std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos, Axon &axon, const Sphere &sph);
     void ModifyAxonsStartingPoint(std::vector<int> &stuck_indices);
     double originalFunction(const double &x, const double &outerRadius);
     double derivative(const double &x);
     double myelin_thickness(const double &inner_radius);
+    void ThreadGrowthGlialCells(std::vector<Glial>& glial_cell_list, const double &mean_process_length, const double &std_process_length, std::vector<int> &nbr_spheres);
 };
 
 

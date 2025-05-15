@@ -38,6 +38,7 @@ public:
     int growth_axis;                                /*!< Axis to grow along */
     double angle;
     bool outside_voxel;
+    bool has_shrunk;                            /*!< Axon has shrunk */
 
 
     /*!
@@ -128,12 +129,6 @@ public:
      *  \brief Deletes all spheres in axon.
      */
     void destroy();
-
-    /*!
-     *  \brief Modify the radius of the first sphere in the axon
-        \param new_radius new radius
-     */
-    void ModifyRadiusFirstSphere(const double &new_radius);
 
     bool isSphereInsideInnerAxon(const Sphere &sph) const;
 

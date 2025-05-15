@@ -18,10 +18,6 @@ Axon::~Axon()
     Box.clear();
 }
 
-void Axon::ModifyRadiusFirstSphere(const double &new_radius){
-    outer_spheres[0].radius = new_radius;
-
-}
 
 void Axon::keep_one_sphere(){
     Sphere s (this->outer_spheres[0]);
@@ -30,12 +26,14 @@ void Axon::keep_one_sphere(){
     add_sphere(s);
     growth_attempts += 1;
 
+
 }
 
 void Axon::destroy(){
     outer_spheres.clear();
     Box.clear();
     growth_attempts = 0;
+
 }
 
 void Axon::updateBox(){
@@ -345,7 +343,7 @@ bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l,
     return true; // Point is inside the dilated box
 }
 
-/*
+
 void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits){
     double new_volume = 0.0;
 
@@ -374,9 +372,9 @@ void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, c
 
     volume = new_volume;
 }
-*/
 
 
+/*
 double sphereVolume(double radius) {
     return (4.0 / 3.0) * M_PI * std::pow(radius, 3);
 }
@@ -423,3 +421,4 @@ void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, c
 
     volume = new_volume;
 }
+*/

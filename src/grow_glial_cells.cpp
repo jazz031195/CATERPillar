@@ -73,7 +73,7 @@ bool GlialCellGrowth::AddOneSphere(const double &radius_, const bool &create_sph
     // if sphere collides with environment
     bool can_grow_;
  
-    if (glial_cell_to_grow.ramification_spheres[i].size() > 100000)
+    if (glial_cell_to_grow.ramification_spheres[i].size() > 1e10)
     {
         return false;
     }

@@ -18,8 +18,6 @@ class AxonGrowth : public CellGrowth
 public:
     Axon& axon_to_grow;
     std::vector<Axon> axons;  
-    std::vector<Axon> modified_axons;  
-    std::vector<int> ind_axons_pushed;
 
     AxonGrowth() = delete;
 
@@ -48,12 +46,12 @@ public:
                      const int& factor);
 
     // Positioning
-    void find_next_center_straight(double distance,
-                                   Sphere& s,
+    Eigen::Vector3d find_next_center_straight(const double distance,
+                                   const Sphere& s,
                                    const std::vector<Sphere>& spheres);
 
-    void find_next_center(Sphere& s,
-                          double dist_,
+    Eigen::Vector3d find_next_center(const Sphere& s,
+                          const double dist_,
                           const std::vector<Sphere>& spheres,
                           const Eigen::Vector3d& target,
                           const bool& is_axon);
@@ -64,7 +62,11 @@ public:
     // Override if needed
     bool pushAxonSpheres(Axon &axon, const Sphere &sph);
 
-    bool canSpherebePlaced(const Sphere &sph, const bool &with_push);
+    bool canSpherebePlaced(Sphere &sph);
+
+    bool checkAxonsOverlap(Sphere &sph);
+    Eigen::Vector3d readapt_sphere_position(const Sphere &s, const Axon &neighbour_axon, bool can_readapt);
+    Eigen::Vector3d find_closest_neighbour(const Sphere &sphere);
 };
 
 #endif // AXONGROWTH_H
