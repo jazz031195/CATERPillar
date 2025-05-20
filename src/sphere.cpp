@@ -66,7 +66,7 @@ void Sphere::getPointOnSphereSurface(Eigen::Vector3d &point, Eigen::Vector3d &ve
         if (vector2 != Eigen::Vector3d {0.0, 0.0, 0.0}) {
             double angle = acos(vector.dot(vector2));
             // Check if the angle is <= pi / 2
-            if (angle <= M_PI / 2.0) {
+            if (angle <= M_PI / 4.0) {
                 valid = true;
             }
             else{

@@ -84,6 +84,12 @@ private:
     QLabel *glial_pop2_nbr_primary_processes_qlabel;
     QLabel *glial_pop1_branching_qlabel;
     QLabel *glial_pop2_branching_qlabel;
+    QLabel *glial_pop1_mean_primary_process_length_qlabel;
+    QLabel *glial_pop1_std_primary_process_length_qlabel;
+    QLabel *glial_pop2_mean_primary_process_length_qlabel;
+    QLabel *glial_pop2_std_primary_process_length_qlabel;
+    QLabel *max_nbr_process_pop1_qlabel;
+    QLabel *max_nbr_process_pop2_qlabel;
     QLabel *k1_qlabel;
     QLabel *k2_qlabel;
     QLabel *k3_qlabel;
@@ -120,6 +126,12 @@ private:
     QDoubleSpinBox *k1_SpinBox;
     QDoubleSpinBox *k2_SpinBox;
     QDoubleSpinBox *k3_SpinBox;
+    QDoubleSpinBox *max_nbr_process_pop1_SpinBox;
+    QDoubleSpinBox *max_nbr_process_pop2_SpinBox;
+    QDoubleSpinBox *glial_pop2_std_primary_process_length_SpinBox;
+    QDoubleSpinBox *glial_pop1_std_primary_process_length_SpinBox;
+    QDoubleSpinBox *glial_pop2_mean_primary_process_length_SpinBox;
+    QDoubleSpinBox *glial_pop1_mean_primary_process_length_SpinBox;
 
     QBoxLayout *layout;
     QPushButton *okButton;
@@ -166,8 +178,14 @@ private:
     bool glial_pop2_branching;
     double glial_pop1_mean_process_length;
     double glial_pop1_std_process_length;
+    double glial_pop1_mean_primary_process_length;
+    double glial_pop1_std_primary_process_length;
     double glial_pop2_mean_process_length;
     double glial_pop2_std_process_length;
+    double glial_pop2_mean_primary_process_length;
+    double glial_pop2_std_primary_process_length;
+    int max_nbr_process_pop1;
+    int max_nbr_process_pop2;
     double k1;
     double k2;
     double k3;
