@@ -730,7 +730,7 @@ bool AxonGammaDistribution::PlaceAxon(const int &axon_id, const double &radius_f
 {
 
     Axon ax = Axon(axon_id, Q, D, radius_for_axon, beading_variation, has_myelin, angle_, outside_voxel); // axons for regrow batch
-    
+
     if (has_myelin) {
         double inner_radius = findInnerRadius(radius_for_axon);
         ax.inner_radius = inner_radius;
@@ -2042,6 +2042,7 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stu
         }
         else {
             //cout <<"finished = 1" << endl;
+            cout <<"discarded axon " << axon_to_grow.id << " with radius " << axon_to_grow.radius << endl;
             // Axon is empty => it was discarded or destroyed
             finished = 1;
         }
@@ -2057,6 +2058,23 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stu
         stuck_radius = axon_to_grow.radius;
         stuck_index = axon_to_grow.id;
         //ind_axons_pushed = {};
+    }
+    if (finished == 1 && !axon_to_grow.outer_spheres.empty()){
+        Sphere last_sphere = axon_to_grow.outer_spheres.back();
+        if (!(last_sphere.center[axon_to_grow.growth_axis] + last_sphere.radius > max_limits[axon_to_grow.growth_axis])) {
+            cout << " not close to target limits, axon " << axon_to_grow.id << " is finished" << endl;
+            cout <<"axon_to_grow.growth_axis : " << axon_to_grow.growth_axis << endl;
+            assert(0);
+        }
+        if (axon_to_grow.outer_spheres.size() < 10){
+            cout << "Axon " << axon_to_grow.id << " has too few spheres: " << axon_to_grow.outer_spheres.size() << endl;
+            cout <<"growth axis : " << axon_to_grow.growth_axis << endl;
+            cout << "starting point : (" << axon_to_grow.begin[0] << ", " << axon_to_grow.begin[1] << ", " << axon_to_grow.begin[2] << ")" << endl;
+            int i;
+            double maxVal = axon_to_grow.begin.cwiseAbs().minCoeff(&i);
+            cout << " growth axis should be : " << i << endl;
+            assert(0);
+        }
     }
     /*
     else{

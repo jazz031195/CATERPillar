@@ -113,6 +113,8 @@ void Axon::add_sphere(const Sphere &sphere_to_add){
 
         this->begin = sphere_to_add.center;
 
+        double maxVal = begin.cwiseAbs().minCoeff(&this->growth_axis);
+
     }
     else{
 

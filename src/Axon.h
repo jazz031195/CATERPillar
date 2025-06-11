@@ -65,8 +65,7 @@ public:
         phase_shift = abs((double)rand() / (RAND_MAX + 1.0))/2;
         volume = 0.0;
         volume_myelin = 0.0;
-        Eigen::Vector3d growth_direction = end-begin;
-        double maxValue = growth_direction.maxCoeff(&growth_axis);
+        double maxVal = begin.cwiseAbs().minCoeff(&this->growth_axis); // gives growth_axis the position of the maximum value
         angle = angle_;
         outside_voxel = outside_voxel_;
 

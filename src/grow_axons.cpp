@@ -188,6 +188,9 @@ Eigen::Vector3d AxonGrowth::find_next_center_straight(const double distance, con
 
 bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_straight, const int &factor)
 {
+
+    double maxVal = axon_to_grow.begin.cwiseAbs().minCoeff(&axon_to_grow.growth_axis);
+
     // Basic validation
     if (axon_to_grow.outer_spheres.empty()) {
         std::cerr << "EMPTY AXON!" << std::endl;
@@ -208,6 +211,7 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
     Sphere last_sphere = axon_to_grow.outer_spheres.back();
     if (last_sphere.center[axon_to_grow.growth_axis] >= extended_max_limits[axon_to_grow.growth_axis] && !is_allowed_to_stop_early) {
         finished = true;
+
         return true; // Axon is done
     }
     else if (!check_borders(min_limits, max_limits, last_sphere.center, last_sphere.radius) && is_allowed_to_stop_early) {
@@ -313,9 +317,11 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
     Sphere current_last = axon_to_grow.outer_spheres.back();
     
     if (current_last.center[axon_to_grow.growth_axis] + current_last.radius > extended_max_limits[axon_to_grow.growth_axis]) {
+
         finished = true;
     }
     else if (!check_borders(min_limits, max_limits, current_last.center, current_last.radius) && is_allowed_to_stop_early) {
+
         finished = true;
     }
     return true;
