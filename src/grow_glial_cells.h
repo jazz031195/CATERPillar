@@ -44,7 +44,9 @@ class GlialCellGrowth : public CellGrowth
         bool collideswithOtherBranches(Sphere &sph);
         void find_next_center_straight(double distance, Sphere &s, const std::vector<Sphere> &spheres);
         void find_next_center(Sphere &s,  double dist_, const std::vector<Sphere> &spheres, const Eigen::Vector3d &target);
-
+        bool canSpherebePlaced(Sphere &sph);
+        Eigen::Vector3d readapt_sphere_position(const Sphere &s, const Axon &neighbour_axon, bool can_readapt);
+        bool checkAxonsOverlap(Sphere &sph);
 
 };
 

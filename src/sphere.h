@@ -89,7 +89,7 @@ public:
      */
     bool CollideswithSphere(const Sphere &sphere_,const double &distance_to_be_inside) const;
     
-    void getPointOnSphereSurface(Eigen::Vector3d &point, Eigen::Vector3d &vector, const Eigen::Vector3d &vector2) const;
+    void getPointOnSphereSurface(Eigen::Vector3d &point, Eigen::Vector3d &vector, const Eigen::Vector3d &vector2, const bool& primary_process) const;
 
     Eigen::Vector3d getNormalOnSpherePoint(Eigen::Vector3d point);
 

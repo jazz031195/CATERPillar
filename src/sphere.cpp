@@ -42,7 +42,7 @@ bool Sphere::CollideswithSphere(const Sphere &sphere_,const double &distance_to_
 }
 
 
-void Sphere::getPointOnSphereSurface(Eigen::Vector3d &point, Eigen::Vector3d &vector, const Eigen::Vector3d &vector2) const {
+void Sphere::getPointOnSphereSurface(Eigen::Vector3d &point, Eigen::Vector3d &vector, const Eigen::Vector3d &vector2, const bool& primary_process) const {
     // random device
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -63,7 +63,7 @@ void Sphere::getPointOnSphereSurface(Eigen::Vector3d &point, Eigen::Vector3d &ve
         vector.normalize();  // Ensure vector is unit length
         point = this->center + (this->radius * vector);  // Scale by the radius to get point on surface
 
-        if (vector2 != Eigen::Vector3d {0.0, 0.0, 0.0}) {
+        if (!primary_process) {
             double angle = acos(vector.dot(vector2));
             // Check if the angle is <= pi / 2
             if (angle <= M_PI / 4.0) {

@@ -107,6 +107,8 @@ void Glial::update_Box(){
 bool Glial::isNearGlialCell(const Eigen::Vector3d &position, const double &distance_to_be_inside) const{
     
     if (Box.empty()){
+        cerr << "Error: Box is empty. Cannot check proximity to glial cell." << endl;
+        assert(0);
         return false;
     }
     if ((position[0] >=  Box[0][0]- distance_to_be_inside)  && (position[0] <= Box[0][1] + distance_to_be_inside)){
@@ -119,16 +121,17 @@ bool Glial::isNearGlialCell(const Eigen::Vector3d &position, const double &dista
 
 bool Glial::collides_with_GlialCell(const Sphere &sph) const{
 
-    if (isNearGlialCell(sph.center, 2*sph.radius+barrier_tickness)){
-        if (sph.object_type != 1 || (sph.object_id != id)){
-            if (soma.CollideswithSphere(sph, barrier_tickness)) // overlap
-            {
-                return true;
-            } 
+    if (sph.object_type == 1 && sph.object_id == this->id){
+        return false; // do not collide with itself
+    }  
+    else if (soma.CollideswithSphere(sph, barrier_tickness)) // overlap
+    {
+        return true;
+    } 
+    else{
+        return false; // no overlap
+    } 
 
-        }
-    }
-    return false;
 }
 
 void Glial::compute_processes_icvf(const int &factor) {

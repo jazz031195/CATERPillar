@@ -286,7 +286,7 @@ public:
     void growFirstPrimaryBranches(Glial &glial_cell, const int &number_ramification_points, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
 
 
-    bool growSecondaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
+    bool growSecondaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &mean_primary_process_length, const double &std_process_length);
 
     /*!
      *  \brief Add myelin sheath by creating an inner_axonal membrane
@@ -347,7 +347,7 @@ public:
 
     double findInnerRadius(const double &outerRadius);
 
-    bool growPrimaryBranch(Glial &glial_cell, const int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
+    bool growPrimaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
 
     double RandomradiusVariation(const Axon &axon);
 
@@ -357,7 +357,7 @@ public:
     
     void process_point(const Eigen::Vector3d &point, const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos, int &axons_count, int &inner_axons_count, int &glial_pop1_somas_count, int &glial_pop1_process_count, int &oligos_somas_count, int &oligos_process_count, int &extracellular_count);
     std::vector<Sphere> addIntermediateSpheres(const Sphere &random_sphere, const Sphere &first_sphere, const int &branch_nbr, const int &nbr_spheres, const int &nbr_spheres_between);
-    bool GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::Vector3d &attractor, const double &radius, const Sphere &sphere_to_emerge_from, const Eigen::Vector3d &vector_to_prev_center, const int &nbr_spheres, const int &nbr_spheres_between, const int &cell_id, const int &branch_id);
+    bool GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::Vector3d &attractor, const double &radius, const Sphere &sphere_to_emerge_from, const Eigen::Vector3d &vector_to_prev_center, const int &nbr_spheres, const int &nbr_spheres_between, const int &cell_id, const int &branch_id, const bool &primary_process);
     double draw_angle(double kappa);
     double c2toKappa(double c2, double tol, double kappa_min, double kappa_max);
     std::vector<double> generate_angles(const int &num_samples);

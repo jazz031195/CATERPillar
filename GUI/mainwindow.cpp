@@ -230,7 +230,7 @@ QGroupBox* Window::createControls(const QString &title)
 
     beta_SpinBox = new QDoubleSpinBox;
     beta_SpinBox->setRange(0, 10);
-    beta_SpinBox->setSingleStep(0.1);
+    beta_SpinBox->setSingleStep(0.001);
     beta_SpinBox->setValue(0.25);
 
     epsilon_SpinBox = new QDoubleSpinBox;
@@ -241,12 +241,12 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop1_mean_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop1_mean_process_length_SpinBox->setRange(0, 100);
     glial_pop1_mean_process_length_SpinBox->setSingleStep(1);
-    glial_pop1_mean_process_length_SpinBox->setValue(15);
+    glial_pop1_mean_process_length_SpinBox->setValue(0);
 
     glial_pop2_mean_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop2_mean_process_length_SpinBox->setRange(0, 100);
     glial_pop2_mean_process_length_SpinBox->setSingleStep(1);
-    glial_pop2_mean_process_length_SpinBox->setValue(15);
+    glial_pop2_mean_process_length_SpinBox->setValue(0);
 
     glial_pop1_mean_primary_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop1_mean_primary_process_length_SpinBox->setRange(0, 100);
@@ -261,22 +261,22 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop1_std_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop1_std_process_length_SpinBox->setRange(0, 100);
     glial_pop1_std_process_length_SpinBox->setSingleStep(1);
-    glial_pop1_std_process_length_SpinBox->setValue(5);
+    glial_pop1_std_process_length_SpinBox->setValue(15);
 
     glial_pop1_std_primary_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop1_std_primary_process_length_SpinBox->setRange(0, 100);
     glial_pop1_std_primary_process_length_SpinBox->setSingleStep(1);
-    glial_pop1_std_primary_process_length_SpinBox->setValue(5);
+    glial_pop1_std_primary_process_length_SpinBox->setValue(15);
 
     glial_pop2_std_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop2_std_process_length_SpinBox->setRange(0, 100);
     glial_pop2_std_process_length_SpinBox->setSingleStep(1);
-    glial_pop2_std_process_length_SpinBox->setValue(5);
+    glial_pop2_std_process_length_SpinBox->setValue(15);
 
     glial_pop2_std_primary_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop2_std_primary_process_length_SpinBox->setRange(0, 100);
     glial_pop2_std_primary_process_length_SpinBox->setSingleStep(1);
-    glial_pop2_std_primary_process_length_SpinBox->setValue(5);
+    glial_pop2_std_primary_process_length_SpinBox->setValue(15);
 
     glial_pop1_nbr_primary_processes_SpinBox = new QDoubleSpinBox;
     glial_pop1_nbr_primary_processes_SpinBox->setRange(1, 20);

@@ -123,15 +123,15 @@ bool AxonGrowth::checkAxonsOverlap(Sphere &sph){
         for (const auto& axon : axons) {
             if (!(axon.id == sph.object_id && sph.object_type == 0)) {
                 if (axon.isSphereInsideAxon(sph)) {
-                    bool can_readapt = false;
-                    Eigen::Vector3d new_center = readapt_sphere_position(sph, axon, can_readapt);
-                    if (can_readapt) {
-                        sph.center = new_center;
-                        moved = true;  // we moved, need to recheck all
-                        break;         // break to restart loop from beginning
-                    } else {
-                        return false;  // can't resolve
-                    }
+                    // bool can_readapt = false;
+                    //Eigen::Vector3d new_center = readapt_sphere_position(sph, axon, can_readapt);
+                    //if (can_readapt) {
+                    //    sph.center = new_center;
+                    //    moved = true;  // we moved, need to recheck all
+                    //    break;         // break to restart loop from beginning
+                    //} else {
+                    return false;  // can't resolve
+                    //}
                 }
             }
         }
@@ -156,22 +156,8 @@ bool AxonGrowth::canSpherebePlaced(Sphere &sph){
     // check collision other glial cells 
     for (auto &glial : glial_cells)
     {
-        if (sph.object_type == 0 || (sph.object_type != 0 && sph.object_id != glial.id) ){
-            if (glial.isNearGlialCell(sph.center, 2*sph.radius+1e-6)){
-                if (glial.collides_with_GlialCell(sph)){
-                    return false;
-                }
-                // check with branches of other glial cells
-                for (long unsigned int i = 0; i < glial.ramification_spheres.size(); i++){
-                    std::vector<Sphere> branch = glial.ramification_spheres[i];
-                    for (long unsigned int k = 0; k < branch.size(); k++){
-                        Sphere sph_ = branch[k];
-                        if (sph_.CollideswithSphere(sph, barrier_tickness)){
-                            return false;
-                        }
-                    }
-                }
-            }
+        if (glial.soma.CollideswithSphere(sph, barrier_tickness)){
+            return false; // collides with soma
         }
     }
 
@@ -414,17 +400,18 @@ Eigen::Vector3d AxonGrowth::find_next_center(const Sphere &s, const double dist_
         generate_random_point_on_sphere(std_dev), target_direction
     );
 
-    Eigen::Vector3d neighbor_vector = find_closest_neighbour(spheres.back());
-    bool has_valid_neighbor = neighbor_vector.norm() > 1e-6;
+    //Eigen::Vector3d neighbor_vector = find_closest_neighbour(spheres.back());
+    //bool has_valid_neighbor = neighbor_vector.norm() > 1e-6;
 
-    Eigen::Vector3d combined_vector;
-    if (has_valid_neighbor) {
+    //Eigen::Vector3d combined_vector;
+    //if (has_valid_neighbor) {
         // Adjust weighting explicitly: stronger attraction to target
-        combined_vector = (0.9 * biased_random_vector + 0.1 * neighbor_vector.normalized()).normalized();
-    } else {
-        combined_vector = biased_random_vector.normalized();
-    }
-
+    //    combined_vector = (0.9 * biased_random_vector + 0.1 * neighbor_vector.normalized()).normalized();
+    //} else {
+    //    combined_vector = biased_random_vector.normalized();
+    //}
+    Eigen::Vector3d combined_vector = biased_random_vector.normalized();
+    
     if (spheres.size() > 2) {
         Eigen::Vector3d previous_vector = (last_center - spheres[spheres.size() - 2].center).normalized();
         double cos_angle = previous_vector.dot(combined_vector.normalized());
@@ -432,26 +419,30 @@ Eigen::Vector3d AxonGrowth::find_next_center(const Sphere &s, const double dist_
 
         double angle = acos(cos_angle);
         int nbr_tries = 0;
-
-        while(angle > M_PI / 4 && nbr_tries < 10) {
+        double angle_limit = M_PI / 2; 
+        
+        while(angle > angle_limit && nbr_tries < 10) {
             biased_random_vector = apply_bias_toward_target(
                 generate_random_point_on_sphere(std_dev), target_direction
             );
-            if (has_valid_neighbor) {
-                combined_vector = (0.9 * biased_random_vector + 0.1 * neighbor_vector.normalized()).normalized();
-            } else {
-                combined_vector = biased_random_vector.normalized();
-            }
+            //if (has_valid_neighbor) {
+            //    combined_vector = (0.9 * biased_random_vector + 0.1 * neighbor_vector.normalized()).normalized();
+            //} else {
+            combined_vector = biased_random_vector.normalized();
+            //}
             cos_angle = previous_vector.dot(combined_vector.normalized());
             cos_angle = std::max(-1.0, std::min(1.0, cos_angle)); // clamp to [-1, 1]
             angle = acos(cos_angle);
             nbr_tries += 1;
         }
-
-        if (angle > M_PI / 4) {
+        
+        if (angle > angle_limit) {
             combined_vector = previous_vector;
         }
+        
+        
     }
+    
 
     return last_center + dist_ * combined_vector;
 }
