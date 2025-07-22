@@ -45,13 +45,13 @@ $$
 \text{Myelin thickness} = K_1 + K_2 \cdot D_\text{in} + K_3 \cdot \log(D_\text{in})
 $$
 
-This log-linear fit was proposed by Lee et al. (DOI : 10.1007/s00429-019-01844-6) with $$K_1$$ = 0.35, $$K_2$$ = 0.006 and $$K_3$$ = 0.024. 
+   With $$D_\text{in}$$ being the inner diameter. This log-linear fit was proposed by Lee et al. (DOI : 10.1007/s00429-019-01844-6) with $$K_1$$ = 0.35, $$K_2$$ = 0.006 and $$K_3$$ = 0.024. 
 - **Axons ICVF (%):** Specifies the volume fraction of non-myelinated axons within the voxel.
 - **Number of Threads:** Determines the number of axons that can grow simultaneously during the simulation, impacting computational efficiency.
 - **ε (Tortuosity):** Represents the standard deviation of the Gaussian distribution governing the 3D positioning of spheres during axonal growth. Higher values result in increased axonal tortuosity.
 - **c₂ (Fibre Orientation Dispersion Function - fODF):** Defined as ⟨cos²ψ⟩, where ψ is the angle between the axon growth direction and the z-axis. This parameter quantifies the degree of fibre orientation dispersion within the substrate.
 - **Number of Axon Populations:** Specifies the number of distinct axonal populations that can grow within the substrate, with a range of 1-3. Each population adopts a primary orientation perpendicular to the others. If two populations are selected, users can choose between a **sheet configuration** or an **interwoven configuration**.
-- **Beading Amplitude:** Defines the amplitude of axonal beading as a fraction of the axon's initial radius, influencing morphological variability.
+- **Beading Amplitude:** Defines the amplitude of axonal beading as a fraction of the axon's initial radius, influencing morphological variability. The radius of an axon change with its length in a stochastic manner. In brief, this means that the radius of the next sphere to place in the chain will be drawn from a normal distribution with the mean place at the previous radius. If this previous radius is above $$R + A \cdot R$$, then the normal distribution will be centred at $$R + A \cdot R$$. $$R$$ is the initial radius attributed to the axon, and A is the beading amplitude. 
 - **Gamma Distribution for Radii (α):** Shape parameter for the Gamma distribution governing axon radii. A recommended value for realistic axon widths is **4**.
 - **Gamma Distribution for Radii (β):** Scale parameter for the Gamma distribution governing axon radii. A recommended value for realistic axon widths is **0.25**.
 
