@@ -75,7 +75,6 @@ public:
     Eigen::Vector3d min_limits;         /*!< Voxel min limits (if any) (bottom left corner) */
     Eigen::Vector3d max_limits;         /*!< Voxel max limits (if any) */
 
-
     double min_radius;                  /*!< Minimum radius value of all axons */
     double max_radius;                  /*!< Maximum radius value of all axons */
 
@@ -84,17 +83,10 @@ public:
     int ondulation_factor;              /*!< axon ondulation factor : the number of spheres during whoch the axon grows straight before picking a direction from gaussian distribution  */
     double mean_glial_pop1_process_length;   /*!< Mean length of glial processes */
     double std_glial_pop1_process_length;    /*!< Standard deviation of glial processes */
-    double mean_glial_pop1_primary_process_length;   /*!< Mean length of glial primary processes */
-    double std_glial_pop1_primary_process_length;    /*!< Standard deviation of glial primary processes */
     int nbr_primary_processes_pop1;          /*!< Number of primary processes for glial cells */
     double mean_glial_pop2_process_length;   /*!< Mean length of glial processes */
     double std_glial_pop2_process_length;    /*!< Standard deviation of glial processes */
-    double mean_glial_pop2_primary_process_length;   /*!< Mean length of glial primary processes */
-    double std_glial_pop2_primary_process_length;    /*!< Standard deviation of glial primary processes */
     int nbr_primary_processes_pop2;          /*!< Number of primary processes for glial cells */
-
-    int max_nbr_process_pop1;         /*!< Maximum number of processes for glial cells */
-    int max_nbr_process_pop2;        /*!< Maximum number of processes for glial cells */ 
 
     double c1;                              /*!< First coefficient of the Myelin thickness */
     double c2;                              /*!< Second coefficient of the Myelin thickness */
@@ -121,7 +113,7 @@ public:
                                               const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
                                               const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
                                               const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_,
-                                              const double &c1_, const double &c2_, const double &c3_, const double &mean_glial_pop1_primary_process_length_, const double &std_glial_pop1_primary_process_length_, const double &mean_glial_pop2_primary_process_length_, const double &std_glial_pop2_primary_process_length_, const double &max_nbr_process_pop1_, const double &max_nbr_process_pop2_);
+                                              const double &c1_, const double &c2_, const double &c3_);
     
     
     /*!
@@ -286,7 +278,7 @@ public:
     void growFirstPrimaryBranches(Glial &glial_cell, const int &number_ramification_points, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
 
 
-    bool growSecondaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &mean_primary_process_length, const double &std_process_length);
+    bool growSecondaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
 
     /*!
      *  \brief Add myelin sheath by creating an inner_axonal membrane
@@ -367,7 +359,7 @@ public:
     double originalFunction(const double &x, const double &outerRadius);
     double derivative(const double &x);
     double myelin_thickness(const double &inner_radius);
-    void ThreadGrowthGlialCells(std::vector<Glial>& glial_cell_list, const double &mean_process_length, const double &std_process_length,const double &mean_primary_process_length, const double &std_primary_process_length, std::vector<int> &nbr_spheres, const int &max_nbr_processes);
+    void ThreadGrowthGlialCells(std::vector<Glial>& glial_cell_list, const double &mean_process_length, const double &std_process_length, std::vector<int> &nbr_spheres, const int &max_nbr_processes);
 };
 
 

@@ -46,7 +46,7 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
                                               const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
                                               const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
                                               const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_,
-                                              const double &c1_, const double &c2_, const double &c3_, const double &mean_glial_pop1_primary_process_length_, const double &std_glial_pop1_primary_process_length_, const double &mean_glial_pop2_primary_process_length_, const double &std_glial_pop2_primary_process_length_, const double &max_nbr_process_pop1_, const double &max_nbr_process_pop2_)
+                                              const double &c1_, const double &c2_, const double &c3_)
 {
     
     target_axons_wo_myelin_icvf = axons_wo_myelin_icvf_;
@@ -104,14 +104,6 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
     std_glial_pop1_process_length = std_glial_pop1_process_length_;
     mean_glial_pop2_process_length = mean_glial_pop2_process_length_;
     std_glial_pop2_process_length = std_glial_pop2_process_length_;
-
-    max_nbr_process_pop1 = max_nbr_process_pop1_;
-    max_nbr_process_pop2 = max_nbr_process_pop2_;
-    mean_glial_pop1_primary_process_length = mean_glial_pop1_primary_process_length_;
-    std_glial_pop1_primary_process_length = std_glial_pop1_primary_process_length_;
-    mean_glial_pop2_primary_process_length = mean_glial_pop2_primary_process_length_;
-    std_glial_pop2_primary_process_length = std_glial_pop2_primary_process_length_;
-
 
     c1 = c1_;
     c2 = c2_;
@@ -185,7 +177,7 @@ std::vector<Sphere> AxonGammaDistribution::addIntermediateSpheres(const Sphere &
     return intermediate_spheres;
 }
 
-bool AxonGammaDistribution::growSecondaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &mean_primary_process_length, const double &std_process_length) {
+bool AxonGammaDistribution::growSecondaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &std_process_length) {
 
     //cout << "Growing seondary branch for glial cell : "<<  glial_cell.id<< endl;
     if (glial_cell.ramification_spheres.empty()) {
@@ -226,7 +218,7 @@ bool AxonGammaDistribution::growSecondaryBranch(Glial &glial_cell, int &nbr_sphe
     std::random_device rd;
     std::mt19937 generator(rd());
 
-    std::normal_distribution<double> length_dist(mean_process_length + mean_primary_process_length - old_length, std_process_length);
+    std::normal_distribution<double> length_dist(mean_process_length - old_length, std_process_length);
     double length_to_grow = length_dist(generator);
 
     int count = 0;
@@ -1462,7 +1454,7 @@ void AxonGammaDistribution::GrowAllGlialCells() {
     }
 }
 
-void AxonGammaDistribution::ThreadGrowthGlialCells(std::vector<Glial>& glial_cell_list, const double &mean_process_length, const double &std_process_length,const double &mean_primary_process_length, const double &std_primary_process_length, std::vector<int> &nbr_spheres, const int &max_nbr_processes) {
+void AxonGammaDistribution::ThreadGrowthGlialCells(std::vector<Glial>& glial_cell_list, const double &mean_process_length, const double &std_process_length, std::vector<int> &nbr_spheres, const int &max_nbr_processes) {
     
     //ThreadPool pool(nbr_threads);
     //std::vector<std::future<void>> futures; // Store futures for synchronization
@@ -1477,7 +1469,7 @@ void AxonGammaDistribution::ThreadGrowthGlialCells(std::vector<Glial>& glial_cel
             //    }
             //));
             //cout <<"growing secondary branch for glial cell " << glial_cell_list[i].id << endl;
-            growSecondaryBranch(glial_cell_list[i], nbr_spheres[i], mean_process_length, mean_primary_process_length, std_process_length);
+            growSecondaryBranch(glial_cell_list[i], nbr_spheres[i], mean_process_length, std_process_length);
         }
         //else if (glial_cell_list[i].ramification_spheres.size() < max_nbr_processes){
         else{
@@ -1487,7 +1479,7 @@ void AxonGammaDistribution::ThreadGrowthGlialCells(std::vector<Glial>& glial_cel
             //    }
             //));
             //cout <<"growing primary branch for glial cell " << glial_cell_list[i].id << endl;
-            growPrimaryBranch(glial_cell_list[i], nbr_spheres[i], mean_primary_process_length, std_primary_process_length);
+            growPrimaryBranch(glial_cell_list[i], nbr_spheres[i], mean_process_length, std_process_length);
         }
     }
     /*
@@ -1550,9 +1542,6 @@ void AxonGammaDistribution::growBranches(std::vector<Glial>& glial_cell_list, co
         nbr_primary_processes = nbr_primary_processes_pop1;
         mean_process_length = mean_glial_pop1_process_length;
         std_process_length = std_glial_pop1_process_length;
-        mean_primary_process_length = mean_glial_pop1_primary_process_length;
-        std_primary_process_length = std_glial_pop1_primary_process_length;
-        max_nbr_processes = max_nbr_process_pop1;
     }
     else if (population_nbr == 2){
         current_branches_icvf = glial_pop2_branches_icvf;
@@ -1560,9 +1549,6 @@ void AxonGammaDistribution::growBranches(std::vector<Glial>& glial_cell_list, co
         nbr_primary_processes = nbr_primary_processes_pop2;
         mean_process_length = mean_glial_pop2_process_length;
         std_process_length = std_glial_pop2_process_length;
-        mean_primary_process_length = mean_glial_pop2_primary_process_length;
-        std_primary_process_length = std_glial_pop2_primary_process_length;
-        max_nbr_processes = max_nbr_process_pop2;
     }
 
     if (target_branches_icvf == 0.0){
@@ -1577,7 +1563,7 @@ void AxonGammaDistribution::growBranches(std::vector<Glial>& glial_cell_list, co
         cout << "Growing first primary branches for glial cells" << endl;
         for (int i = 0; i < glial_cell_list.size(); i++) 
         {
-            growFirstPrimaryBranches(glial_cell_list[i], nbr_primary_processes, nbr_spheres[i], mean_primary_process_length, std_primary_process_length);
+            growFirstPrimaryBranches(glial_cell_list[i], nbr_primary_processes, nbr_spheres[i], mean_process_length, std_process_length);
             glial_cell_list[i].compute_processes_icvf(factor);
         }
     }
@@ -1604,7 +1590,7 @@ void AxonGammaDistribution::growBranches(std::vector<Glial>& glial_cell_list, co
     
     while (current_branches_icvf < target_branches_icvf) {
         cout <<"grow" << endl;
-        ThreadGrowthGlialCells(glial_cell_list, mean_process_length, std_process_length, mean_primary_process_length, std_primary_process_length, nbr_spheres, max_nbr_processes);
+        ThreadGrowthGlialCells(glial_cell_list, mean_process_length, std_process_length, nbr_spheres, max_nbr_processes);
 
         if (nbr_tries%10 == 0 && nbr_tries >0) {
             // Recompute processes and update ICVF for all glial_pop1 in parallel

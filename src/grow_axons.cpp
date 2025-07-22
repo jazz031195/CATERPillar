@@ -182,7 +182,6 @@ Eigen::Vector3d AxonGrowth::find_next_center_straight(const double distance, con
     straight_vector *= distance;
     Eigen::Vector3d new_center = last_center + straight_vector;
     return new_center;
-
 }
 
 

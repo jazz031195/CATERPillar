@@ -26,7 +26,7 @@ To run CATERPillar, follow these steps:
    ./Caterpillar
    ```
 
-This will launch the graphical user interface, allowing users to configure parameters and generate realistic numerical substrates for simulations.
+This will launch the graphical user interface, allowing users to configure parameters and generate realistic numerical substrates for simulations. To generate a new numerical substrate, press on the "Grow Substrate" button. If you wish to visualise a substrate already grown, press on the "Visualise Substrate" button. 
 
 
 ## **List of Parameters**
@@ -39,6 +39,13 @@ This will launch the graphical user interface, allowing users to configure param
    
 ### **Axon Parameters:**
 - **Axons with Myelin ICVF (%):** Defines the volume fraction occupied by myelinated axons, including the myelin compartment. The g-ratio for each axon is assigned based on a log-linear relationship between the inner radius and the g-ratio.
+- **$$K_1$$, $$K_2$$ and $$K_3$$ parameters :** This is to define the relationship between the inner diameter of the axons and the myelin thickness : 
+
+$$
+\text{Myelin thickness} = K_1 + K_2 \cdot D_\text{in} + K_3 \cdot \log(D_\text{in})
+$$
+
+This log-linear fit was proposed by Lee et al. (DOI : 10.1007/s00429-019-01844-6) with $$K_1$$ = 0.35, $$K_2$$ = 0.006 and $$K_3$$ = 0.024. 
 - **Axons ICVF (%):** Specifies the volume fraction of non-myelinated axons within the voxel.
 - **Number of Threads:** Determines the number of axons that can grow simultaneously during the simulation, impacting computational efficiency.
 - **ε (Tortuosity):** Represents the standard deviation of the Gaussian distribution governing the 3D positioning of spheres during axonal growth. Higher values result in increased axonal tortuosity.
@@ -49,13 +56,19 @@ This will launch the graphical user interface, allowing users to configure param
 - **Gamma Distribution for Radii (β):** Scale parameter for the Gamma distribution governing axon radii. A recommended value for realistic axon widths is **0.25**.
 
 ### **Glial Cell Parameters:**
-- **Astrocyte Somas ICVF (%):** Defines the volume fraction occupied by astrocyte somas within the substrate.
-- **Astrocyte Processes ICVF (%):** Specifies the volume fraction of astrocyte processes, contributing to the extracellular microstructure.
-- **Oligodendrocyte Somas ICVF (%):** Defines the volume fraction occupied by oligodendrocyte somas.
-- **Oligodendrocyte Processes ICVF (%):** Specifies the volume fraction of oligodendrocyte processes.
-- **Mean Process Length (μm):** Represents the average length of astrocyte and oligodendrocyte processes within the substrate.
-- **Standard Deviation for Process Length (μm):** Defines the variability in process lengths for both astrocytes and oligodendrocytes, contributing to the heterogeneity of the substrate.
+- **Somas ICVF (%):** Defines the volume fraction occupied by astrocyte somas within the substrate.
+- **Processes ICVF (%):** Specifies the volume fraction of astrocyte processes, contributing to the extracellular microstructure.
+- **Soma radius mean (μm):** Mean radius of the somas. The soma for each glial cell is drawn from a normal distribution with this value as a mean.
+- **Soma radius standard deviation (μm):** Standard deviation for the radius of the somas. The soma for each glial cell is drawn from a normal distribution with this value as a standard deviation.
+- **Mean Process Length (μm):** Represents the average length of processes within the substrate. THis length starts from the soma and ends at the tip of the process. Secondary process, that branch from primary ones, will have a shorter length because we take into account the distance already grown before the bifurcation.
+- **Standard Deviation for Process Length (μm):** Defines the variability in process lengths, contributing to the heterogeneity of the substrate.
 
+- **Number of primary processes:** Number of processes that emerge directly from soma. 
+
+- **Can glial cell population have branching:** If this box is ticked, the glial cell can have hogher order processes. If not, only primary processes will be present. If the volume fraction for processes cannot be reached with the number of primaary processes selected, more of them will grow. 
+
+
+Two different populations of glial cells can co-exist in a voxel. So, two boxes are present with all of these parameters. 
 ## **Output**
 
 Once the simulation is complete, the **GUI** will display the generated substrate, allowing users to visually inspect the microstructure. Additionally, the GUI provides options to plot:

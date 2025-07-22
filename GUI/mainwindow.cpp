@@ -22,6 +22,7 @@
 Window::Window(QWidget *parent)
     : QWidget(parent)
 {
+
         // Inside your Window constructor or init function
     QVBoxLayout *startupLayout = new QVBoxLayout;
 
@@ -46,11 +47,13 @@ Window::Window(QWidget *parent)
     QWidget *startupWidget = new QWidget;
     startupWidget->setLayout(startupLayout);
 
+
     QWidget *mainWidget = new QWidget;
     QVBoxLayout *mainLayout = new QVBoxLayout(mainWidget);
 
     // Your parameter group
     controlsGroup = createControls(tr("Parameters"));
+
     mainLayout->addWidget(controlsGroup);
 
     // OK and Select Directory buttons
@@ -71,6 +74,7 @@ Window::Window(QWidget *parent)
     connect(growButton, &QPushButton::clicked, [stack]() {
         stack->setCurrentIndex(1); // Show parameters layout
     });
+
 
     connect(visualiseButton, &QPushButton::clicked, this, &Window::SelectSWCFileButton);
 
@@ -202,12 +206,6 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop2_nbr_primary_processes_qlabel = new QLabel(tr("Number of Primary Processes:"));
     glial_pop1_branching_qlabel = new QLabel(tr("Can Glial Cell Population have branching ? "));
     glial_pop2_branching_qlabel = new QLabel(tr("Can Glial Cell Population have branching ? "));
-    glial_pop1_mean_primary_process_length_qlabel = new QLabel(tr("Mean Primary Process Length (μm):"));
-    glial_pop1_std_primary_process_length_qlabel = new QLabel(tr("Standard Deviation Primary Process Length (μm):"));
-    glial_pop2_mean_primary_process_length_qlabel = new QLabel(tr("Mean Primary Process Length (μm):"));
-    glial_pop2_std_primary_process_length_qlabel = new QLabel(tr("Standard Deviation Primary Process Length (μm):"));
-    max_nbr_process_pop1_qlabel = new QLabel(tr("Max Number of Processes:"));
-    max_nbr_process_pop2_qlabel = new QLabel(tr("Max Number of Processes:"));
 
     visualise_voxel_checkbox = new QCheckBox;
     visualise_voxel_checkbox->setChecked(true);
@@ -243,40 +241,21 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop1_mean_process_length_SpinBox->setSingleStep(1);
     glial_pop1_mean_process_length_SpinBox->setValue(0);
 
-    glial_pop2_mean_process_length_SpinBox = new QDoubleSpinBox;
-    glial_pop2_mean_process_length_SpinBox->setRange(0, 100);
-    glial_pop2_mean_process_length_SpinBox->setSingleStep(1);
-    glial_pop2_mean_process_length_SpinBox->setValue(0);
-
-    glial_pop1_mean_primary_process_length_SpinBox = new QDoubleSpinBox;
-    glial_pop1_mean_primary_process_length_SpinBox->setRange(0, 100);
-    glial_pop1_mean_primary_process_length_SpinBox->setSingleStep(1);
-    glial_pop1_mean_primary_process_length_SpinBox->setValue(30);
-
-    glial_pop2_mean_primary_process_length_SpinBox = new QDoubleSpinBox;
-    glial_pop2_mean_primary_process_length_SpinBox->setRange(0, 100);
-    glial_pop2_mean_primary_process_length_SpinBox->setSingleStep(1);
-    glial_pop2_mean_primary_process_length_SpinBox->setValue(30);
-
     glial_pop1_std_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop1_std_process_length_SpinBox->setRange(0, 100);
     glial_pop1_std_process_length_SpinBox->setSingleStep(1);
     glial_pop1_std_process_length_SpinBox->setValue(15);
 
-    glial_pop1_std_primary_process_length_SpinBox = new QDoubleSpinBox;
-    glial_pop1_std_primary_process_length_SpinBox->setRange(0, 100);
-    glial_pop1_std_primary_process_length_SpinBox->setSingleStep(1);
-    glial_pop1_std_primary_process_length_SpinBox->setValue(15);
+    glial_pop2_mean_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop2_mean_process_length_SpinBox->setRange(0, 100);
+    glial_pop2_mean_process_length_SpinBox->setSingleStep(1);
+    glial_pop2_mean_process_length_SpinBox->setValue(0);
 
     glial_pop2_std_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop2_std_process_length_SpinBox->setRange(0, 100);
     glial_pop2_std_process_length_SpinBox->setSingleStep(1);
     glial_pop2_std_process_length_SpinBox->setValue(15);
 
-    glial_pop2_std_primary_process_length_SpinBox = new QDoubleSpinBox;
-    glial_pop2_std_primary_process_length_SpinBox->setRange(0, 100);
-    glial_pop2_std_primary_process_length_SpinBox->setSingleStep(1);
-    glial_pop2_std_primary_process_length_SpinBox->setValue(15);
 
     glial_pop1_nbr_primary_processes_SpinBox = new QDoubleSpinBox;
     glial_pop1_nbr_primary_processes_SpinBox->setRange(1, 20);
@@ -351,17 +330,6 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop2_radius_std_SpinBox->setSingleStep(0.1);
     glial_pop2_radius_std_SpinBox->setValue(0.5);
 
-    max_nbr_process_pop1_SpinBox = new QDoubleSpinBox;
-    max_nbr_process_pop1_SpinBox->setRange(1, 5000);
-    max_nbr_process_pop1_SpinBox->setSingleStep(10);
-    max_nbr_process_pop1_SpinBox->setValue(150);
-
-    max_nbr_process_pop2_SpinBox = new QDoubleSpinBox;
-    max_nbr_process_pop2_SpinBox->setRange(1, 5000);
-    max_nbr_process_pop2_SpinBox->setSingleStep(10);
-    max_nbr_process_pop2_SpinBox->setValue(150);
-
-    
     k1_SpinBox = new QDoubleSpinBox;
     k1_SpinBox->setRange(0, 10);
     k1_SpinBox->setSingleStep(0.05);
@@ -395,7 +363,6 @@ QGroupBox* Window::createControls(const QString &title)
     connect(nbr_axons_populations_SpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this, &Window::updateConfigurationSelectionVisibility);
 
-
     c2_SpinBox = new QDoubleSpinBox;
     c2_SpinBox->setRange(0, 1);
     c2_SpinBox->setSingleStep(0.05);
@@ -409,11 +376,11 @@ QGroupBox* Window::createControls(const QString &title)
     std::vector<QLabel*> axons_labels = {axons_w_myelin_icvf_qlabel, k1_qlabel, k2_qlabel, k3_qlabel, axons_icvf_qlabel ,nbr_threads_qlabel, epsilon_qlabel, c2_qlabel, nbr_axons_populations_qlabel, beading_amplitude_qlabel, alpha_qlabel, beta_qlabel};
     std::vector <QDoubleSpinBox*> axons_spinBoxes = {axons_w_myelin_icvf_SpinBox, k1_SpinBox, k2_SpinBox, k3_SpinBox, axons_icvf_SpinBox, nbr_threads_SpinBox, epsilon_SpinBox, c2_SpinBox, nbr_axons_populations_SpinBox, beading_amplitude_SpinBox, alpha_SpinBox, beta_SpinBox};
     
-    std::vector<QLabel*> glials_labels1 = {glial_pop1_soma_icvf_qlabel, glial_pop1_processes_icvf_qlabel, glial_pop1_radius_mean_qlabel, glial_pop1_radius_std_qlabel, glial_pop1_mean_process_length_qlabel, glial_pop1_std_process_length_qlabel, glial_pop1_nbr_primary_processes_qlabel, glial_pop1_mean_primary_process_length_qlabel, glial_pop1_std_primary_process_length_qlabel, max_nbr_process_pop1_qlabel};
-    std::vector <QDoubleSpinBox*> glials_spinBoxes1 = {glial_pop1_soma_icvf_SpinBox, glial_pop1_processes_icvf_SpinBox, glial_pop1_radius_mean_SpinBox, glial_pop1_radius_std_SpinBox, glial_pop1_mean_process_length_SpinBox, glial_pop1_std_process_length_SpinBox, glial_pop1_nbr_primary_processes_SpinBox, glial_pop1_mean_primary_process_length_SpinBox, glial_pop1_std_primary_process_length_SpinBox, max_nbr_process_pop1_SpinBox};
+    std::vector<QLabel*> glials_labels1 = {glial_pop1_soma_icvf_qlabel, glial_pop1_processes_icvf_qlabel, glial_pop1_radius_mean_qlabel, glial_pop1_radius_std_qlabel, glial_pop1_mean_process_length_qlabel, glial_pop1_std_process_length_qlabel, glial_pop1_nbr_primary_processes_qlabel};
+    std::vector <QDoubleSpinBox*> glials_spinBoxes1 = {glial_pop1_soma_icvf_SpinBox, glial_pop1_processes_icvf_SpinBox, glial_pop1_radius_mean_SpinBox, glial_pop1_radius_std_SpinBox, glial_pop1_mean_process_length_SpinBox, glial_pop1_std_process_length_SpinBox, glial_pop1_nbr_primary_processes_SpinBox};
     
-    std::vector<QLabel*> glials_labels2 = {glial_pop2_soma_icvf_qlabel, glial_pop2_processes_icvf_qlabel, glial_pop2_radius_mean_qlabel, glial_pop2_radius_std_qlabel, glial_pop2_mean_process_length_qlabel, glial_pop2_std_process_length_qlabel, glial_pop2_nbr_primary_processes_qlabel, glial_pop2_mean_primary_process_length_qlabel, glial_pop2_std_primary_process_length_qlabel, max_nbr_process_pop2_qlabel};
-    std::vector <QDoubleSpinBox*> glials_spinBoxes2 = {glial_pop2_soma_icvf_SpinBox, glial_pop2_processes_icvf_SpinBox, glial_pop2_radius_mean_SpinBox, glial_pop2_radius_std_SpinBox, glial_pop2_mean_process_length_SpinBox, glial_pop2_std_process_length_SpinBox, glial_pop2_nbr_primary_processes_SpinBox, glial_pop2_mean_primary_process_length_SpinBox, glial_pop2_std_primary_process_length_SpinBox, max_nbr_process_pop2_SpinBox};
+    std::vector<QLabel*> glials_labels2 = {glial_pop2_soma_icvf_qlabel, glial_pop2_processes_icvf_qlabel, glial_pop2_radius_mean_qlabel, glial_pop2_radius_std_qlabel, glial_pop2_mean_process_length_qlabel, glial_pop2_std_process_length_qlabel, glial_pop2_nbr_primary_processes_qlabel};
+    std::vector <QDoubleSpinBox*> glials_spinBoxes2 = {glial_pop2_soma_icvf_SpinBox, glial_pop2_processes_icvf_SpinBox, glial_pop2_radius_mean_SpinBox, glial_pop2_radius_std_SpinBox, glial_pop2_mean_process_length_SpinBox, glial_pop2_std_process_length_SpinBox, glial_pop2_nbr_primary_processes_SpinBox};
 
     
     QGridLayout *generalLayout = new QGridLayout;
@@ -479,8 +446,8 @@ QGroupBox* Window::createControls(const QString &title)
 
         glialLayout1->addWidget(glials_labels1[i], i, 0);
         glialLayout1->addWidget(glials_spinBoxes1[i], i, 1);
-        //cout << "Adding widgets at index " << i << endl;
     }
+
 
     glialLayout1->addWidget(glial_pop1_branching_qlabel, glials_labels1.size(), 0);
     glialLayout1->addWidget(glial_pop1_branching_checkbox, glials_labels1.size(), 1);
@@ -545,10 +512,6 @@ void Window::onSaveButtonClicked()
     glial_pop1_std_process_length = glial_pop1_std_process_length_SpinBox->value();
     glial_pop2_mean_process_length = glial_pop2_mean_process_length_SpinBox->value();
     glial_pop2_std_process_length = glial_pop2_std_process_length_SpinBox->value();
-    glial_pop1_mean_primary_process_length = glial_pop1_mean_primary_process_length_SpinBox->value();
-    glial_pop1_std_primary_process_length = glial_pop1_std_primary_process_length_SpinBox->value();
-    glial_pop2_mean_primary_process_length = glial_pop2_mean_primary_process_length_SpinBox->value();
-    glial_pop2_std_primary_process_length = glial_pop2_std_primary_process_length_SpinBox->value();
 
     epsilon = epsilon_SpinBox->value();
     minimum_radius = minimum_radius_SpinBox->value();
@@ -563,10 +526,6 @@ void Window::onSaveButtonClicked()
     glial_pop2_nbr_primary_processes = glial_pop2_nbr_primary_processes_SpinBox->value();
     glial_pop1_branching = glial_pop1_branching_checkbox->isChecked();
     glial_pop2_branching = glial_pop2_branching_checkbox->isChecked();
-
-    max_nbr_process_pop1 = max_nbr_process_pop1_SpinBox->value();
-    max_nbr_process_pop2 = max_nbr_process_pop2_SpinBox->value();
-
 
     // Close the parameter input dialog
     this->close();
@@ -785,12 +744,11 @@ void Window::StartSimulation(){
             Eigen::Vector3d max_l = {vox_size, vox_size, vox_size}; // um
 
             auto startTime = std::chrono::high_resolution_clock::now();
-            cout << "STARTING SIMULATION " << endl;
             // create distribution of axons
             AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, alpha, beta,
                                              min_l, max_l, min_radius, regrow_thr, beading_amplitude, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
                                               glial_pop1_mean_process_length, glial_pop1_std_process_length, glial_pop2_mean_process_length, glial_pop2_std_process_length,
-                                              glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, glial_pop1_nbr_primary_processes, glial_pop2_nbr_primary_processes, k1, k2, k3, glial_pop1_mean_primary_process_length, glial_pop1_std_primary_process_length, glial_pop2_mean_primary_process_length, glial_pop2_std_primary_process_length, max_nbr_process_pop1, max_nbr_process_pop2);
+                                              glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, glial_pop1_nbr_primary_processes, glial_pop2_nbr_primary_processes, k1, k2, k3);
             AxonDistribution.createSubstrate();
             // saving spheres
             for (unsigned i=0; i< AxonDistribution.axons.size(); ++i){
