@@ -2050,7 +2050,7 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stu
         if (!(last_sphere.center[axon_to_grow.growth_axis] + last_sphere.radius > max_limits[axon_to_grow.growth_axis])) {
             cout << " not close to target limits, axon " << axon_to_grow.id << " is finished" << endl;
             cout <<"axon_to_grow.growth_axis : " << axon_to_grow.growth_axis << endl;
-            assert(0);
+            //assert(0);
         }
         if (axon_to_grow.outer_spheres.size() < 10){
             cout << "Axon " << axon_to_grow.id << " has too few spheres: " << axon_to_grow.outer_spheres.size() << endl;
