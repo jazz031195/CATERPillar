@@ -187,9 +187,15 @@ Eigen::Vector3d AxonGrowth::find_next_center_straight(const double distance, con
 
 bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_straight, const int &factor)
 {
-    Eigen::Vector3d growth_direction = axon_to_grow.end - axon_to_grow.begin;
-    growth_direction = growth_direction.normalized();
-    double maxVal = growth_direction.cwiseAbs().maxCoeff(&axon_to_grow.growth_axis);
+
+    // adjust growth axis 
+    int i;
+    double maxVal = axon_to_grow.begin.cwiseAbs().minCoeff(&i);
+    if (i != axon_to_grow.growth_axis) {
+        axon_to_grow.growth_axis = i; // set growth axis to the one with the smallest absolute value
+        cout << "axon " << axon_to_grow.id << " growth axis changed to " << axon_to_grow.growth_axis << endl;
+
+    }
 
     // Basic validation
     if (axon_to_grow.outer_spheres.empty()) {

@@ -1996,6 +1996,15 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stu
     int grow_straight = 0;
     int straight_growths = 0;
 
+    // adjust growth axis 
+    int i;
+    double maxVal = axon_to_grow.begin.cwiseAbs().minCoeff(&i);
+    if (i != axon_to_grow.growth_axis) {
+        axon_to_grow.growth_axis = i; // set growth axis to the one with the smallest absolute value
+        cout << "axon " << axon_to_grow.id << " growth axis changed to " << axon_to_grow.growth_axis << endl;
+
+    }
+
 
     // Possibly alter the beading amplitude if beading_variation > 0
     if (beading_variation > 0) {
@@ -2059,7 +2068,9 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stu
             int i;
             double maxVal = axon_to_grow.begin.cwiseAbs().minCoeff(&i);
             cout << " growth axis should be : " << i << endl;
-            assert(0);
+            axon_to_grow.destroy();
+            stuck_radius = axon_to_grow.radius;
+            stuck_index = axon_to_grow.id;
         }
     }
     /*
