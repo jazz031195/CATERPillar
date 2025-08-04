@@ -120,7 +120,7 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
             {0.380, 0.850, 0.99, 1.00, 1.00, 1.00, 1.00},
             {0.620, 0.980, 1.00, 1.00, 1.00, 1.00, 1.00}
         }
-    };
+    }; // https://www.sciencedirect.com/science/article/pii/S1053811911001376?via%3Dihub
 
 }
 void display_progress(double nbr_axons, double number_obstacles)
@@ -639,7 +639,7 @@ void AxonGammaDistribution::generate_radii(std::vector<double> &radii_, std::vec
             double jkr = distribution(generator);
 
             // generates the radii in a list
-            if (jkr > min_radius && jkr < 5)
+            if (jkr > min_radius)
             {
                 if (target_axons_w_myelin_icvf > 0){   
 
