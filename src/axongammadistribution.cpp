@@ -1698,7 +1698,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
     //glial_pop2
 
     glial_icvf_ = 0.0;
-    std::uniform_real_distribution<> dis_radius_oligo(glial_pop2_radius_mean, glial_pop2_radius_std);
+    std::normal_distribution<> dis_radius_oligo(glial_pop2_radius_mean, glial_pop2_radius_std);
 
     while (glial_icvf_ < target_glial_pop2_soma_icvf) {
         Sphere s;
