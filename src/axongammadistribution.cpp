@@ -1638,7 +1638,7 @@ void AxonGammaDistribution::growBranches(std::vector<Glial>& glial_cell_list, co
 void AxonGammaDistribution::PlaceGlialCells() {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis_radius(glial_pop1_radius_mean, glial_pop1_radius_std);
+    std::normal_distribution<> dis_radius(glial_pop1_radius_mean, glial_pop1_radius_std);
     
     //Astrocytes
     double glial_icvf_ = 0.0;
