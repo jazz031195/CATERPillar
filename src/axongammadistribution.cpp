@@ -1652,10 +1652,6 @@ void AxonGammaDistribution::PlaceGlialCells() {
 
             double rad = dis_radius(gen);
 
-            if (rad < 0.5){
-                rad = 0.5;
-            }
-
             double min_distance_to_border = rad+5;
             std::uniform_real_distribution<> dis_x(min_limits[0] + min_distance_to_border, max_limits[0] - min_distance_to_border);
             std::uniform_real_distribution<> dis_y(min_limits[1] + min_distance_to_border, max_limits[1] - min_distance_to_border);
