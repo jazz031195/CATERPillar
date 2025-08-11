@@ -108,9 +108,6 @@ Eigen::Vector3d CellGrowth::apply_bias_toward_target(const Eigen::Vector3d &poin
 }
 
 
-
-
-
 bool CellGrowth::canSpherebePlaced(const Sphere &sph){
 
     for (auto &axon : axons)
@@ -130,24 +127,9 @@ bool CellGrowth::canSpherebePlaced(const Sphere &sph){
     // check collision other glial cells 
     for (auto &glial : glial_cells)
     {
-        if (sph.object_type == 0 || (sph.object_type != 0 && sph.object_id != glial.id) ){
-            if (glial.isNearGlialCell(sph.center, 2*sph.radius+1e-6)){
-
-                if (glial.collides_with_GlialCell(sph)){
-                    return false;
-                }
-                // check with branches of other glial cells
-                for (long unsigned int i = 0; i < glial.ramification_spheres.size(); i++){
-                    std::vector<Sphere> branch = glial.ramification_spheres[i];
-                    for (long unsigned int k = 0; k < branch.size(); k++){
-                        Sphere sph_ = branch[k];
-                        if (sph_.CollideswithSphere(sph, barrier_tickness)){
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
+        if (glial.collides_with_GlialCell(sph, barrier_tickness)){
+            return false;
+        } 
     }
 
     return true;
