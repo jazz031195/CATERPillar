@@ -410,7 +410,6 @@ bool AxonGammaDistribution::growPrimaryBranch(Glial &glial_cell, int &nbr_sphere
     GlialCellGrowth growth(glial_cell_, glial_pop1, glial_pop2, axons, min_limits, max_limits, min_limits, max_limits, std_dev, glial_cell_.minimum_radius);
     
     double distance = initial_radius;
-    cout <<"INITIATE GROWTH OF PRIMARY BRANCH"<< endl;
     while (can_grow) {
  
         // Calculate the radius at the current distance
@@ -420,7 +419,6 @@ bool AxonGammaDistribution::growPrimaryBranch(Glial &glial_cell, int &nbr_sphere
         } else {
             bool check_collision = glial_cell.ramification_spheres[j].size() >= nbr_non_checked_spheres;
             int grow_straight = 0;
-            cout <<"add one sphere with radius : " << R_ << endl;
             can_grow = growth.AddOneSphere(R_, true, grow_straight, j, check_collision, parent, factor);
         }
 

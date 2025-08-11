@@ -41,7 +41,7 @@ class GlialCellGrowth : public CellGrowth
 
         void add_spheres(Sphere &sph, const Sphere &last_sphere, const bool &check_collision_with_branches, const int &factor, const int &index_ram_spheres);
         bool AddOneSphere(const double &radius_, const bool &create_sphere, int &grow_straight, const int &i, const bool &check_collision_with_branches, const int &parent, const int &factor);
-        bool collideswithOtherBranches(Sphere &sph);
+        bool collideswithItself(Sphere &sph);
         void find_next_center_straight(double distance, Sphere &s, const std::vector<Sphere> &spheres);
         void find_next_center(Sphere &s,  double dist_, const std::vector<Sphere> &spheres, const Eigen::Vector3d &target);
         bool canSpherebePlaced(Sphere &sph);
