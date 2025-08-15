@@ -193,7 +193,7 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
     double maxVal = axon_to_grow.begin.cwiseAbs().minCoeff(&i);
     if (i != axon_to_grow.growth_axis) {
         axon_to_grow.growth_axis = i; // set growth axis to the one with the smallest absolute value
-        cout << "axon " << axon_to_grow.id << " growth axis changed to " << axon_to_grow.growth_axis << endl;
+        //cout << "axon " << axon_to_grow.id << " growth axis changed to " << axon_to_grow.growth_axis << endl;
 
     }
 

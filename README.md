@@ -87,3 +87,8 @@ Upon completion, the following output files will be created in the selected dire
 These files can be used for further analysis, integration with external tools, or validation against experimental data.
 
 
+## Citation
+
+If you use CATERPillar, please cite the following work:
+
+Nguyen-Duc JK, Brammerloh M, Cherchali M, De Riedmatten I, Perot JB, Rafael-Patino J, Jelescu IO, CATERPillar: A Flexible Framework for Generating White Matter Numerical Substrates with incorporated Glial Cells, bioRxiv 2025
