@@ -19,10 +19,12 @@
 #include "sphere.h"
 #include <thread>
 #include <mutex>
+#include <random>
 
 class AxonGammaDistribution
 {
 public:
+    std::mt19937 gen; 
     std::vector<Axon> axons;            /*!< Vector of axons */
     std::vector<double> radii;          /*!< Axon radii */
     std::vector<double> stuck_radii;    /*!< Radii of stuck axons, to regrow */
@@ -341,7 +343,7 @@ public:
 
     bool growPrimaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
 
-    double RandomradiusVariation(const Axon &axon);
+    double RandomradiusVariation(Axon &axon);
 
     void growBranches(std::vector<Glial>& glial_cell_list, const int &population_nbr);
 

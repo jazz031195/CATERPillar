@@ -7,6 +7,7 @@
 #include "Glial.h"
 #include "sphere.h"
 #include "threads.h"
+#include <random>
 
 /**
  * @brief Abstract base class for cell growth (axon or glial).
@@ -18,6 +19,7 @@ public:
     virtual ~CellGrowth(); 
     CellGrowth();
     CellGrowth(const CellGrowth& other);
+    std::mt19937 gen; 
 
     int finished = 0;
 
@@ -29,6 +31,7 @@ public:
     bool canSpherebePlaced(const Sphere& sph);
 
 protected:
+
     std::vector<Glial> glial_cells;
     const std::vector<Axon>& axons;  
 
@@ -62,6 +65,8 @@ protected:
     {
         glial_cells = astrocytes;
         glial_cells.insert(glial_cells.end(), oligodendrocytes.begin(), oligodendrocytes.end());
+        std::random_device rd;
+        gen.seed(rd());
     }
 };
 

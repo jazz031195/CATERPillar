@@ -241,6 +241,8 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
              axon_to_grow.begin,
              radius_);
 
+
+
     bool can_grow_ = false;
     int tries = 0;
 
@@ -412,17 +414,8 @@ Eigen::Vector3d AxonGrowth::find_next_center(const Sphere &s, const double dist_
         generate_random_point_on_sphere(std_dev), target_direction
     );
 
-    //Eigen::Vector3d neighbor_vector = find_closest_neighbour(spheres.back());
-    //bool has_valid_neighbor = neighbor_vector.norm() > 1e-6;
-
-    //Eigen::Vector3d combined_vector;
-    //if (has_valid_neighbor) {
-        // Adjust weighting explicitly: stronger attraction to target
-    //    combined_vector = (0.9 * biased_random_vector + 0.1 * neighbor_vector.normalized()).normalized();
-    //} else {
-    //    combined_vector = biased_random_vector.normalized();
-    //}
     Eigen::Vector3d combined_vector = biased_random_vector.normalized();
+    
     
     if (spheres.size() > 2) {
         Eigen::Vector3d previous_vector = (last_center - spheres[spheres.size() - 2].center).normalized();

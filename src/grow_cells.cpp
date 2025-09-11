@@ -52,57 +52,52 @@ double CellGrowth::clamp(double value, double lower, double upper) {
 }
 
 Eigen::Vector3d CellGrowth::generate_random_point_on_sphere(double std) {
+    // azimuth: uniform (no azimuthal bias)
+    std::uniform_real_distribution<double> U(0.0, 2.0*M_PI);
+    double theta = U(gen);
 
-    // Random number generation
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<> dist(0.0, std); // Normal distribution with mean=0 and std deviation=std
+    // polar: bias toward the pole via cos(phi) ~ N(1, std)
+    std::normal_distribution<double> N(1.0, std);
+    double cphi = clamp(N(gen), -1.0, 1.0);  // cos(phi)
+    double sphi = std::sqrt(std::max(0.0, 1.0 - cphi*cphi));
 
-    // Generate random theta and phi values for spherical coordinates
-    double theta = dist(gen);  // Random theta value
-    double cos_phi = dist(gen);  // Random cos_phi value
-    double phi = acos(cos_phi);  // Convert cos_phi to phi
-
-    // Ensure theta is within the range [0, 2*pi] and phi is within the range [0, pi]
-    theta = fmod(theta, 2 * M_PI);
-    phi = clamp(phi, 0.0, M_PI/2);  // Ensure phi is within [0, pi]
-
-    // Spherical to Cartesian conversion
-    double x = sin(phi) * cos(theta);
-    double y = sin(phi) * sin(theta);
-    double z = cos(phi);
-
-    return Eigen::Vector3d(x, y, z);
-
+    double x = sphi * std::cos(theta);
+    double y = sphi * std::sin(theta);
+    double z = cphi;                // near 1 when std is small
+    return Eigen::Vector3d(x, y, z);  // unit by construction
 }
+
 
 // Function to compute the rotation matrix from vector1 to vector2
 Eigen::Matrix3d CellGrowth::rotation_matrix_from_vectors(const Eigen::Vector3d &vec1, const Eigen::Vector3d &vec2) {
     Eigen::Vector3d a = vec1.normalized();
     Eigen::Vector3d b = vec2.normalized();
     
-    Eigen::Vector3d v = a.cross(b);
     double c = a.dot(b);
+
+    if (c > 1.0 - 1e-12) return Eigen::Matrix3d::Identity();       // already aligned
+    if (c < -1.0 + 1e-12) {                                         // 180°
+        Eigen::Vector3d axis = a.unitOrthogonal();
+        return Eigen::AngleAxisd(M_PI, axis).toRotationMatrix();
+    }
+
+    Eigen::Vector3d v = a.cross(b);
     double s = v.norm();
-    
-    Eigen::Matrix3d kmat;
-    kmat <<  0, -v[2], v[1],
-             v[2], 0, -v[0],
-            -v[1], v[0], 0;
-    
-    Eigen::Matrix3d rotation_matrix = Eigen::Matrix3d::Identity() + kmat + kmat * kmat * ((1 - c) / (s * s + 1e-10));
-    
-    return rotation_matrix;
+    Eigen::Matrix3d K;
+    K <<   0,   -v.z(),  v.y(),
+         v.z(),     0,  -v.x(),
+        -v.y(),  v.x(),    0;
+    return Eigen::Matrix3d::Identity() + K + K*K * ((1 - c)/(s*s));
 }
 
 // Function to apply bias toward the target for a single point
 Eigen::Vector3d CellGrowth::apply_bias_toward_target(const Eigen::Vector3d &point, const Eigen::Vector3d &target) {
-    // Step 1: Compute the rotation matrix from [1, 0, 0] to the target
-    Eigen::Vector3d reference(1, 0, 0);  // Reference vector [1, 0, 0]
+    // Step 1: Compute the rotation matrix from [0, 0, 0] to the target
+    Eigen::Vector3d reference(0, 0, 1);  // Reference vector [0, 0, 1]
     Eigen::Matrix3d R = rotation_matrix_from_vectors(reference, target);
 
     // Step 2: Rotate the point using the computed rotation matrix
-    Eigen::Vector3d rotated_point = R * point;
+    Eigen::Vector3d rotated_point = (R * point).normalized();
 
     return rotated_point;
 }

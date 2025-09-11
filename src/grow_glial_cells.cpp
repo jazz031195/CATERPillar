@@ -77,7 +77,7 @@ void GlialCellGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const 
             }
             if(can_grow_){
                 glial_cell_to_grow.ramification_spheres[index_ram_spheres].push_back(s);
-                glial_cell_to_grow.update_Box(s);
+                glial_cell_to_grow.update_all_boxes(s);
             }
 
 
@@ -85,7 +85,7 @@ void GlialCellGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const 
     }
     sph.id = last_sphere.id + nbr_spheres + 1;
     glial_cell_to_grow.ramification_spheres[index_ram_spheres].push_back(sph); 
-    glial_cell_to_grow.update_Box(sph);
+    glial_cell_to_grow.update_all_boxes(sph);
 }
 
 
@@ -206,64 +206,18 @@ bool GlialCellGrowth::checkAxonsOverlap(Sphere &sph){
 
 bool GlialCellGrowth::collideswithItself(Sphere &sph){
 
+
     // if collides with own soma
     if (glial_cell_to_grow.soma.CollideswithSphere(sph, barrier_tickness)){
         return true;
     }
 
-    double soma_radius = glial_cell_to_grow.soma.radius;
-    double x_min = glial_cell_to_grow.soma.center[0] - soma_radius - barrier_tickness;
-    double x_max = glial_cell_to_grow.soma.center[0] + soma_radius + barrier_tickness;
-    double y_min = glial_cell_to_grow.soma.center[1] - soma_radius - barrier_tickness;
-    double y_max = glial_cell_to_grow.soma.center[1] + soma_radius + barrier_tickness;
-    double z_min = glial_cell_to_grow.soma.center[2] - soma_radius - barrier_tickness;
-    double z_max = glial_cell_to_grow.soma.center[2] + soma_radius + barrier_tickness;
-    int branch_id = sph.branch_id;
-
-    if (glial_cell_to_grow.ramification_boxes.size() != glial_cell_to_grow.ramification_spheres.size())
-    {
-        std::cout << "ramification boxes and spheres are not the same size" << std::endl;
-        cout << "ramification boxes size: " << glial_cell_to_grow.ramification_boxes.size() << endl;
-        cout << "ramification spheres size: " << glial_cell_to_grow.ramification_spheres.size() << endl;
-        assert(0);
-    }
-
     // check other branches of same glial cell
-    for (long unsigned int i = 0; i < glial_cell_to_grow.ramification_boxes.size(); i++)
-    {
-        if (glial_cell_to_grow.ramification_boxes[i].empty())
-        {
-            continue; // skip empty boxes
-        }
-
-        if (i == branch_id)
-        {
-            continue; // skip own branch
-        }
-
-        // if inside box 
-        if (x_min < glial_cell_to_grow.ramification_boxes[i][0][1] &&
-            x_max > glial_cell_to_grow.ramification_boxes[i][0][0] &&
-            y_min < glial_cell_to_grow.ramification_boxes[i][1][1] &&
-            y_max > glial_cell_to_grow.ramification_boxes[i][1][0] &&
-            z_min < glial_cell_to_grow.ramification_boxes[i][2][1] &&
-            z_max > glial_cell_to_grow.ramification_boxes[i][2][0])
-        {
-            // check if collides with spheres in branch
-            if (glial_cell_to_grow.ramification_spheres[i].size() > 0)
-            {
-                std::vector<Sphere> branch = glial_cell_to_grow.ramification_spheres[i];
-                for (long unsigned int k = 0; k < branch.size(); k++)
-                {
-                    Sphere sph_ = branch[k];
-                    if (sph_.CollideswithSphere(sph, barrier_tickness))
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
+    bool collides_with_branches = glial_cell_to_grow.collidesWithItsOwnRamification(sph, barrier_tickness);
+    if (collides_with_branches){
+        return true;
     }
+
     return false;
 }
 

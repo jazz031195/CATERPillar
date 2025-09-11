@@ -39,6 +39,7 @@ public:
     double angle;
     bool outside_voxel;
     bool has_shrunk;                            /*!< Axon has shrunk */
+    double z_stat_rad_variation;                  /*!< Standard deviation of radius variation along z axis */
 
 
     /*!
@@ -68,6 +69,7 @@ public:
         double maxVal = begin.cwiseAbs().minCoeff(&this->growth_axis); // gives growth_axis the position of the maximum value
         angle = angle_;
         outside_voxel = outside_voxel_;
+        z_stat_rad_variation = 0.0;
 
     };
 
@@ -91,6 +93,7 @@ public:
             angle = ax.angle;
             outside_voxel = ax.outside_voxel;
             inner_radius = ax.inner_radius;
+            z_stat_rad_variation = ax.z_stat_rad_variation;
 
         }
         return *this;
