@@ -188,7 +188,7 @@ bool Glial::collides_with_GlialCell(const Sphere &sph, const double &distance_to
 
 }
 
-void Glial::compute_processes_icvf(const int &factor) {
+void Glial::compute_processes_icvf(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits) {
     volume_processes = 0.0;
     for (int b = 0; b < ramification_spheres.size(); ++b) {
         for (int i = factor; i < ramification_spheres[b].size(); i += factor) {
@@ -197,6 +197,12 @@ void Glial::compute_processes_icvf(const int &factor) {
             }
             Sphere &s = ramification_spheres[b][i-factor];
             Sphere &s_next = ramification_spheres[b][i];
+            if (s_next.center [0] + s_next.radius < min_limits[0] || s_next.center [0] - s_next.radius > max_limits[0] ||
+                s_next.center [1] + s_next.radius < min_limits[1] || s_next.center [1] - s_next.radius > max_limits[1] ||
+                s_next.center [2] + s_next.radius < min_limits[2] || s_next.center [2] - s_next.radius > max_limits[2]) {
+                continue;
+            }
+            
             double distance = (s_next.center - s.center).norm();
             double v = M_PI * (s.radius * s.radius + s_next.radius * s_next.radius + s.radius * s_next.radius) * distance / 3.0;
             volume_processes += v;

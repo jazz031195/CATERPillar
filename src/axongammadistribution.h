@@ -352,7 +352,7 @@ public:
     std::vector<Sphere> addIntermediateSpheres(const Sphere &random_sphere, const Sphere &first_sphere, const int &branch_nbr, const int &nbr_spheres, const int &nbr_spheres_between);
     bool GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::Vector3d &attractor, const double &radius, const Sphere &sphere_to_emerge_from, const Eigen::Vector3d &vector_to_prev_center, const int &nbr_spheres, const int &nbr_spheres_between, const int &cell_id, const int &branch_id, const bool &primary_process);
     double draw_angle(double kappa);
-    double c2toKappa(double c2, double tol, double kappa_min, double kappa_max);
+    double c2toKappa(double c2_target, double c2_tol, double kappa_max);
     std::vector<double> generate_angles(const int &num_samples);
     void processBatchWithThreadPool(std::vector<Axon>& axons_to_grow, std::vector<int> &indices, std::vector<double>& stuck_radii, std::vector<int>& stuck_indices);
     bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border);

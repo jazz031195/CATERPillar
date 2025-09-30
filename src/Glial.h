@@ -55,7 +55,7 @@ class Glial : public Obstacle
         soma = soma_;
         volume_soma = M_PI*pow(soma.radius, 3)*4/3;
         volume_processes = 0.0;
-        minimum_radius = soma.radius/33.0;
+        minimum_radius = soma.radius/20.0;
         allow_branching = allow_branching_;
 
         ramification_spheres.clear();
@@ -112,7 +112,7 @@ class Glial : public Obstacle
     bool collides_with_GlialCell(const Sphere &sph, const double &distance_to_be_inside) const;
     bool collidesWithRamification(const Eigen::Vector3d &position, const double &distance_to_be_inside) const;
 
-    void compute_processes_icvf(const int &factor);
+    void compute_processes_icvf(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits);
 
     void initialise_boxes();
 };

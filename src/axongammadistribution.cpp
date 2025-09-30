@@ -110,7 +110,7 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
     c1 = c1_;
     c2 = c2_;
     c3 = c3_;
-
+    /*
     cdf = {
         {4, 8, 16, 32, 64, 128}, // Kappas
         {5, 10, 15, 30, 45, 60, 75}, // Angles
@@ -123,6 +123,7 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
             {0.620, 0.980, 1.00, 1.00, 1.00, 1.00, 1.00}
         }
     }; // https://www.sciencedirect.com/science/article/pii/S1053811911001376?via%3Dihub
+    */
 
 }
 void display_progress(double nbr_axons, double number_obstacles)
@@ -141,9 +142,9 @@ void display_progress(double nbr_axons, double number_obstacles)
 
 
 // Function to find intersection points between a vector and each face of the cube
-Eigen::Vector3d findDistantPoint(const Eigen::Vector3d &vector, const Eigen::Vector3d &point)
+Eigen::Vector3d findDistantPoint(const Eigen::Vector3d &vector, const Eigen::Vector3d &point, const double &L)
 {
-    double distance = 1000;
+    double distance = L + 10; // Large initial distance
     Eigen::Vector3d distant_point = point + distance * vector;
     return distant_point;
 }
@@ -222,7 +223,7 @@ bool AxonGammaDistribution::growSecondaryBranch(Glial &glial_cell, int &nbr_sphe
 
     std::normal_distribution<double> length_dist(mean_process_length - old_length, std_process_length);
     double length_to_grow = length_dist(generator);
-    double min_length_to_grow = 0.75*length_to_grow;
+    double min_length_to_grow = 0.5*length_to_grow;
     int nbr_non_checked_spheres = factor*3 ;
 
 
@@ -340,10 +341,14 @@ bool AxonGammaDistribution::GenerateFirstSphereinProcess(Sphere &first_sphere, E
         Eigen::Vector3d vector = {0, 0, 0};
         Eigen::Vector3d point = {0, 0, 0};
         sphere_to_emerge_from.getPointOnSphereSurface(point, vector, vector_to_prev_center, primary_process);
-        attractor = findDistantPoint(vector, point);
+        attractor = findDistantPoint(vector, point, max_limits[0]);
         first_sphere = Sphere(nbr_spheres + nbr_spheres_between + 1, cell_id, 1, point, radius, branch_id, sphere_to_emerge_from.id);
         if (canSpherebePlaced(first_sphere, axons, glial_pop1, glial_pop2)) {
             stop = true;
+            // check boundaries
+            if (!withinBounds(first_sphere.center, glial_pop1_radius_mean)) {
+                stop = false;
+            }  
         } else {
             tries_++;
             if (tries_ == max_nbr_tries) return false;
@@ -366,7 +371,7 @@ bool AxonGammaDistribution::growPrimaryBranch(Glial &glial_cell, int &nbr_sphere
     std::mt19937 generator(rd());
     std::normal_distribution<double> length_dist(mean_primary_process_length, std_primary_process_length);
     double length = length_dist(generator);
-    double min_length = 0.75*length; // Minimum length to grow a branch
+    double min_length = 0.5*length; // Minimum length to grow a branch
     int tries = 0;
     while (length < min_length && tries < 100) {
         length = length_dist(generator);
@@ -376,7 +381,7 @@ bool AxonGammaDistribution::growPrimaryBranch(Glial &glial_cell, int &nbr_sphere
         return false;
     }
 
-    double initial_radius = glial_cell.soma.radius;
+    double initial_radius = glial_cell.soma.radius/3;
     double alpha = -std::log(glial_cell.minimum_radius / initial_radius)/length;
 
     auto compute_radius = [&](double t) {
@@ -496,8 +501,8 @@ bool AxonGammaDistribution::withinBounds(const Eigen::Vector3d &pos, const doubl
 {
     // Check if the point is inside the dilated box
     for (int i = 0; i < 3; ++i) {
-        double min_bound = min_limits[i];
-        double max_bound = max_limits[i];
+        double min_bound = min_limits[i] - distance;
+        double max_bound = max_limits[i] + distance;
         if (pos[i] < min_bound || pos[i] > max_bound) {
             return false; // Point is outside the dilated box
         }
@@ -921,90 +926,103 @@ double erfi(double x) {
 }
 
 
-// Function to find the kappa value corresponding to a given c2
-double AxonGammaDistribution::c2toKappa(double c2, double tol = 1e-3, double kappa_min = 0, double kappa_max = 64) {
-    if (c2 == 1.0) {
-        return std::numeric_limits<double>::infinity(); // Return infinity for perfect alignment
-    } else if (c2 < 1.0 / 3.0) {
-        return 0; // Return 0 for isotropic distribution
-    }
+// Computes c2(kappa) for the axial Watson distribution (kappa >= 0).
+// Safe across kappa=0 and large kappa.
+static inline double c2_of_kappa(double kappa) {
+    if (kappa <= 0.0) return 1.0/3.0;
+    const double rt = std::sqrt(kappa);
 
-    // Generate a range of kappa values
-    std::vector<double> kappas;
-    for (double k = kappa_min; k <= kappa_max; k += tol) {
-        kappas.push_back(k);
-    }
+    // F = (sqrt(pi)/2) * e^{-kappa} * erfi(sqrt(kappa))
+    // so that 1/(2*sqrt(kappa)*F) = e^{kappa}/(sqrt(pi)*erfi(sqrt(kappa))*sqrt(kappa))
+    const double erfi_rt = erfi(rt);               // assume you have a stable erfi
+    const double emk     = std::exp(-kappa);
+    const double F       = 0.5 * std::sqrt(M_PI) * emk * erfi_rt;
 
-    // Compute Fs and c2s for each kappa
-    std::vector<double> Fs(kappas.size());
-    std::vector<double> c2s(kappas.size());
-
-    for (size_t i = 0; i < kappas.size(); ++i) {
-        double sqrt_kappa = std::sqrt(kappas[i]);
-        double exp_neg_kappa = std::exp(-kappas[i]);
-        Fs[i] = (std::sqrt(M_PI) / 2.0) * exp_neg_kappa * erfi(sqrt_kappa);
-
-        if (kappas[i] > 0) {
-            c2s[i] = 1.0 / (2.0 * sqrt_kappa * Fs[i]) - 1.0 / (2.0 * kappas[i]);
-        } else {
-            c2s[i] = 1.0 / 3.0; // Edge case for kappa = 0
-        }
-    }
-
-    // Set the last c2 value explicitly to 1
-    c2s.back() = 1.0;
-
-    // Find the kappa value closest to the target c2
-    double min_diff = std::numeric_limits<double>::max();
-    size_t idx_c2 = 0;
-    for (size_t i = 0; i < c2s.size(); ++i) {
-        double diff = std::abs(c2 - c2s[i]);
-        if (diff < min_diff) {
-            min_diff = diff;
-            idx_c2 = i;
-        }
-    }
-
-    double kappa = kappas[idx_c2];
-    return std::max(0.0, kappa); // Ensure kappa is non-negative
+    // c2 = 1/(2*sqrt(kappa)*F) - 1/(2*kappa)
+    const double term1 = 1.0 / (2.0 * rt * F);
+    const double term2 = 1.0 / (2.0 * kappa);
+    return term1 - term2;
 }
 
-// Function to draw angles from the Watson distribution given c2
+// Invert c2 to kappa by monotone bisection on [0, kappa_max].
+double AxonGammaDistribution::c2toKappa(double c2_target,
+                                        double c2_tol =1e-6,
+                                        double kappa_max=64) {
+    // Clamp noisy inputs
+    if (c2_target <= 1.0/3.0) return 0.0;
+
+    // For near-perfect alignment, use large finite kappa (or caller-specific cap)
+    if (c2_target >= 1.0 - 1e-12) {
+        // Large-kappa asymptotic: c2 ≈ 1 - 1/(2*kappa)  =>  kappa ≈ 1/(2*(1-c2))
+        double guess = 1.0 / std::max(2.0 * (1.0 - c2_target), 1e-12);
+        return std::min(guess, kappa_max);
+    }
+
+    // Ensure the bracket [lo, hi] contains the solution
+    double lo = 0.0;
+    double hi = std::min(kappa_max, 1.0 / std::max(2.0 * (1.0 - c2_target), 1e-8)); // asymptotic-based hi
+    double c2_lo = 1.0/3.0;           // c2(0) = 1/3
+    double c2_hi = c2_of_kappa(hi);
+
+    // If hi is not high enough, expand exponentially until c2_hi >= target or we hit kappa_max
+    while (c2_hi < c2_target && hi < kappa_max) {
+        lo = hi; c2_lo = c2_hi;
+        hi = std::min(hi * 2.0, kappa_max);
+        c2_hi = c2_of_kappa(hi);
+        if (hi >= kappa_max && c2_hi < c2_target) return kappa_max; // saturated
+    }
+
+    // Bisection
+    for (int it = 0; it < 100; ++it) {
+        double mid   = 0.5 * (lo + hi);
+        double c2mid = c2_of_kappa(mid);
+
+        // Check tolerance in c2-space (more meaningful than kappa-space)
+        if (std::abs(c2mid - c2_target) <= c2_tol) return mid;
+
+        if (c2mid < c2_target) { lo = mid; c2_lo = c2mid; }
+        else                   { hi = mid; c2_hi = c2mid; }
+    }
+    return 0.5 * (lo + hi); // fallback
+}
+
+// Generic clamp: keeps x within [low, high].
+template <typename T>
+constexpr const T& clamp(const T& x, const T& low, const T& high) {
+    return (x < low) ? low : (x > high) ? high : x;
+}
+
+// Sample theta in [0, pi/2] from axial Watson(kappa >= 0)
 double AxonGammaDistribution::draw_angle(double kappa) {
+    std::uniform_real_distribution<double> U(0.0, 1.0);
+    double u = U(gen);
 
-    // Find kappa bounds
-    double max_kappa = *std::max_element(cdf.kappas.begin(), cdf.kappas.end());
-    double min_kappa = *std::min_element(cdf.kappas.begin(), cdf.kappas.end());
-
-    if (kappa > max_kappa) {
-        return 0.0;
-    }
-    if (kappa < min_kappa) {
-        
-        cout << "Kappa value is out of bounds "<< kappa << ", new kappa value : " << min_kappa << endl;
-        kappa = min_kappa;
-
+    if (kappa <= 0.0) {
+        // isotropic axial => mu ~ U(0,1)
+        double mu = u;
+        return std::acos(mu);
     }
 
-    // Interpolate for the kappa row
-    std::vector<double> interpolated_row(cdf.angles.size());
-    for (size_t i = 0; i < cdf.angles.size(); ++i) {
-        std::vector<double> cdf_column;
-        for (const auto& row : cdf.data) {
-            cdf_column.push_back(row[i]);
-        }
-        interpolated_row[i] = interpolate(kappa, cdf.kappas, cdf_column);
+    const double rt = std::sqrt(kappa);
+    const double erfi_rt = erfi(rt);                   // same erfi you used before
+    const double norm_c = 2.0*rt / (std::sqrt(M_PI)*erfi_rt); // F'(mu) coefficient
+
+    // Initial guess: use small/large-kappa heuristics
+    double mu = (kappa < 1.0)
+              ? u                       // near-uniform
+              : std::min(1.0, std::sqrt(std::max(0.0, std::log1p((erfi_rt*u)/(erfi_rt*(1.0-u))) / kappa))); // crude
+
+    // Newton solve F(mu)=u, clamp mu to [0,1]
+    for (int it = 0; it < 20; ++it) {
+        double Fmu = erfi(rt*mu) / erfi_rt;
+        double fmu = norm_c * std::exp(kappa*mu*mu);
+        double step = (Fmu - u) / std::max(1e-16, fmu);
+        mu = clamp(mu - step, 0.0, 1.0);
+        if (std::abs(step) < 1e-12) break;
     }
-    
-    // Generate random values and map them to angles
-    std::uniform_real_distribution<> dis(0.0, 1.0);
-
-    double random_value = dis(gen);
-    double sampled_angle = interpolate(random_value, interpolated_row, cdf.angles);
-    sampled_angle = sampled_angle*M_PI/180;
-
-    return sampled_angle;
+    return std::acos(mu);
 }
+
 
 Eigen::Vector3d AxonGammaDistribution::randomPointOnPlane(const Eigen::Vector3d &begin, const Eigen::Vector3d &end, const int &axis1, const int &axis2, const int &axis3, double &angle, bool &outside_voxel) {
  
@@ -1333,7 +1351,8 @@ void AxonGammaDistribution::parallelGrowth()
     
     std::vector<double> stuck_radii_; 
     std::vector<int> stuck_indices_;
-    bool cells_ok = FinalCheck(axons, stuck_radii_, stuck_indices_);
+    //bool cells_ok = FinalCheck(axons, stuck_radii_, stuck_indices_);
+    bool cells_ok = true;
 
     if (!cells_ok)
     {
@@ -1480,7 +1499,7 @@ void AxonGammaDistribution::growBranches(std::vector<Glial>& glial_cell_list, co
         for (int i = 0; i < glial_cell_list.size(); i++) 
         {
             growFirstPrimaryBranches(glial_cell_list[i], nbr_primary_processes, nbr_spheres[i], mean_process_length, std_process_length);
-            glial_cell_list[i].compute_processes_icvf(factor);
+            glial_cell_list[i].compute_processes_icvf(factor, min_limits, max_limits);
         }
     }
 
@@ -1511,7 +1530,7 @@ void AxonGammaDistribution::growBranches(std::vector<Glial>& glial_cell_list, co
         if (nbr_tries%10 == 0 && nbr_tries >0) {
             // Recompute processes and update ICVF for all glial_pop1 in parallel
             for (size_t i = 0; i < glial_cell_list.size(); ++i) {
-                glial_cell_list[i].compute_processes_icvf(factor);
+                glial_cell_list[i].compute_processes_icvf(factor, min_limits, max_limits);
             }
             // Update global ICVF and display progress
             ICVF(axons, glial_pop1, glial_cell_list);
@@ -1551,116 +1570,135 @@ void AxonGammaDistribution::growBranches(std::vector<Glial>& glial_cell_list, co
     }
 
 }
-
 void AxonGammaDistribution::PlaceGlialCells() {
+    // --- helpers (local lambdas) ---------------------------------------------
+    auto draw_positive_radius = [&](std::normal_distribution<>& dis) {
+        double r;
+        do { r = dis(gen); } while (r <= 0.0);
+        return r;
+    };
 
-    std::normal_distribution<> dis_radius(glial_pop1_radius_mean, glial_pop1_radius_std);
-    
-    //Astrocytes
-    double glial_icvf_ = 0.0;
+    // Signed clearance to the box (>= 0 => sphere fully inside by that margin).
+    auto signed_box_margin = [&](const Sphere& s) {
+        double m = std::numeric_limits<double>::infinity();
+        for (int i = 0; i < 3; ++i) {
+            double left  = (s.center[i] - min_limits[i]) - s.radius;
+            double right = (max_limits[i] - s.center[i]) - s.radius;
+            m = std::min(m, std::min(left, right));
+        }
+        return m;
+    };
 
-    while (glial_icvf_ < target_glial_pop1_soma_icvf) {
+    auto soma_volume = [](double r) {
+        return (4.0 * M_PI * r * r * r) / 3.0;
+    };
+
+    // Expand the sampling window to allow placements outside the bounds.
+    // If you want a different expansion per population, split this.
+    const double expand = std::max(0.0, glial_pop1_radius_mean);
+
+    // --- Population 1 (astrocytes) ------------------------------------------
+    std::normal_distribution<> dis_radius_pop1(glial_pop1_radius_mean, glial_pop1_radius_std);
+
+    double glial_icvf_1 = 0.0;
+    const int MAX_GLOBAL_FAILS_1 = 20000;
+    int global_fail_count_1 = 0;
+
+    std::uniform_real_distribution<> base_x1(min_limits[0] - expand, max_limits[0] + expand);
+    std::uniform_real_distribution<> base_y1(min_limits[1] - expand, max_limits[1] + expand);
+    std::uniform_real_distribution<> base_z1(min_limits[2] - expand, max_limits[2] + expand);
+
+    while (glial_icvf_1 < target_glial_pop1_soma_icvf && global_fail_count_1 < MAX_GLOBAL_FAILS_1) {
         Sphere s;
-        bool can_be_placed = false;
+        bool placed = false;
+        bool fully_inside = false;
 
         for (int attempt = 0; attempt < 10000; ++attempt) {
-            // Generate random position
+            const double rad = draw_positive_radius(dis_radius_pop1);
 
-            double rad = dis_radius(gen);
+            s = Sphere(
+                /*object_id*/ 0,                        // keep your ID scheme if needed
+                /*index*/ static_cast<int>(glial_pop1.size()),
+                /*type*/ 1,
+                { base_x1(gen), base_y1(gen), base_z1(gen) },
+                rad
+            );
 
-            double min_distance_to_border = rad+5;
-            std::uniform_real_distribution<> dis_x(min_limits[0] + min_distance_to_border, max_limits[0] - min_distance_to_border);
-            std::uniform_real_distribution<> dis_y(min_limits[1] + min_distance_to_border, max_limits[1] - min_distance_to_border);
-            std::uniform_real_distribution<> dis_z(min_limits[2] + min_distance_to_border, max_limits[2] - min_distance_to_border);
-
-            s = Sphere(0, glial_pop1.size(), 1, {
-                dis_x(gen), dis_y(gen), dis_z(gen)
-            }, rad);
-
-            // Check if sphere can be placed
             if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2)) {
-                // Check distance to voxel border
-                bool within_bounds = true;
-                for (int i = 0; i < 3; ++i) {
-                    if (s.center[i] <= min_limits[i] + s.radius || s.center[i] >= max_limits[i] - s.radius) {
-                        within_bounds = false;
-                        break;
-                    }
-                }
-                if (within_bounds) {
-                    can_be_placed = true;
-                    break;  // Exit loop if placed
-                }
+                fully_inside = (signed_box_margin(s) >= 0.0);
+                placed = true;
+                break;
             }
         }
 
-        if (can_be_placed) {
-            Glial glial_cell = Glial(s.object_id, s, glial_pop1_branching);
-            glial_pop1.push_back(glial_cell);
-            double glial_volume = 4 * M_PI * glial_cell.soma.radius * glial_cell.soma.radius * glial_cell.soma.radius / 3;
+        if (!placed) {
+            ++global_fail_count_1;
+            continue; // try placing another cell; loop terminates via MAX_GLOBAL_FAILS_1
+        }
 
-            glial_icvf_ += glial_volume / total_volume;
+        // Always add to the population
+        Glial glial_cell = Glial(s.object_id, s, glial_pop1_branching);
+        glial_pop1.push_back(glial_cell);
 
-        } else {
-            break;  // Exit while loop if unable to place more glial cells
+        // Count ICVF only if fully inside
+        if (fully_inside) {
+            glial_icvf_1 += soma_volume(glial_cell.soma.radius) / total_volume;
         }
     }
-    glial_pop1_soma_icvf = glial_icvf_;
 
-    //glial_pop2
+    glial_pop1_soma_icvf = glial_icvf_1;
 
-    glial_icvf_ = 0.0;
-    std::normal_distribution<> dis_radius_oligo(glial_pop2_radius_mean, glial_pop2_radius_std);
+    // --- Population 2 (oligodendrocytes) ------------------------------------
+    std::normal_distribution<> dis_radius_pop2(glial_pop2_radius_mean, glial_pop2_radius_std);
 
-    while (glial_icvf_ < target_glial_pop2_soma_icvf) {
+    double glial_icvf_2 = 0.0;
+    const int MAX_GLOBAL_FAILS_2 = 20000;
+    int global_fail_count_2 = 0;
+
+    std::uniform_real_distribution<> base_x2(min_limits[0] - expand, max_limits[0] + expand);
+    std::uniform_real_distribution<> base_y2(min_limits[1] - expand, max_limits[1] + expand);
+    std::uniform_real_distribution<> base_z2(min_limits[2] - expand, max_limits[2] + expand);
+
+    while (glial_icvf_2 < target_glial_pop2_soma_icvf && global_fail_count_2 < MAX_GLOBAL_FAILS_2) {
         Sphere s;
-        bool can_be_placed = false;
+        bool placed = false;
+        bool fully_inside = false;
 
         for (int attempt = 0; attempt < 10000; ++attempt) {
-            // Generate random position
+            const double rad = draw_positive_radius(dis_radius_pop2);
 
-            double rad = dis_radius_oligo(gen);
+            s = Sphere(
+                /*object_id*/ 0,
+                /*index*/ static_cast<int>(glial_pop2.size()),
+                /*type*/ 1,
+                { base_x2(gen), base_y2(gen), base_z2(gen) },
+                rad
+            );
 
-            double min_distance_to_border = rad + 5;
-            std::uniform_real_distribution<> dis_x(min_limits[0] + min_distance_to_border, max_limits[0] - min_distance_to_border);
-            std::uniform_real_distribution<> dis_y(min_limits[1] + min_distance_to_border, max_limits[1] - min_distance_to_border);
-            std::uniform_real_distribution<> dis_z(min_limits[2] + min_distance_to_border, max_limits[2] - min_distance_to_border);
-
-            s = Sphere(0, glial_pop2.size(), 1, {
-                dis_x(gen), dis_y(gen), dis_z(gen)
-            }, rad);
-
-            // Check if sphere can be placed
             if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2)) {
-                // Check distance to voxel border
-                bool within_bounds = true;
-                for (int i = 0; i < 3; ++i) {
-                    if (s.center[i] <= min_limits[i] + s.radius || s.center[i] >= max_limits[i] - s.radius) {
-                        within_bounds = false;
-                        break;
-                    }
-                }
-                if (within_bounds) {
-                    can_be_placed = true;
-                    break;  // Exit loop if placed
-                }
+                fully_inside = (signed_box_margin(s) >= 0.0);
+                placed = true;
+                break;
             }
         }
 
-        if (can_be_placed) {
-            Glial glial_cell = Glial(s.object_id, s);
-            glial_pop2.push_back(glial_cell);
-            double glial_volume = 4 * M_PI * glial_cell.soma.radius * glial_cell.soma.radius * glial_cell.soma.radius / 3;
-            glial_icvf_ += glial_volume / total_volume;
+        if (!placed) {
+            ++global_fail_count_2;
+            continue;
+        }
 
-        } else {
-            break;  // Exit while loop if unable to place more glial cells
+        // Always add to the population
+        Glial glial_cell = Glial(s.object_id, s); // pop2 ctor (no branching arg)
+        glial_pop2.push_back(glial_cell);
+
+        // Count ICVF only if fully inside
+        if (fully_inside) {
+            glial_icvf_2 += soma_volume(glial_cell.soma.radius) / total_volume;
         }
     }
-    glial_pop2_soma_icvf = glial_icvf_;
 
+    glial_pop2_soma_icvf = glial_icvf_2;
 }
-
 
 bool AxonGammaDistribution::FinalCheck(std::vector<Axon> &axs, std::vector<double> &stuck_radii_, std::vector<int> &stuck_indices_)
 {
@@ -1906,7 +1944,8 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stu
     int grow_straight = 0;
     int straight_growths = 0;
 
-    // adjust growth axis 
+    // adjust growth axis
+    /* 
     int i;
     double maxVal = axon_to_grow.begin.cwiseAbs().minCoeff(&i);
     if (i != axon_to_grow.growth_axis) {
@@ -1914,6 +1953,7 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stu
         cout << "axon " << axon_to_grow.id << " growth axis changed to " << axon_to_grow.growth_axis << endl;
 
     }
+    */
 
 
     // Possibly alter the beading amplitude if beading_variation > 0
