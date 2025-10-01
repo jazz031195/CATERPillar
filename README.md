@@ -81,10 +81,18 @@ These visualization tools help in analyzing the structural properties of the gen
 ### **Generated Files**
 Upon completion, the following output files will be created in the selected directory:
 
-1. **`voxel.swc`** – Contains detailed information about the substrate, with each line defining a sphere’s properties.
+1. **`voxel.csv`** – Contains detailed information about the substrate, with each line defining a sphere’s properties.
 2. **`voxel_info.txt`** – Provides metadata and summary statistics related to the generated substrate, including parameters used during the simulation.
 
-These files can be used for further analysis, integration with external tools, or validation against experimental data.
+These files can be used for further analysis, integration with external tools, or validation against experimental data. The **`voxel.csv`** file will give for each sphere :
+- **cell_type** : The type of the cell can be : axon, glial_cell or neuron.
+- **cell_id** : The id of the cell starting from 0. 
+- **component** : The component of the cell can be : soma, branch, axon or spine.
+- **component_id** : The id of the component starting from 0.
+- **X Y Z** : Coordinates of the cell (μm).
+- **inner_radius** : Inner radius, which can be identical to the outer radius or not if myelin is present (μm).
+- **outer_radius** : Outer radius (μm).
+
 
 
 ## Citation

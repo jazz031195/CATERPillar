@@ -29,13 +29,16 @@ public:
     void ShollAnalysis();
     void resetCamera();
     void updateConfigurationSelectionVisibility(double value);
+    void HideGlialCells();
+    void HideAxons();
+    void ShowAllCells();
 
     
 private slots:
     void onSaveButtonClicked();
     void onSelectDirectoryButtonClicked(); // Slot for selecting a directory
     void SelectSWCFileButton();
-    void PlotCells();
+    void PlotCells(const bool& axons_plot, const bool& glial_pop1_plot, const bool& glial_pop2_plot);
     void ReadGlialCellsFromSWC(const QString& filePath);
     void ReadAxonsFromSWC(const QString& filePath);
 
@@ -135,6 +138,11 @@ private:
     QPushButton *resetCameraButton;
     QPushButton *visualiseButton;
     QPushButton *growButton;
+    QPushButton *hideGlialCellsButton;
+    QPushButton *hideAxonsButton;
+    QPushButton *showAllCellsButton;
+    
+
 
     // Additional member variables to store values
     int axons_icvf;

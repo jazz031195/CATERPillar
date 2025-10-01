@@ -85,17 +85,16 @@ Window::Window(QWidget *parent)
 
 void Window::SelectSWCFileButton() {
     QString filePath = QFileDialog::getOpenFileName(this, tr("Select SWC File"), "", tr("SWC Files (*.swc)"));
-    
     if (!filePath.isEmpty()) {
         SWCFile = filePath;  // Assuming you have a QString member named SWCFile
         qDebug() << "Selected SWC file:" << SWCFile;
         ReadAxonsFromSWC(SWCFile);       // Load axons
         ReadGlialCellsFromSWC(SWCFile);  // Load glial cells
-        PlotCells();              // Visualize
+        PlotCells(true, true, true);              // Visualize
     }
 }
 
-void Window::PlotCells(){
+void Window::PlotCells(const bool& axons_plot, const bool& glial_pop1_plot, const bool& glial_pop2_plot) {
     // Plotting cells
     //QtDataVisualization::Q3DScatter *graph = new QtDataVisualization::Q3DScatter();
     OpenGLWindow *openglWindow = new OpenGLWindow();
@@ -104,19 +103,78 @@ void Window::PlotCells(){
     openglWindow->setTitle("3D Spheres Visualization");
     openglWindow->resize(800, 600);
 
+    std::vector<std::vector<double>> X = {};
+    std::vector<std::vector<double>> Y = {};
+    std::vector<std::vector<double>> Z = {};
+    std::vector<std::vector<double>> R = {};
+
     // Pass the spheres data to the OpenGL window and trigger an update
-    std::vector<std::vector<double>> X = X_axons;
-    X.insert(X.end(), X_glial_pop1.begin(), X_glial_pop1.end());
-    X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
-    std::vector<std::vector<double>> Y = Y_axons;
-    Y.insert(Y.end(), Y_glial_pop1.begin(), Y_glial_pop1.end());
-    Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
-    std::vector<std::vector<double>> Z = Z_axons;
-    Z.insert(Z.end(), Z_glial_pop1.begin(), Z_glial_pop1.end());
-    Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
-    std::vector<std::vector<double>> R = R_axons;
-    R.insert(R.end(), R_glial_pop1.begin(), R_glial_pop1.end());
-    R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
+    if (axons_plot && !glial_pop1_plot && !glial_pop2_plot){
+        X = X_axons;
+        Y = Y_axons;
+        Z = Z_axons;
+        R = R_axons;
+    }
+    if (!axons_plot && glial_pop1_plot && !glial_pop2_plot){
+        X = X_glial_pop1;
+        Y = Y_glial_pop1;
+        Z = Z_glial_pop1;
+        R = R_glial_pop1;
+    }
+    if (!axons_plot && !glial_pop1_plot && glial_pop2_plot){
+        X = X_glial_pop2;
+        Y = Y_glial_pop2;
+        Z = Z_glial_pop2;
+        R = R_glial_pop2;
+    }
+    if (axons_plot && glial_pop1_plot && !glial_pop2_plot){
+        X = X_axons;
+        Y = Y_axons;
+        Z = Z_axons;
+        R = R_axons;
+        X.insert(X.end(), X_glial_pop1.begin(), X_glial_pop1.end());
+        Y.insert(Y.end(), Y_glial_pop1.begin(), Y_glial_pop1.end());
+        Z.insert(Z.end(), Z_glial_pop1.begin(), Z_glial_pop1.end());
+        R.insert(R.end(), R_glial_pop1.begin(), R_glial_pop1.end());
+    }
+    if (axons_plot && !glial_pop1_plot && glial_pop2_plot){
+        X = X_axons;
+        Y = Y_axons;
+        Z = Z_axons;
+        R = R_axons;
+        X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
+        Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
+        Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
+        R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
+    }
+    if (!axons_plot && glial_pop1_plot && glial_pop2_plot){
+        X = X_glial_pop1;
+        Y = Y_glial_pop1;
+        Z = Z_glial_pop1;
+        R = R_glial_pop1;
+        X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
+        Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
+        Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
+        R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
+    }
+    if (axons_plot && glial_pop1_plot && glial_pop2_plot){
+        X = X_axons;
+        Y = Y_axons;
+        Z = Z_axons;
+        R = R_axons;
+
+        X.insert(X.end(), X_glial_pop1.begin(), X_glial_pop1.end());
+        Y.insert(Y.end(), Y_glial_pop1.begin(), Y_glial_pop1.end());
+        Z.insert(Z.end(), Z_glial_pop1.begin(), Z_glial_pop1.end());
+        R.insert(R.end(), R_glial_pop1.begin(), R_glial_pop1.end());
+
+        X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
+        Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
+        Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
+        R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
+    }
+
+
     openglWindow->setSpheres(X, Y, Z, R);
 
     // This will ensure the window is updated with new data
@@ -142,6 +200,15 @@ void Window::PlotCells(){
     QPushButton *resetCameraButton = new QPushButton(widget);  // New button for Sholl analysis
     resetCameraButton->setText(QStringLiteral("Reset Camera"));
 
+    QPushButton *hideAxonsButton = new QPushButton(widget);  // New button for Sholl analysis
+    hideAxonsButton->setText(QStringLiteral("Hide Axons"));
+
+    QPushButton *hideGlialCellsButton = new QPushButton(widget);  // New button for Sholl analysis
+    hideGlialCellsButton->setText(QStringLiteral("Hide Glial Cells"));
+
+    QPushButton *showall = new QPushButton(widget);  // New button for Sholl analysis
+    showall->setText(QStringLiteral("Show All Cells"));
+
 
     // Add widgets to the vertical layout
 
@@ -149,18 +216,76 @@ void Window::PlotCells(){
     vLayout->addWidget(plotTortuosityButton, 0, Qt::AlignTop);  // Add plot tortuosity button to layout
     vLayout->addWidget(plotShollAnalysisButton, 0, Qt::AlignTop);  // Add plot Sholl analysis button to layout
     vLayout->addWidget(resetCameraButton, 0, Qt::AlignTop);  // Add reset camera button to layout
+    vLayout->addWidget(hideAxonsButton, 0, Qt::AlignTop);  // Add hide axons button to layout
+    vLayout->addWidget(hideGlialCellsButton, 0, Qt::AlignTop);  // Add hide glial cells button to layout
+    vLayout->addWidget(showall, 0, Qt::AlignTop);  // Add show all button to layout
 
     // Connect the "Plot Radii Distribution" button to the plotRadiusDistribution function
     QObject::connect(plotRadiiButton, &QPushButton::clicked, this, &Window::plotRadiusDistribution);
     QObject::connect(plotTortuosityButton, &QPushButton::clicked, this, &Window::plotTortuosityDistribution);
     QObject::connect(plotShollAnalysisButton, &QPushButton::clicked, this, &Window::ShollAnalysis);
     QObject::connect(resetCameraButton, &QPushButton::clicked, openglWindow, &OpenGLWindow::resetCamera);
+    QObject::connect(hideAxonsButton, &QPushButton::clicked, this, &Window::HideAxons);
+    QObject::connect(hideGlialCellsButton, &QPushButton::clicked, this, &Window::HideGlialCells);
+    QObject::connect(showall, &QPushButton::clicked, this, &Window::ShowAllCells);
+
 
     widget->show();
 }
 
 void Window::resetCamera(){
     openglWindow->resetCamera();
+}
+
+
+void Window::ShowAllCells(){
+
+    std::vector<std::vector<double>> X = X_glial_pop1;
+    std::vector<std::vector<double>> Y = Y_glial_pop1;
+    std::vector<std::vector<double>> Z = Z_glial_pop1;
+    std::vector<std::vector<double>> R = R_glial_pop1;
+    X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
+    Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
+    Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
+    R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
+
+    X.insert(X.end(), X_axons.begin(), X_axons.end());
+    Y.insert(Y.end(), Y_axons.begin(), Y_axons.end());
+    Z.insert(Z.end(), Z_axons.begin(), Z_axons.end());
+    R.insert(R.end(), R_axons.begin(), R_axons.end());
+
+    openglWindow->setSpheres(X, Y, Z, R);
+
+    openglWindow->update();
+}
+
+
+void Window::HideAxons(){
+
+    std::vector<std::vector<double>> X = X_glial_pop1;
+    std::vector<std::vector<double>> Y = Y_glial_pop1;
+    std::vector<std::vector<double>> Z = Z_glial_pop1;
+    std::vector<std::vector<double>> R = R_glial_pop1;
+    X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
+    Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
+    Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
+    R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
+
+    openglWindow->setSpheres(X, Y, Z, R);
+
+    openglWindow->update();
+}
+
+void Window::HideGlialCells(){
+
+    std::vector<std::vector<double>> X = X_axons;
+    std::vector<std::vector<double>> Y = Y_axons;
+    std::vector<std::vector<double>> Z = Z_axons;
+    std::vector<std::vector<double>> R = R_axons;
+
+    openglWindow->setSpheres(X, Y, Z, R);
+
+    openglWindow->update();
 }
 
 QGroupBox* Window::createControls(const QString &title)
@@ -851,7 +976,7 @@ void Window::StartSimulation(){
             std::ifstream file(filename);
 
             simulation_file_name = (directory + "/growth_info.txt");
-            swc_file_name = (directory + "/Voxel.swc");
+            swc_file_name = (directory + "/Voxel.csv");
             std::ofstream swc_file(swc_file_name);
             std::ofstream simulation_file(simulation_file_name);
 
@@ -886,7 +1011,7 @@ void Window::StartSimulation(){
 
     if (visualise_voxel) {
         // After simulation completes, call PlotCells to display the data
-        PlotCells();
+        PlotCells(true, true, true);
     }
     else{
         // Display a message box to inform the user that the simulation is complete

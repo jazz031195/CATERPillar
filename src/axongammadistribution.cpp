@@ -361,10 +361,6 @@ bool AxonGammaDistribution::growPrimaryBranch(Glial &glial_cell, int &nbr_sphere
 
     //cout << "Growing primary branch for glial cell : "<<  glial_cell.id << "/"<< glial_pop1.size()<< endl;
     int j = glial_cell.ramification_spheres.size();
-    glial_cell.ramification_spheres.resize(j + 1);
-    glial_cell.lengths_branches.resize(j + 1);
-    glial_cell.ramification_boxes.resize(j + 1);
-    glial_cell.attractors.resize(j + 1);
 
     // Generate length from Gaussian distribution
     std::random_device rd;
@@ -424,12 +420,17 @@ bool AxonGammaDistribution::growPrimaryBranch(Glial &glial_cell, int &nbr_sphere
     Eigen::Vector3d prev_pos = first_sphere.center;
 
     Glial glial_cell_ = glial_cell;
+
+    glial_cell_.ramification_spheres.resize(j + 1);
+    glial_cell_.lengths_branches.resize(j + 1);
+    glial_cell_.ramification_boxes.resize(j + 1);
+    glial_cell_.attractors.resize(j + 1);
     glial_cell_.ramification_spheres[j] = vector_first_spheres;
     glial_cell_.attractors[j] = attractor;
     glial_cell_.lengths_branches[j] = std::vector<double>(vector_first_spheres.size(), first_sphere.radius);
 
     GlialCellGrowth growth(glial_cell_, glial_pop1, glial_pop2, axons, min_limits, max_limits, min_limits, max_limits, std_dev, glial_cell_.minimum_radius);
-    
+
     double distance = initial_radius + first_radius;
     while (can_grow) {
  
@@ -438,7 +439,7 @@ bool AxonGammaDistribution::growPrimaryBranch(Glial &glial_cell, int &nbr_sphere
         if (R_ <= glial_cell_.minimum_radius or distance >= length) {
             break;
         } else {
-            bool check_collision = glial_cell.ramification_spheres[j].size() >= nbr_non_checked_spheres;
+            bool check_collision = glial_cell_.ramification_spheres[j].size() >= nbr_non_checked_spheres;
             int grow_straight = 0;
             can_grow = growth.AddOneSphere(R_, true, grow_straight, j, check_collision, parent, factor);
         }
@@ -461,7 +462,7 @@ bool AxonGammaDistribution::growPrimaryBranch(Glial &glial_cell, int &nbr_sphere
     if (distance < min_length) {
         return false;
     }
-    else {
+    else if (glial_cell_.ramification_spheres[j].size() != 0) {
         //cout << "Branch grown" << endl;
         glial_cell = std::move(glial_cell_);
         // Update the number of spheres
@@ -469,6 +470,8 @@ bool AxonGammaDistribution::growPrimaryBranch(Glial &glial_cell, int &nbr_sphere
         
         return true;
     }
+    return true;
+
 
 }
 
@@ -1589,6 +1592,16 @@ void AxonGammaDistribution::PlaceGlialCells() {
         return m;
     };
 
+    // fully outside the box
+    auto fully_outside_box = [&](const Sphere& s) {
+        for (int i = 0; i < 3; ++i) {
+            if (s.center[i] + s.radius < min_limits[i] || s.center[i] - s.radius > max_limits[i]) {
+                return true;
+            }
+        }
+        return false;
+    };
+
     auto soma_volume = [](double r) {
         return (4.0 * M_PI * r * r * r) / 3.0;
     };
@@ -1612,6 +1625,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
         Sphere s;
         bool placed = false;
         bool fully_inside = false;
+        bool fully_outside = false;
 
         for (int attempt = 0; attempt < 10000; ++attempt) {
             const double rad = draw_positive_radius(dis_radius_pop1);
@@ -1626,6 +1640,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
 
             if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2)) {
                 fully_inside = (signed_box_margin(s) >= 0.0);
+                fully_outside = fully_outside_box(s);
                 placed = true;
                 break;
             }
@@ -1643,6 +1658,9 @@ void AxonGammaDistribution::PlaceGlialCells() {
         // Count ICVF only if fully inside
         if (fully_inside) {
             glial_icvf_1 += soma_volume(glial_cell.soma.radius) / total_volume;
+        }
+        else if (!fully_outside) {
+            glial_icvf_1 += (soma_volume(glial_cell.soma.radius) / total_volume)/2;
         }
     }
 
@@ -1663,6 +1681,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
         Sphere s;
         bool placed = false;
         bool fully_inside = false;
+        bool fully_outside = false;
 
         for (int attempt = 0; attempt < 10000; ++attempt) {
             const double rad = draw_positive_radius(dis_radius_pop2);
@@ -1677,6 +1696,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
 
             if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2)) {
                 fully_inside = (signed_box_margin(s) >= 0.0);
+                fully_outside = fully_outside_box(s);
                 placed = true;
                 break;
             }
@@ -1694,6 +1714,9 @@ void AxonGammaDistribution::PlaceGlialCells() {
         // Count ICVF only if fully inside
         if (fully_inside) {
             glial_icvf_2 += soma_volume(glial_cell.soma.radius) / total_volume;
+        }
+        else if (!fully_outside) {
+            glial_icvf_2 += (soma_volume(glial_cell.soma.radius) / total_volume)/2;
         }
     }
 
@@ -2571,7 +2594,7 @@ void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
     final_axons = axons;
 
 
-    out << "id_cell id_sph id_branch Type X Y Z Rin Rout P" << endl;
+    out << "cell_type cell_id component component_id X Y Z inner_radius outer_radius" << endl;
     std::sort(final_axons.begin(), final_axons.end(), [](const Axon a, Axon b) -> bool
               { return a.radius < b.radius; }); // sort by size
 
@@ -2590,13 +2613,23 @@ void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
 
         for (long unsigned int j = 0; j < final_axons[i].outer_spheres.size(); j++)
         {
-                if (final_axons[i].inner_spheres.size() > 0)
+            int cell_id = final_axons[i].outer_spheres[j].id;
+            int component_id = 0;
+            std::string cell_type = "axon";
+            std::string component = "axon";
+            double x = final_axons[i].outer_spheres[j].center[0];
+            double y = final_axons[i].outer_spheres[j].center[1];
+            double z = final_axons[i].outer_spheres[j].center[2];
+            double outer_radius = final_axons[i].outer_spheres[j].radius;
+            
+            if (final_axons[i].inner_spheres.size() > 0)
             {
-                out << i << " " << j << " -1 axon " << final_axons[i].outer_spheres[j].center[0] << " " << final_axons[i].outer_spheres[j].center[1] << " " << final_axons[i].outer_spheres[j].center[2] << " " << final_axons[i].inner_spheres[j].radius << " " << final_axons[i].outer_spheres[j].radius << " " << final_axons[i].outer_spheres[j].parent_id << endl;
+                double inner_radius = final_axons[i].inner_spheres[j].radius;
+                out << cell_type << " " <<  cell_id << " " << component << " " << component_id << " " << x << " " << y << " " << z << " " << outer_radius << " " << inner_radius << endl;
             }
             else
             {
-                out << i << " " << j << " -1 axon " << final_axons[i].outer_spheres[j].center[0] << " " << final_axons[i].outer_spheres[j].center[1] << " " << final_axons[i].outer_spheres[j].center[2] << " " << final_axons[i].outer_spheres[j].radius << " " << final_axons[i].outer_spheres[j].radius << " " << final_axons[i].outer_spheres[j].parent_id << endl;
+                out << cell_type << " " <<  cell_id << " " << component << " " << component_id << " " << x << " " << y << " " << z << " " << outer_radius << " " << outer_radius << endl;
             }
             
         }
@@ -2608,24 +2641,59 @@ void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
 
     for (auto &glial_cell : glial_pop1)
     {
-        out << glial_cell.id << " " << glial_cell.soma.id << " -1 CellSoma " << glial_cell.soma.center[0] << " " << glial_cell.soma.center[1] << " " << glial_cell.soma.center[2] << " " << glial_cell.soma.radius << " " << glial_cell.soma.radius << " " << -1 << endl;
+
+        int cell_id = glial_cell.id;
+        int component_id = 0;
+        std::string cell_type = "glial_cell";
+        std::string component = "soma";
+        double x = glial_cell.soma.center[0];
+        double y = glial_cell.soma.center[1];
+        double z = glial_cell.soma.center[2];
+        double outer_radius = glial_cell.soma.radius;
+
+        out << cell_type << " " <<  cell_id << " " << component << " " << component_id << " " << x << " " << y << " " << z << " " << outer_radius << " " << outer_radius << endl;
+        
         for (long unsigned int j = 0; j < glial_cell.ramification_spheres.size(); j++)
         {
+            cell_id = glial_cell.id;
             for (long unsigned int k = 0; k < glial_cell.ramification_spheres[j].size(); k++)
             {
-                out << glial_cell.id << " " << glial_cell.ramification_spheres[j][k].id << " " << glial_cell.ramification_spheres[j][k].branch_id << " Process " << glial_cell.ramification_spheres[j][k].center[0] << " " << glial_cell.ramification_spheres[j][k].center[1] << " " << glial_cell.ramification_spheres[j][k].center[2] << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].parent_id << endl;
+                component_id = glial_cell.ramification_spheres[j][k].branch_id;
+                x = glial_cell.ramification_spheres[j][k].center[0];
+                y = glial_cell.ramification_spheres[j][k].center[1];
+                z = glial_cell.ramification_spheres[j][k].center[2];
+                outer_radius = glial_cell.ramification_spheres[j][k].radius;
+                component = "branch";
+                out << cell_type << " " <<  cell_id << " " << component << " " << component_id << " " << x << " " << y << " " << z << " " << outer_radius << " " << outer_radius << endl;
             }
         }
     }
 
     for (auto &glial_cell : glial_pop2)
     {
-        out << glial_cell.id << " " << glial_cell.soma.id << " -1 CellSoma " << glial_cell.soma.center[0] << " " << glial_cell.soma.center[1] << " " << glial_cell.soma.center[2] << " " << glial_cell.soma.radius << " " << glial_cell.soma.radius << " " << -1 << endl;
+        int cell_id = glial_cell.id;
+        int component_id = 0;
+        std::string cell_type = "glial_cell";
+        std::string component = "soma";
+        double x = glial_cell.soma.center[0];
+        double y = glial_cell.soma.center[1];
+        double z = glial_cell.soma.center[2];
+        double outer_radius = glial_cell.soma.radius;
+
+        out << cell_type << " " <<  cell_id << " " << component << " " << component_id << " " << x << " " << y << " " << z << " " << outer_radius << " " << outer_radius << endl;
+        
         for (long unsigned int j = 0; j < glial_cell.ramification_spheres.size(); j++)
         {
+            cell_id = glial_cell.id;
             for (long unsigned int k = 0; k < glial_cell.ramification_spheres[j].size(); k++)
             {
-                out << glial_cell.id << " " << glial_cell.ramification_spheres[j][k].id << " " << glial_cell.ramification_spheres[j][k].branch_id << " Process " << glial_cell.ramification_spheres[j][k].center[0] << " " << glial_cell.ramification_spheres[j][k].center[1] << " " << glial_cell.ramification_spheres[j][k].center[2] << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].radius << " " << glial_cell.ramification_spheres[j][k].parent_id << endl;
+                component_id = glial_cell.ramification_spheres[j][k].branch_id;
+                x = glial_cell.ramification_spheres[j][k].center[0];
+                y = glial_cell.ramification_spheres[j][k].center[1];
+                z = glial_cell.ramification_spheres[j][k].center[2];
+                outer_radius = glial_cell.ramification_spheres[j][k].radius;
+                component = "branch";
+                out << cell_type << " " <<  cell_id << " " << component << " " << component_id << " " << x << " " << y << " " << z << " " << outer_radius << " " << outer_radius << endl;
             }
         }
     }
