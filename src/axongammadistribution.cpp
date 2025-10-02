@@ -2441,38 +2441,34 @@ double get_axonal_length(Axon axon)
 }
 
 
+double AxonGammaDistribution::RandomradiusVariation(Axon &axon) 
+{ 
+    double prev_radius = axon.outer_spheres[axon.outer_spheres.size()-1].radius; 
 
-double AxonGammaDistribution::RandomradiusVariation(Axon &axon) {
-    double prev_radius = axon.outer_spheres[axon.outer_spheres.size()-1].radius;
+    if (prev_radius < axon.radius-axon.beading_amplitude*axon.radius) 
+    { 
+        prev_radius = axon.radius-axon.beading_amplitude*axon.radius; 
+    } 
+    else if (prev_radius > axon.radius+axon.beading_amplitude*axon.radius) 
+    { 
+        prev_radius = axon.radius+axon.beading_amplitude*axon.radius; 
+    } 
+    double standard_deviation = axon.beading_amplitude * axon.radius / 3; 
 
+    std::normal_distribution<double> dis(prev_radius, standard_deviation); 
 
-    if (prev_radius < axon.radius-axon.beading_amplitude*axon.radius)
-    {
-        prev_radius = axon.radius-axon.beading_amplitude*axon.radius;
-    }
-    else if (prev_radius > axon.radius+axon.beading_amplitude*axon.radius)
-    {
-        prev_radius = axon.radius+axon.beading_amplitude*axon.radius;
-    }
+    double random_radius = dis(gen); 
 
-    double standard_deviation = axon.beading_amplitude * axon.radius / 3;
+    while (random_radius > prev_radius+3* standard_deviation || random_radius < prev_radius-3*standard_deviation) 
+    { 
+        random_radius = dis(gen); 
+    } 
+    if (random_radius < min_radius) 
+    { 
+        random_radius = min_radius; 
+    } 
+return random_radius; }
 
-    std::normal_distribution<double> dis(prev_radius, standard_deviation);
-
-    double random_radius = dis(gen);
-
-    while (random_radius > prev_radius+3* standard_deviation || random_radius < prev_radius-3*standard_deviation)
-    {
-        random_radius = dis(gen);
-    }
-    
-    if (random_radius < min_radius)
-    {
-        random_radius = min_radius;
-    }
-
-    return random_radius;
-}
 /*
 double AxonGammaDistribution::RandomradiusVariation(Axon& axon)   // you pass an id or index for the axon
 {
@@ -2613,7 +2609,7 @@ void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
 
         for (long unsigned int j = 0; j < final_axons[i].outer_spheres.size(); j++)
         {
-            int cell_id = final_axons[i].outer_spheres[j].id;
+            int cell_id = final_axons[i].outer_spheres[j].object_id;
             int component_id = 0;
             std::string cell_type = "axon";
             std::string component = "axon";
