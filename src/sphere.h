@@ -93,6 +93,14 @@ public:
 
     Eigen::Vector3d getNormalOnSpherePoint(Eigen::Vector3d point);
 
+    inline double estimateFraction9(const Eigen::Vector3d& bmin,
+                                const Eigen::Vector3d& bmax,
+                                const double R2);
+    double sphereBoxIntersectionVolume(const Eigen::Vector3d& min_limits,
+                                   const Eigen::Vector3d& max_limits,
+                                   double eps_rel = 1e-12,
+                                   int    max_depth = 20);
+
 
 };  
 
