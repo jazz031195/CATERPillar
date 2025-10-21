@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "Eigen/Core"
 #include <QMainWindow>
 #include <QSlider>
 #include <QLabel>
@@ -32,6 +33,8 @@ public:
     void HideGlialCells();
     void HideAxons();
     void ShowAllCells();
+    bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
+
 
     
 private slots:
@@ -77,6 +80,7 @@ private:
     QLabel *glial_pop2_mean_process_length_qlabel;
     QLabel *glial_pop2_std_process_length_qlabel;
     QLabel *beading_amplitude_qlabel;
+    QLabel *beading_std_qlabel;
     QLabel *alpha_qlabel;
     QLabel *beta_qlabel;
     QLabel *glial_pop1_radius_mean_qlabel;
@@ -112,6 +116,7 @@ private:
     QDoubleSpinBox *glial_pop2_mean_process_length_SpinBox;
     QDoubleSpinBox *glial_pop2_std_process_length_SpinBox;
     QDoubleSpinBox *beading_amplitude_SpinBox;
+    QDoubleSpinBox *beading_std_SpinBox;
     QDoubleSpinBox *alpha_SpinBox;
     QDoubleSpinBox *beta_SpinBox;
     QDoubleSpinBox *glial_pop1_radius_mean_SpinBox;
@@ -161,6 +166,7 @@ private:
     double mean_process_length;
     double std_process_length;
     double beading_amplitude;
+    double beading_std;
     double epsilon;
     double alpha;
     double beta;

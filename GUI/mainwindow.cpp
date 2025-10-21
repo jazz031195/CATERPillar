@@ -317,6 +317,7 @@ QGroupBox* Window::createControls(const QString &title)
     nbr_axons_populations_qlabel = new QLabel(tr("Number of populations:"));
     epsilon_qlabel = new QLabel(tr("ε (tortuousity):"));
     beading_amplitude_qlabel = new QLabel(tr("Beading Amplitude :"));
+    beading_std_qlabel = new QLabel(tr("Beading Standard Deviation :"));
     glial_pop1_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
     glial_pop1_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
     glial_pop2_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
@@ -345,6 +346,11 @@ QGroupBox* Window::createControls(const QString &title)
     beading_amplitude_SpinBox->setRange(0, 1);
     beading_amplitude_SpinBox->setSingleStep(0.1);
     beading_amplitude_SpinBox->setValue(0.3);
+
+    beading_std_SpinBox = new QDoubleSpinBox;
+    beading_std_SpinBox->setRange(0, 1);
+    beading_std_SpinBox->setSingleStep(0.1);
+    beading_std_SpinBox->setValue(0.1);
 
     alpha_SpinBox = new QDoubleSpinBox;
     alpha_SpinBox->setRange(0, 10);
@@ -498,8 +504,8 @@ QGroupBox* Window::createControls(const QString &title)
     std::vector<QLabel*> general_labels = {voxel_size_qlabel, overlapping_factor_qlabel, minimum_radius_qlabel};
     std::vector <QDoubleSpinBox*> general_spinBoxes = { voxel_size_SpinBox, overlapping_factor_SpinBox, minimum_radius_SpinBox};
     
-    std::vector<QLabel*> axons_labels = {axons_w_myelin_icvf_qlabel, k1_qlabel, k2_qlabel, k3_qlabel, axons_icvf_qlabel ,nbr_threads_qlabel, epsilon_qlabel, c2_qlabel, nbr_axons_populations_qlabel, beading_amplitude_qlabel, alpha_qlabel, beta_qlabel};
-    std::vector <QDoubleSpinBox*> axons_spinBoxes = {axons_w_myelin_icvf_SpinBox, k1_SpinBox, k2_SpinBox, k3_SpinBox, axons_icvf_SpinBox, nbr_threads_SpinBox, epsilon_SpinBox, c2_SpinBox, nbr_axons_populations_SpinBox, beading_amplitude_SpinBox, alpha_SpinBox, beta_SpinBox};
+    std::vector<QLabel*> axons_labels = {axons_w_myelin_icvf_qlabel, k1_qlabel, k2_qlabel, k3_qlabel, axons_icvf_qlabel ,nbr_threads_qlabel, epsilon_qlabel, c2_qlabel, nbr_axons_populations_qlabel, beading_amplitude_qlabel, beading_std_qlabel, alpha_qlabel, beta_qlabel};
+    std::vector <QDoubleSpinBox*> axons_spinBoxes = {axons_w_myelin_icvf_SpinBox, k1_SpinBox, k2_SpinBox, k3_SpinBox, axons_icvf_SpinBox, nbr_threads_SpinBox, epsilon_SpinBox, c2_SpinBox, nbr_axons_populations_SpinBox, beading_amplitude_SpinBox, beading_std_SpinBox, alpha_SpinBox, beta_SpinBox};
     
     std::vector<QLabel*> glials_labels1 = {glial_pop1_soma_icvf_qlabel, glial_pop1_processes_icvf_qlabel, glial_pop1_radius_mean_qlabel, glial_pop1_radius_std_qlabel, glial_pop1_mean_process_length_qlabel, glial_pop1_std_process_length_qlabel, glial_pop1_nbr_primary_processes_qlabel};
     std::vector <QDoubleSpinBox*> glials_spinBoxes1 = {glial_pop1_soma_icvf_SpinBox, glial_pop1_processes_icvf_SpinBox, glial_pop1_radius_mean_SpinBox, glial_pop1_radius_std_SpinBox, glial_pop1_mean_process_length_SpinBox, glial_pop1_std_process_length_SpinBox, glial_pop1_nbr_primary_processes_SpinBox};
@@ -633,6 +639,7 @@ void Window::onSaveButtonClicked()
     c2 = c2_SpinBox->value();
     nbr_axons_populations = nbr_axons_populations_SpinBox->value();
     beading_amplitude = beading_amplitude_SpinBox->value();
+    beading_std = beading_std_SpinBox->value();
     glial_pop1_mean_process_length = glial_pop1_mean_process_length_SpinBox->value();
     glial_pop1_std_process_length = glial_pop1_std_process_length_SpinBox->value();
     glial_pop2_mean_process_length = glial_pop2_mean_process_length_SpinBox->value();
@@ -826,6 +833,23 @@ void Window::ReadGlialCellsFromSWC(const QString& fileName){
     swcFile.close();
 }
 
+// Function to check if a point is inside a dilated box
+bool Window::check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border) {
+
+    
+    // Check if the point is inside the dilated box
+    for (int i = 0; i < 3; ++i) {
+        double min_bound = min_l[i] - distance_to_border;
+        double max_bound = max_l[i] + distance_to_border;
+        if (pos[i] < min_bound || pos[i] > max_bound) {
+            return false; // Point is outside the dilated box
+        }
+    }
+    
+    return true; // Point is inside the dilated box
+}
+
+
 void Window::StartSimulation(){
 
     Parameters parameters;
@@ -871,7 +895,7 @@ void Window::StartSimulation(){
             auto startTime = std::chrono::high_resolution_clock::now();
             // create distribution of axons
             AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, alpha, beta,
-                                             min_l, max_l, min_radius, regrow_thr, beading_amplitude, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
+                                             min_l, max_l, min_radius, regrow_thr, beading_amplitude, beading_std, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
                                               glial_pop1_mean_process_length, glial_pop1_std_process_length, glial_pop2_mean_process_length, glial_pop2_std_process_length,
                                               glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, glial_pop1_nbr_primary_processes, glial_pop2_nbr_primary_processes, k1, k2, k3);
             AxonDistribution.createSubstrate();
@@ -882,10 +906,19 @@ void Window::StartSimulation(){
                 std::vector<double> z_;
                 std::vector<double> r_;
                 for (unsigned j=0; j< AxonDistribution.axons[i].outer_spheres.size(); ++j){
-                    x_.push_back(AxonDistribution.axons[i].outer_spheres[j].center[0]);
-                    y_.push_back(AxonDistribution.axons[i].outer_spheres[j].center[1]);
-                    z_.push_back(AxonDistribution.axons[i].outer_spheres[j].center[2]);
-                    r_.push_back(AxonDistribution.axons[i].outer_spheres[j].radius);
+
+                    double _x_ = AxonDistribution.axons[i].outer_spheres[j].center[0];
+                    double _y_ = AxonDistribution.axons[i].outer_spheres[j].center[1];
+                    double _z_ = AxonDistribution.axons[i].outer_spheres[j].center[2];
+                    double _r_ = AxonDistribution.axons[i].outer_spheres[j].radius;
+                    Eigen::Vector3d pos = {_x_, _y_, _z_};
+
+                    if (check_borders(min_l, max_l, pos, _r_)) {
+                        x_.push_back(_x_);
+                        y_.push_back(_y_);
+                        z_.push_back(_z_);
+                        r_.push_back(_r_);
+                    }
                 }
                 X_axons.push_back(x_);
                 Y_axons.push_back(y_);
@@ -904,19 +937,37 @@ void Window::StartSimulation(){
                 std::vector<double> r_;
                 std::vector<int> b_;
 
-                x_.push_back(AxonDistribution.glial_pop1[i].soma.center[0]);
-                y_.push_back(AxonDistribution.glial_pop1[i].soma.center[1]);
-                z_.push_back(AxonDistribution.glial_pop1[i].soma.center[2]);
-                r_.push_back(AxonDistribution.glial_pop1[i].soma.radius);
-                b_.push_back(0);
+                double _x_ = AxonDistribution.glial_pop1[i].soma.center[0];
+                double _y_ = AxonDistribution.glial_pop1[i].soma.center[1];
+                double _z_ = AxonDistribution.glial_pop1[i].soma.center[2];
+                double _r_ = AxonDistribution.glial_pop1[i].soma.radius;
+                Eigen::Vector3d pos = {_x_, _y_, _z_};
+
+                if (check_borders(min_l, max_l, pos, _r_)) {
+                    x_.push_back(_x_);
+                    y_.push_back(_y_);
+                    z_.push_back(_z_);
+                    r_.push_back(_r_);
+                    b_.push_back(0);
+                }
+
 
                 for (unsigned j=0; j< AxonDistribution.glial_pop1[i].ramification_spheres.size(); ++j){
 
                     for (unsigned k=0; k< AxonDistribution.glial_pop1[i].ramification_spheres[j].size(); ++k){
-                        x_.push_back(AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[0]);
-                        y_.push_back(AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[1]);
-                        z_.push_back(AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[2]);
-                        r_.push_back(AxonDistribution.glial_pop1[i].ramification_spheres[j][k].radius);
+
+                        double _x_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[0];
+                        double _y_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[1];
+                        double _z_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[2];
+                        double _r_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].radius;
+                        Eigen::Vector3d pos = {_x_, _y_, _z_};
+                        if (!check_borders(min_l, max_l, pos, _r_)) {
+                            continue;
+                        }
+                        x_.push_back(_x_);
+                        y_.push_back(_y_);
+                        z_.push_back(_z_);
+                        r_.push_back(_r_);
                         b_.push_back(j);
                     }
                 }
@@ -940,19 +991,36 @@ void Window::StartSimulation(){
                 std::vector<double> r_;
                 std::vector<int> b_;
 
-                x_.push_back(AxonDistribution.glial_pop2[i].soma.center[0]);
-                y_.push_back(AxonDistribution.glial_pop2[i].soma.center[1]);
-                z_.push_back(AxonDistribution.glial_pop2[i].soma.center[2]);
-                r_.push_back(AxonDistribution.glial_pop2[i].soma.radius);
-                b_.push_back(0);
+                double _x_ = AxonDistribution.glial_pop2[i].soma.center[0];
+                double _y_ = AxonDistribution.glial_pop2[i].soma.center[1];
+                double _z_ = AxonDistribution.glial_pop2[i].soma.center[2];
+                double _r_ = AxonDistribution.glial_pop2[i].soma.radius;
+
+                if (check_borders(min_l, max_l, {_x_, _y_, _z_}, _r_)) {
+                    x_.push_back(_x_);
+                    y_.push_back(_y_);
+                    z_.push_back(_z_);
+                    r_.push_back(_r_);
+                    b_.push_back(0);
+                }
+
 
                 for (unsigned j=0; j< AxonDistribution.glial_pop2[i].ramification_spheres.size(); ++j){
 
                     for (unsigned k=0; k< AxonDistribution.glial_pop2[i].ramification_spheres[j].size(); ++k){
-                        x_.push_back(AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[0]);
-                        y_.push_back(AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[1]);
-                        z_.push_back(AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[2]);
-                        r_.push_back(AxonDistribution.glial_pop2[i].ramification_spheres[j][k].radius);
+
+                        double _x_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[0];
+                        double _y_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[1];
+                        double _z_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[2];
+                        double _r_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].radius;
+
+                        if (!check_borders(min_l, max_l, {_x_, _y_, _z_}, _r_)) {
+                            continue;
+                        }
+                        x_.push_back(_x_);
+                        y_.push_back(_y_);
+                        z_.push_back(_z_);
+                        r_.push_back(_r_);
                         b_.push_back(j);
                     }
                 }
