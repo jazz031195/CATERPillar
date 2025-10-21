@@ -81,6 +81,7 @@ public:
     double max_radius;                  /*!< Maximum radius value of all axons */
 
     double beading_variation;              /*!< For beading: percentage of variation between the maximum radius and minimum radius in each axon. If set to 1, there is no "beading" */
+    double beading_std;                    /*!< Standard deviation of the variation in beading */
     double std_dev;                     /*< Standard deviation for gaussian distribution in generation of directions to grow in */ 
     int ondulation_factor;              /*!< axon ondulation factor : the number of spheres during whoch the axon grows straight before picking a direction from gaussian distribution  */
     double mean_glial_pop1_process_length;   /*!< Mean length of glial processes */
@@ -93,6 +94,7 @@ public:
     double c1;                              /*!< First coefficient of the Myelin thickness */
     double c2;                              /*!< Second coefficient of the Myelin thickness */
     double c3;                              /*!< Third coefficient of the Myelin thickness */
+    double expanded_for_glial_space;         /*!< Volume expansion factor to account for glial space */
 
     struct CDF {
       std::vector<double> kappas;              // Row indices (kappas)
@@ -112,7 +114,7 @@ public:
      */
     AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &glial_pop1_icvf_soma_, const double &glial_pop1_icvf_branches_, const double &glial_pop2_icvf_soma_, const double &glial_pop2_icvf_branches_, const double &a, const double &b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
-                                              const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
+                                              const int &regrow_thr_, const double &beading_variation_,const double &beading_variation_std, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
                                               const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
                                               const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_,
                                               const double &c1_, const double &c2_, const double &c3_);
@@ -345,7 +347,7 @@ public:
 
     double RandomradiusVariation(Axon &axon);
 
-    void growBranches(std::vector<Glial>& glial_cell_list, const int &population_nbr);
+    void growBranches(const int &population_nbr);
 
     void ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos);
     
@@ -360,7 +362,7 @@ public:
     double originalFunction(const double &x, const double &outerRadius);
     double derivative(const double &x);
     double myelin_thickness(const double &inner_radius);
-    void ThreadGrowthGlialCells(std::vector<Glial>& glial_cell_list, const double &mean_process_length, const double &std_process_length, std::vector<int> &nbr_spheres, const int &max_nbr_processes);
+
 };
 
 

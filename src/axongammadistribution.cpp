@@ -43,7 +43,7 @@ std::vector<std::string> _split_line(const std::string &s, char delim)
 
 AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &glial_pop1_icvf_soma_, const double &glial_pop1_icvf_branches_, const double &glial_pop2_icvf_soma_, const double &glial_pop2_icvf_branches_, const double &a, const double &b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
-                                              const int &regrow_thr_, const double &beading_variation_, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
+                                              const int &regrow_thr_, const double &beading_variation_, const double &beading_variation_std, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
                                               const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
                                               const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_,
                                               const double &c1_, const double &c2_, const double &c3_)
@@ -59,6 +59,7 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
     target_glial_pop2_soma_icvf = glial_pop2_icvf_soma_;
     target_glial_pop2_branches_icvf = glial_pop2_icvf_branches_;
     nbr_axons_populations = nbr_axons_populations_;
+    expanded_for_glial_space = 0;
 
     glial_pop1_soma_icvf = 0.0;
     glial_pop1_branches_icvf = 0.0;
@@ -82,6 +83,7 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
     min_radius = min_radius_;
     regrow_thr = regrow_thr_;
     beading_variation = beading_variation_;
+    beading_std = beading_variation_std;
     std_dev = std_dev_;
     ondulation_factor = ondulation_factor_;
 
@@ -141,378 +143,57 @@ void display_progress(double nbr_axons, double number_obstacles)
 }
 
 
-// Function to find intersection points between a vector and each face of the cube
-Eigen::Vector3d findDistantPoint(const Eigen::Vector3d &vector, const Eigen::Vector3d &point, const double &L)
-{
-    double distance = L + 10; // Large initial distance
-    Eigen::Vector3d distant_point = point + distance * vector;
-    return distant_point;
-}
 
-std::vector<Sphere> AxonGammaDistribution::addIntermediateSpheres(const Sphere &random_sphere, const Sphere &first_sphere,  const int &branch_nbr, const int &nbr_spheres, const int &nbr_spheres_between) {
-    
-    std::vector<Sphere> intermediate_spheres;
+/*
 
-    // Direction vector for sphere placement
-    Eigen::Vector3d direction = (first_sphere.center - random_sphere.center).normalized();
-    double total_distance = (first_sphere.center - random_sphere.center).norm();
-    double distance_between_spheres = total_distance / (nbr_spheres_between + 1);
+bool AxonGammaDistribution::growPartialBranch(){
 
-    // Add intermediate spheres
-    for (int i = 0; i < nbr_spheres_between; ++i) {
-        Eigen::Vector3d position = random_sphere.center + direction * distance_between_spheres * (i + 1);
-        double rad = random_sphere.radius +
-                        (first_sphere.radius - random_sphere.radius) * (i + 1) / (nbr_spheres_between + 1);
-
-        Sphere next(
-            nbr_spheres + i + 1, first_sphere.object_id, first_sphere.object_type, position, rad, branch_nbr,
-            random_sphere.id);
-
-        // Check if the sphere can be placed
-        if (canSpherebePlaced(next, axons, glial_pop1, glial_pop2)) {
-            intermediate_spheres.emplace_back(next);
-        }
-    }
-
-    // Add the initial branching sphere to the list
-    intermediate_spheres.push_back(first_sphere);
-
-    return intermediate_spheres;
-}
-
-bool AxonGammaDistribution::growSecondaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &std_process_length) {
-
-    //cout << "Growing seondary branch for glial cell : "<<  glial_cell.id<< endl;
-    if (glial_cell.ramification_spheres.empty()) {
-        cout << "No branches in glial cell" << endl;
-        return false;
-    }
-    if (nbr_spheres <= 0) {
-        cout << "No spheres in glial cell : " <<  glial_cell.id << endl;
-        return false;
-    }
-
-    int nbr_branches = glial_cell.ramification_spheres.size();
-
-    std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<int> branch_dist(0, nbr_branches - 1);
-    bool finished = false;
-
-    // finding source of branching
-    int nbr_spheres_between = factor - 1;
-
-
-    int random_branch = branch_dist(rng);
-    while (glial_cell.ramification_spheres[random_branch].empty()) {
-        random_branch = branch_dist(rng);
-    }
-
-    int size = glial_cell.ramification_spheres[random_branch].size();
-    //int random_sphere_ind = size / 2 + rand() % (size - size / 2);
-    int random_sphere_ind = rand() % size ;
-    Sphere random_sphere = glial_cell.ramification_spheres[random_branch][random_sphere_ind];
-    if (glial_cell.lengths_branches.size() <= random_branch) {
-        cout << "glial_cell.lengths_branches.size() : " << glial_cell.lengths_branches.size() << endl;
-        cout << "random_branch : " << random_branch << endl;
-        cout << "Error: lengths_branches vector is not large enough." << endl;
-        assert(0);
-    }
-    double old_length = glial_cell.lengths_branches[random_branch][random_sphere_ind];
-    std::random_device rd;
-    std::mt19937 generator(rd());
-
-    std::normal_distribution<double> length_dist(mean_process_length - old_length, std_process_length);
-    double length_to_grow = length_dist(generator);
-    double min_length_to_grow = 0.5*length_to_grow;
-    int nbr_non_checked_spheres = factor*3 ;
-
-
-    int count = 0;
-    while (count < 100 && length_to_grow < min_length_to_grow) {
-        length_to_grow = length_dist(generator);
-        count++;
-    }
-
-    if (length_to_grow < min_length_to_grow) {
-        return false;
-    }
-
-    Eigen::Vector3d vector_to_prev_sphere = (random_sphere.center - glial_cell.ramification_spheres[random_branch][random_sphere_ind - 1].center).normalized();
-    Sphere first_sphere;
-    Eigen::Vector3d attractor = Eigen::Vector3d(0, 0, 0);
-    double initial_radius = random_sphere.radius;
-    bool first_sphere_created = GenerateFirstSphereinProcess(first_sphere, attractor, initial_radius, random_sphere, vector_to_prev_sphere, nbr_spheres, nbr_spheres_between, glial_cell.id, nbr_branches, false);
-
-    double alpha = -std::log(glial_cell.minimum_radius / initial_radius)/length_to_grow;
-
-    auto compute_radius = [&](double t) {
-        return std::exp(-alpha * t) * initial_radius;
-    };
-    
-    //length_to_grow = dist_non_checked_spheres + length_to_grow;
-    //cout <<" length to grow : " << length_to_grow << endl;
-
-
-    if (!first_sphere_created) {
-        return false;
-    }
-
-    std::vector<Sphere> vector_first_spheres;
-    if (factor > 1) {
-        // add spheres between the first and the last
-        vector_first_spheres = addIntermediateSpheres(random_sphere, first_sphere, nbr_branches, nbr_spheres, nbr_spheres_between);
-    } else {
-        vector_first_spheres = {first_sphere};
-    }
-
-    Glial glial_cell_ = glial_cell;
-    int current_branch = glial_cell_.ramification_spheres.size();
-    if (glial_cell_.ramification_spheres.size() <= current_branch) {
-        glial_cell_.ramification_spheres.resize(current_branch + 1);
-        glial_cell_.ramification_boxes.resize(current_branch + 1);
-        glial_cell_.lengths_branches.resize(current_branch + 1);
-        glial_cell_.lengths_branches[current_branch].resize(vector_first_spheres.size());
-    }
-    glial_cell_.ramification_spheres[current_branch]= vector_first_spheres;
-    glial_cell_.lengths_branches[current_branch] = std::vector<double>(vector_first_spheres.size(), old_length);
-    glial_cell_.attractors.push_back(attractor);
-
-    // grow glial cell process
-
-    GlialCellGrowth growth(glial_cell_,  glial_pop1, glial_pop2, axons, min_limits, max_limits, min_limits, max_limits, std_dev, glial_cell_.minimum_radius);
-
-    Eigen::Vector3d prev_pos = first_sphere.center;
-    double distance = initial_radius;
-    double total_distance = initial_radius + old_length;
-    bool can_grow = true;
-    int stop_criteria = 0;
-
-    int parent = random_sphere.id;
-
-    while (can_grow && stop_criteria < 1e5) {
-
-        double R_ = compute_radius(distance);
-
-        if (R_ <= glial_cell_.minimum_radius || distance >= length_to_grow) {
-            can_grow = false;
-
-        } 
-        else {
-            int grow_straight = 0;
-            can_grow = growth.AddOneSphere(R_, true, grow_straight, current_branch, glial_cell_.ramification_spheres.back().size() > nbr_non_checked_spheres, parent, factor);
-            if (can_grow) {
-                glial_cell_ = std::move(growth.glial_cell_to_grow);
-                double segment = (prev_pos - glial_cell_.ramification_spheres.back().back().center).norm();
-                distance += segment;
-                total_distance += segment;
-                int nbr_spheres_in_branch_before = glial_cell_.lengths_branches[current_branch].size();
-                int nbr_spheres_in_branch_after = glial_cell_.ramification_spheres.back().size();
-                for (int i = nbr_spheres_in_branch_before; i < nbr_spheres_in_branch_after; i++) {
-                    glial_cell_.lengths_branches[current_branch].push_back(total_distance);
-                }
-                prev_pos = glial_cell_.ramification_spheres.back().back().center;
-                parent = glial_cell_.ramification_spheres.back().back().id;
-            }
-        }
-
-        stop_criteria++;
-    }
-
-    if (distance > min_length_to_grow && glial_cell_.ramification_spheres.back().size() > nbr_non_checked_spheres) {
-        finished = true;
-        nbr_spheres += glial_cell_.ramification_spheres.back().size();
-        glial_cell = std::move(glial_cell_);
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-
-bool AxonGammaDistribution::GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::Vector3d &attractor, const double &radius, const Sphere &sphere_to_emerge_from, const Eigen::Vector3d &vector_to_prev_center, const int &nbr_spheres, const int &nbr_spheres_between, const int &cell_id, const int &branch_id, const bool &primary_process) {
-    
-    bool stop = false;
-    int tries_ = 0;
-    int max_nbr_tries = 100;
-    attractor = Eigen::Vector3d(0, 0, 0);
-
-
-    while (!stop && tries_ < max_nbr_tries) {
-        Eigen::Vector3d vector = {0, 0, 0};
-        Eigen::Vector3d point = {0, 0, 0};
-        sphere_to_emerge_from.getPointOnSphereSurface(point, vector, vector_to_prev_center, primary_process);
-        attractor = findDistantPoint(vector, point, max_limits[0]);
-        first_sphere = Sphere(nbr_spheres + nbr_spheres_between + 1, cell_id, 1, point, radius, branch_id, sphere_to_emerge_from.id);
-        if (canSpherebePlaced(first_sphere, axons, glial_pop1, glial_pop2)) {
-            stop = true;
-            // check boundaries
-            if (!withinBounds(first_sphere.center, glial_pop1_radius_mean)) {
-                stop = false;
-            }  
-        } else {
-            tries_++;
-            if (tries_ == max_nbr_tries) return false;
-        }
-    }
-    return true;
-}
-
-bool AxonGammaDistribution::growPrimaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_primary_process_length, const double &std_primary_process_length) {
-
-    //cout << "Growing primary branch for glial cell : "<<  glial_cell.id << "/"<< glial_pop1.size()<< endl;
-    int j = glial_cell.ramification_spheres.size();
-
-    // Generate length from Gaussian distribution
-    std::random_device rd;
-    std::mt19937 generator(rd());
-    std::normal_distribution<double> length_dist(mean_primary_process_length, std_primary_process_length);
-    double length = length_dist(generator);
-    double min_length = 0.5*length; // Minimum length to grow a branch
-    int tries = 0;
-    while (length < min_length && tries < 100) {
-        length = length_dist(generator);
-    }
-
-    if (length < min_length) {
-        return false;
-    }
-
-    double initial_radius = glial_cell.soma.radius/3;
-    double alpha = -std::log(glial_cell.minimum_radius / initial_radius)/length;
-
-    auto compute_radius = [&](double t) {
-        return std::exp(-alpha * t) * initial_radius;
+    auto draw_positive_radius = [&](std::normal_distribution<>& dis) {
+        double r;
+        do { r = dis(gen); } while (r <= 0.0);
+        return r;
     };
 
+    std::uniform_real_distribution<double> udist(0, 1);
+    std::uniform_real_distribution<double> dist_const(3, 15);
 
-    // Find points on the surface of the glial soma sphere
-    bool stop = false;
-    tries = 0;
-    // Add the first sphere with intermediate spheres
-    int parent = 0;  // parent is the soma
-    int nbr_spheres_between = factor - 1;
+    auto generate_sphere = [&]() {
 
-    Eigen::Vector3d vector_to_prev_center = {0, 0, 0};
-    Sphere first_sphere;
-    Eigen::Vector3d attractor = Eigen::Vector3d(0, 0, 0);
-    double first_radius = compute_radius(initial_radius);
-    bool first_sphere_created = GenerateFirstSphereinProcess(first_sphere, attractor, first_radius, glial_cell.soma, vector_to_prev_center, nbr_spheres, nbr_spheres_between, glial_cell.id, j, true);
+        // find free spot on (0,0,0) (0,0,L) plane
 
-    if (!first_sphere_created) {
-        return false;
-    }
+        double dist_x = udist(gen) * (max_limits[0] - min_limits[0]) + min_limits[0];
+        double dist_y = udist(gen) * (max_limits[1] - min_limits[1]) + min_limits[1];
 
-    std::vector<Sphere> vector_first_spheres;
-    if (factor >1)
-    {
-        // add spheres between the first and the last
-        vector_first_spheres = addIntermediateSpheres(glial_cell.soma, first_sphere, j, nbr_spheres, nbr_spheres_between);
-    }
-    else{
-        vector_first_spheres = {first_sphere};
-    }
+        Eigen::Vector3d point_on_plane = Eigen::Vector3d(dist_x, dist_y, min_limits[2]);
 
-    int nbr_non_checked_spheres = factor * 3;
+        // find radius from normal distribution
+        std::normal_distribution<double> glial_pop1_radius_dist(glial_pop1_radius_mean, glial_pop1_radius_std);
 
-    // Grow spheres in the branch
-    bool can_grow = true;
+        double constant = dist_const(gen);
+        double radius_sphere= draw_positive_radius(glial_pop1_radius_dist)/constant;
 
-    Eigen::Vector3d prev_pos = first_sphere.center;
+        Sphere sphere(0, -1, 1, point_on_plane, radius_sphere, -1, -1);
 
-    Glial glial_cell_ = glial_cell;
+        return sphere;
+    };
 
-    glial_cell_.ramification_spheres.resize(j + 1);
-    glial_cell_.lengths_branches.resize(j + 1);
-    glial_cell_.ramification_boxes.resize(j + 1);
-    glial_cell_.attractors.resize(j + 1);
-    glial_cell_.ramification_spheres[j] = vector_first_spheres;
-    glial_cell_.attractors[j] = attractor;
-    glial_cell_.lengths_branches[j] = std::vector<double>(vector_first_spheres.size(), first_sphere.radius);
+    // create sphere on plane
+    Sphere sphere = generate_sphere();
 
-    GlialCellGrowth growth(glial_cell_, glial_pop1, glial_pop2, axons, min_limits, max_limits, min_limits, max_limits, std_dev, glial_cell_.minimum_radius);
-
-    double distance = initial_radius + first_radius;
-    while (can_grow) {
- 
-        // Calculate the radius at the current distance
-        double R_ = compute_radius(distance);
-        if (R_ <= glial_cell_.minimum_radius or distance >= length) {
-            break;
-        } else {
-            bool check_collision = glial_cell_.ramification_spheres[j].size() >= nbr_non_checked_spheres;
-            int grow_straight = 0;
-            can_grow = growth.AddOneSphere(R_, true, grow_straight, j, check_collision, parent, factor);
-        }
-
-        if (can_grow) {
-            glial_cell_ = growth.glial_cell_to_grow;
-            const auto &new_sphere = glial_cell_.ramification_spheres[j].back();
-            distance += (prev_pos - new_sphere.center).norm();
-            prev_pos = new_sphere.center;
-            int nbr_spheres_in_branch_before = glial_cell_.lengths_branches[j].size();
-            int nbr_spheres_in_branch_after = glial_cell_.ramification_spheres.back().size();
-            for (int i = nbr_spheres_in_branch_before; i < nbr_spheres_in_branch_after; i++) {
-                glial_cell_.lengths_branches[j].push_back(distance);
-            }
-        }
-    }
-
-
-    // Check if the branch has grown sufficiently
-    if (distance < min_length) {
-        return false;
-    }
-    else if (glial_cell_.ramification_spheres[j].size() != 0) {
-        //cout << "Branch grown" << endl;
-        glial_cell = std::move(glial_cell_);
-        // Update the number of spheres
-        nbr_spheres += glial_cell.ramification_spheres.back().size();
-        
-        return true;
-    }
-    return true;
-
-
-}
-
-
-void AxonGammaDistribution::growFirstPrimaryBranches(Glial &glial_cell, const int &number_ramification_points, int &nbr_spheres, const double &mean_process_length, const double &std_process_length)
-{
-
+    bool canSpherebePlaced(sphere, axons, glial_pop1, glial_pop2);
 
     int nbr_tries = 0;
-    for (int j = 0; j < number_ramification_points; j++)
-    {
-        bool has_grown = growPrimaryBranch(glial_cell, nbr_spheres, mean_process_length, std_process_length);
-        if (!has_grown && nbr_tries < 100){
-            j = j - 1;
-            nbr_tries += 1;
-        }
-        else if (nbr_tries >= 1000){
-            cout << "Failed to grow glial cell" << endl;
-        }
-        else{
-            nbr_tries = 0;
-        }
-        
+
+    while (!canSpherebePlaced && nbr_tries < 100) {
+        sphere = generate_sphere();
+        canSpherebePlaced = canSpherebePlaced(sphere, axons, glial_pop1, glial_pop2);
     }
 
+    // define attractor 
+    Eigen::Vector3d attractor = sphere.center + Eigen::Vector3d(0, 0, max_limits[2] - min_limits[2]) + 10;
 
 }
-
-bool AxonGammaDistribution::withinBounds(const Eigen::Vector3d &pos, const double &distance)
-{
-    // Check if the point is inside the dilated box
-    for (int i = 0; i < 3; ++i) {
-        double min_bound = min_limits[i] - distance;
-        double max_bound = max_limits[i] + distance;
-        if (pos[i] < min_bound || pos[i] > max_bound) {
-            return false; // Point is outside the dilated box
-        }
-    }
-    
-    return true; // Point is inside the dilated box
-}
+*/
 
 bool AxonGammaDistribution::get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D, double &angle)
 {
@@ -1383,196 +1064,116 @@ void AxonGammaDistribution::GrowAllGlialCells() {
     if (target_glial_pop1_branches_icvf >0.0 && glial_pop1.size() > 0)
     {   
         // Growing extra branches for glial_pop1
-        growBranches(glial_pop1, 1);
+        growBranches(1);
     } 
     if (target_glial_pop2_branches_icvf >0.0 &&  glial_pop2.size() > 0)
     {
         // Growing extra branches for glial_pop2
-        growBranches(glial_pop2, 2);
+        growBranches(2);
     }
 }
 
-void AxonGammaDistribution::ThreadGrowthGlialCells(std::vector<Glial>& glial_cell_list, const double &mean_process_length, const double &std_process_length, std::vector<int> &nbr_spheres, const int &max_nbr_processes) {
-    
-    //ThreadPool pool(nbr_threads);
-    //std::vector<std::future<void>> futures; // Store futures for synchronization
 
-    for (size_t i = 0; i < glial_cell_list.size(); ++i) {
+void AxonGammaDistribution::growBranches(const int &population_nbr) {
 
-        //if (glial_cell_list[i].allow_branching && glial_cell_list[i].ramification_spheres.size() < max_nbr_processes){
-        if (glial_cell_list[i].allow_branching){
-            //futures.emplace_back(pool.enqueueTask(
-            //    [this, &glial_cell_list, &nbr_spheres, &mean_process_length, &std_process_length, i]() {
-            //        growSecondaryBranch(glial_cell_list[i], nbr_spheres[i], mean_process_length, std_process_length);
-            //    }
-            //));
-            //cout <<"growing secondary branch for glial cell " << glial_cell_list[i].id << endl;
-            growSecondaryBranch(glial_cell_list[i], nbr_spheres[i], mean_process_length, std_process_length);
-        }
-        //else if (glial_cell_list[i].ramification_spheres.size() < max_nbr_processes){
-        else{
-            //futures.emplace_back(pool.enqueueTask(
-            //    [this, &glial_cell_list, &nbr_spheres, &mean_process_length, &std_process_length, i]() {
-            //        growPrimaryBranch(glial_cell_list[i], nbr_spheres[i], mean_process_length, std_process_length);
-            //    }
-            //));
-            //cout <<"growing primary branch for glial cell " << glial_cell_list[i].id << endl;
-            growPrimaryBranch(glial_cell_list[i], nbr_spheres[i], mean_process_length, std_process_length);
-        }
-    }
-    /*
-    for (auto& future : futures) {
-        future.get();
+    // Pick the population once
+    auto& pop = (population_nbr == 1 ? glial_pop1 : glial_pop2);
+
+    // Per-pop parameters
+    double target_icvf = (population_nbr == 1) ? target_glial_pop1_branches_icvf
+                                               : target_glial_pop2_branches_icvf;
+    double current_icvf = (population_nbr == 1) ? glial_pop1_branches_icvf
+                                                : glial_pop2_branches_icvf;
+
+    int    nbr_primary_processes = (population_nbr == 1) ? nbr_primary_processes_pop1
+                                                         : nbr_primary_processes_pop2;
+    double mean_len  = (population_nbr == 1) ? mean_glial_pop1_process_length
+                                             : mean_glial_pop2_process_length;
+    double std_len   = (population_nbr == 1) ? std_glial_pop1_process_length
+                                             : std_glial_pop2_process_length;
+
+    if (target_icvf <= 0.0) return;
+
+    Eigen::Vector3d extended_min_limits = min_limits - Eigen::Vector3d::Constant(expanded_for_glial_space);
+    Eigen::Vector3d extended_max_limits = max_limits + Eigen::Vector3d::Constant(expanded_for_glial_space);
+    std::vector<GlialCellGrowth> growths;
+    growths.reserve(pop.size());
+    for (size_t i = 0; i < pop.size(); ++i) {
+        growths.emplace_back(pop[i], &glial_pop1, &glial_pop2,
+                             &axons, extended_min_limits, extended_max_limits,
+                             min_limits, max_limits, min_radius);
     }
     
-    for (size_t i = 0; i < glial_cell_list.size(); ++i) {
-        auto& glial_cell1 = glial_cell_list[i];
-        auto& spheres1 = glial_cell1.ramification_spheres.back();
-
-        for (size_t j = i + 1; j < glial_cell_list.size(); ++j) {
-            auto& glial_cell2 = glial_cell_list[j];
-            auto& spheres2 = glial_cell2.ramification_spheres.back();
-
-            for (auto& sphere1 : spheres1) {
-                for (auto& sphere2 : spheres2) {
-                    if (sphere1.CollideswithSphere(sphere2, barrier_tickness)) {
-
-                        glial_cell1.ramification_spheres.back().clear();
-                        glial_cell2.ramification_spheres.back().clear();
-                        glial_cell1.lengths_branches.pop_back();
-                        glial_cell2.lengths_branches.pop_back();
-                        glial_cell1.attractors.pop_back();
-                        glial_cell2.attractors.pop_back();
-                        glial_cell1.update_Box();
-                        glial_cell2.update_Box();
-                        //cout <<"Collision detected between glial cells " << glial_cell1.id << " and " << glial_cell2.id << endl;
-
-                        // Once collision is handled, skip to the next pair
-                        goto next_pair;
-                    }
-                }
-            }
-        next_pair:;
-        }
-    }
-    */
-    
-
-}
-void AxonGammaDistribution::growBranches(std::vector<Glial>& glial_cell_list, const int &population_nbr) {
-
-    double target_branches_icvf = 0.0;
-    double current_branches_icvf = 0.0;
-
-    int nbr_primary_processes = 1;
-
-    double mean_process_length = 0.0;
-    double std_process_length = 0.0;
-
-    double mean_primary_process_length = 0.0;
-    double std_primary_process_length = 0.0;
-
-    int max_nbr_processes = 0.0;
-    
-    if (population_nbr == 1){
-        current_branches_icvf = glial_pop1_branches_icvf;
-        target_branches_icvf = target_glial_pop1_branches_icvf;
-        nbr_primary_processes = nbr_primary_processes_pop1;
-        mean_process_length = mean_glial_pop1_process_length;
-        std_process_length = std_glial_pop1_process_length;
-    }
-    else if (population_nbr == 2){
-        current_branches_icvf = glial_pop2_branches_icvf;
-        target_branches_icvf = target_glial_pop2_branches_icvf;
-        nbr_primary_processes = nbr_primary_processes_pop2;
-        mean_process_length = mean_glial_pop2_process_length;
-        std_process_length = std_glial_pop2_process_length;
-    }
-
-    if (target_branches_icvf == 0.0){
-        return;
-    }
-
     // Grow first primary branches
-    std::vector<int> nbr_spheres(glial_cell_list.size(), 0);
+    std::vector<int> nbr_spheres(pop.size(), 0);
 
 
-    if (target_branches_icvf >0.0){
-        cout << "Growing first primary branches for glial cells" << endl;
-        for (int i = 0; i < glial_cell_list.size(); i++) 
-        {
-            growFirstPrimaryBranches(glial_cell_list[i], nbr_primary_processes, nbr_spheres[i], mean_process_length, std_process_length);
-            glial_cell_list[i].compute_processes_icvf(factor, min_limits, max_limits);
-        }
+    for (size_t i = 0; i < growths.size(); ++i) {
+        growths[i].update_environment(&axons, &glial_pop1, &glial_pop2);
+
+        growths[i].growFirstPrimaryBranches(nbr_primary_processes,
+                                            nbr_spheres[i], mean_len, std_len, factor);
+
+        pop[i] = growths[i].glial_cell_to_grow;
+        pop[i].compute_processes_icvf(factor, min_limits, max_limits);
+
     }
 
-    if (population_nbr == 1) {
-        ICVF(axons, glial_cell_list, glial_pop2);
-        current_branches_icvf = glial_pop1_branches_icvf;
-    }
-    else if (population_nbr == 2) {
-        ICVF(axons, glial_pop1, glial_cell_list);
-        current_branches_icvf = glial_pop2_branches_icvf;
-    }
+    ICVF(axons, glial_pop1, glial_pop2); // updates glial_pop1_branches_icvf and glial_pop2_branches_icvf
+    current_icvf = (population_nbr == 1) ? glial_pop1_branches_icvf
+                                         : glial_pop2_branches_icvf;
+    display_progress(current_icvf, target_icvf);
+    if (current_icvf >= target_icvf) return;
 
-    display_progress(current_branches_icvf, target_branches_icvf);
-
-    if (current_branches_icvf >= target_branches_icvf) {
-        return;
-    }
-
+    // Iterative growth
     int nbr_tries = 0;
-    const int max_tries = 1e5;
-    double previous_branches_icvf = current_branches_icvf;
-    int tolerance = 0;
-    
-    while (current_branches_icvf < target_branches_icvf) {
+    const int   max_tries   = 100000;
+    double      prev_icvf   = current_icvf;
+    int         stall_count = 0;
+    const int   stall_limit = 100;
+    const double rel_eps    = 1e-6;
 
-        ThreadGrowthGlialCells(glial_cell_list, mean_process_length, std_process_length, nbr_spheres, max_nbr_processes);
-
-        if (nbr_tries%10 == 0 && nbr_tries >0) {
-            // Recompute processes and update ICVF for all glial_pop1 in parallel
-            for (size_t i = 0; i < glial_cell_list.size(); ++i) {
-                glial_cell_list[i].compute_processes_icvf(factor, min_limits, max_limits);
+    while (current_icvf < target_icvf && nbr_tries <= max_tries) {
+        for (size_t i = 0; i < growths.size(); ++i) {
+            growths[i].update_environment(&axons, &glial_pop1, &glial_pop2);
+            if (growths[i].glial_cell_to_grow.allow_branching) {
+                growths[i].growSecondaryBranch(nbr_spheres[i], mean_len, std_len, factor);
+            } else {
+                growths[i].growPrimaryBranch(nbr_spheres[i], mean_len, std_len, factor);
             }
-            // Update global ICVF and display progress
-            ICVF(axons, glial_pop1, glial_cell_list);
-            if (population_nbr == 1) {
-                current_branches_icvf = glial_pop1_branches_icvf;
-            }
-            else if (population_nbr == 2) {
-                current_branches_icvf = glial_pop2_branches_icvf;
-            }
-
-            display_progress(current_branches_icvf, target_branches_icvf);
-
-            if (current_branches_icvf >= target_branches_icvf) {
-                break;
-            }
- 
-            if (std::abs(current_branches_icvf - previous_branches_icvf) < 1e-10) {
-                tolerance++;
-            }
-            if (tolerance > 100) {
-                std::cerr << "Stuck in a loop, stopping growth!" << std::endl;
-                target_branches_icvf= current_branches_icvf;
-                break;
-            }
-            
-            previous_branches_icvf = current_branches_icvf;
-            
+            pop[i] = growths[i].glial_cell_to_grow;
         }
 
-        // Break if too many attempts
-        if (nbr_tries > max_tries) {
-            std::cerr << "Max attempts reached while growing branches!" << std::endl;
-            break;
-        }
-        nbr_tries++;
+        if (nbr_tries % 10 == 0) {
+            for (auto& g : pop) {
+                g.compute_processes_icvf(factor, min_limits, max_limits);
+            }
+            ICVF(axons, glial_pop1, glial_pop2);
+            current_icvf = (population_nbr == 1) ? glial_pop1_branches_icvf
+                                                 : glial_pop2_branches_icvf;
+            display_progress(current_icvf, target_icvf);
 
+            if (current_icvf >= target_icvf) break;
+
+            double denom = std::max(1.0, std::abs(prev_icvf));
+            if (std::abs(current_icvf - prev_icvf) / denom < rel_eps) {
+                if (++stall_count > stall_limit) {
+                    std::cerr << "Stuck in a loop, stopping growth!\n";
+                    break;
+                }
+            } else {
+                stall_count = 0;
+            }
+            prev_icvf = current_icvf;
+        }
+        ++nbr_tries;
     }
 
+    if (nbr_tries > max_tries) {
+        std::cerr << "Max attempts reached while growing branches!\n";
+    }
 }
+
 void AxonGammaDistribution::PlaceGlialCells() {
     // --- helpers (local lambdas) ---------------------------------------------
     auto draw_positive_radius = [&](std::normal_distribution<>& dis) {
@@ -1608,7 +1209,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
 
     // Expand the sampling window to allow placements outside the bounds.
     // If you want a different expansion per population, split this.
-    const double expand = std::max(0.0, glial_pop1_radius_mean);
+    expanded_for_glial_space = std::max(0.0, glial_pop1_radius_mean*3);
 
     // --- Population 1 (astrocytes) ------------------------------------------
     std::normal_distribution<> dis_radius_pop1(glial_pop1_radius_mean, glial_pop1_radius_std);
@@ -1617,9 +1218,9 @@ void AxonGammaDistribution::PlaceGlialCells() {
     const int MAX_GLOBAL_FAILS_1 = 20000;
     int global_fail_count_1 = 0;
 
-    std::uniform_real_distribution<> base_x1(min_limits[0] - expand, max_limits[0] + expand);
-    std::uniform_real_distribution<> base_y1(min_limits[1] - expand, max_limits[1] + expand);
-    std::uniform_real_distribution<> base_z1(min_limits[2] - expand, max_limits[2] + expand);
+    std::uniform_real_distribution<> base_x1(min_limits[0] - expanded_for_glial_space, max_limits[0] + expanded_for_glial_space);
+    std::uniform_real_distribution<> base_y1(min_limits[1] - expanded_for_glial_space, max_limits[1] + expanded_for_glial_space);
+    std::uniform_real_distribution<> base_z1(min_limits[2] - expanded_for_glial_space, max_limits[2] + expanded_for_glial_space);
 
     while (glial_icvf_1 < target_glial_pop1_soma_icvf && global_fail_count_1 < MAX_GLOBAL_FAILS_1) {
         Sphere s;
@@ -1660,9 +1261,54 @@ void AxonGammaDistribution::PlaceGlialCells() {
             glial_icvf_1 += soma_volume(glial_cell.soma.radius) / total_volume;
         }
         else if (!fully_outside) {
-            glial_icvf_1 += (soma_volume(glial_cell.soma.radius) / total_volume)/2;
+            glial_icvf_1 += glial_cell.soma.sphereBoxIntersectionVolume(min_limits, max_limits, /*eps_rel=*/1e-6) / total_volume;
         }
     }
+
+    auto transform = [&](double x, double r) {
+            if (x > expanded_for_glial_space){
+                x = max_limits[0] + (x - (expanded_for_glial_space-r));
+            }
+            else{
+                x = min_limits[0] - ((expanded_for_glial_space-r) - x);
+            }
+            return x;
+        };
+
+    if (target_glial_pop1_soma_icvf > 0.0) {
+
+        Sphere s;
+
+        // add some extra in extra space
+        for (int i = 0; i < 10; i++) {
+
+            const double rad = draw_positive_radius(dis_radius_pop1);
+
+            std::uniform_real_distribution<> base_z1(0, 2*(expanded_for_glial_space-rad));
+
+            double x = base_x1(gen);
+            double y = base_y1(gen);
+            double z = base_z1(gen);
+            z = transform(z, rad);
+
+            s = Sphere(
+                        /*object_id*/ 0,                        // keep your ID scheme if needed
+                        /*index*/ static_cast<int>(glial_pop1.size()),
+                        /*type*/ 1,
+                        {x,y,z},
+                        rad
+                    );
+            if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2)) {
+                Glial glial_cell = Glial(s.object_id, s, glial_pop1_branching);
+                glial_pop1.push_back(glial_cell);
+                cout << "added extra glial cell pop1 at x :" << x << endl;
+            }
+            else{
+                cout << "could not add extra glial cell pop1 at x :" << x << endl;
+            }
+        }
+    }
+    
 
     glial_pop1_soma_icvf = glial_icvf_1;
 
@@ -1673,9 +1319,9 @@ void AxonGammaDistribution::PlaceGlialCells() {
     const int MAX_GLOBAL_FAILS_2 = 20000;
     int global_fail_count_2 = 0;
 
-    std::uniform_real_distribution<> base_x2(min_limits[0] - expand, max_limits[0] + expand);
-    std::uniform_real_distribution<> base_y2(min_limits[1] - expand, max_limits[1] + expand);
-    std::uniform_real_distribution<> base_z2(min_limits[2] - expand, max_limits[2] + expand);
+    std::uniform_real_distribution<> base_x2(min_limits[0] - expanded_for_glial_space, max_limits[0] + expanded_for_glial_space);
+    std::uniform_real_distribution<> base_y2(min_limits[1] - expanded_for_glial_space, max_limits[1] + expanded_for_glial_space);
+    std::uniform_real_distribution<> base_z2(min_limits[2] - expanded_for_glial_space, max_limits[2] + expanded_for_glial_space);
 
     while (glial_icvf_2 < target_glial_pop2_soma_icvf && global_fail_count_2 < MAX_GLOBAL_FAILS_2) {
         Sphere s;
@@ -1716,11 +1362,40 @@ void AxonGammaDistribution::PlaceGlialCells() {
             glial_icvf_2 += soma_volume(glial_cell.soma.radius) / total_volume;
         }
         else if (!fully_outside) {
-            glial_icvf_2 += (soma_volume(glial_cell.soma.radius) / total_volume)/2;
+            glial_icvf_2 += glial_cell.soma.sphereBoxIntersectionVolume(min_limits, max_limits, /*eps_rel=*/1e-6) / total_volume;
         }
     }
 
     glial_pop2_soma_icvf = glial_icvf_2;
+
+    if (target_glial_pop2_soma_icvf > 0.0) {
+
+        Sphere s;
+        // add some extra in extra space
+        for (int i = 0; i < 10; i++) {
+
+            const double rad = draw_positive_radius(dis_radius_pop2);
+
+            std::uniform_real_distribution<> base_z2(0, 2*(expanded_for_glial_space-rad));
+
+            double x = base_x2(gen);
+            double y = base_y2(gen);
+            double z = base_z2(gen);
+            z = transform(z, rad);
+
+            s = Sphere(
+                        /*object_id*/ 0,                        // keep your ID scheme if needed
+                        /*index*/ static_cast<int>(glial_pop2.size()),
+                        /*type*/ 1,
+                        {x,y,z},
+                        rad
+                    );
+            if (canSpherebePlaced(s, axons, glial_pop2, glial_pop2)) {
+                Glial glial_cell = Glial(s.object_id, s, glial_pop2_branching);
+                glial_pop2.push_back(glial_cell);
+            }
+        }
+    }
 }
 
 bool AxonGammaDistribution::FinalCheck(std::vector<Axon> &axs, std::vector<double> &stuck_radii_, std::vector<int> &stuck_indices_)
@@ -1993,7 +1668,7 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stu
     }
 
     // Initialize a Growth object for this axon
-    AxonGrowth growth(axon_to_grow, glial_pop1, glial_pop2, axons, min_limits, max_limits, min_limits, max_limits, std_dev, min_radius);
+    AxonGrowth growth(axon_to_grow, &glial_pop1, &glial_pop2, &axons, min_limits, max_limits, min_limits, max_limits, std_dev, min_radius);
 
     int tries_  = 0;
     int max_nbr_tries = 1e10; // growth class stops itself anyway
@@ -2445,21 +2120,24 @@ double AxonGammaDistribution::RandomradiusVariation(Axon &axon)
 { 
     double prev_radius = axon.outer_spheres[axon.outer_spheres.size()-1].radius; 
 
-    if (prev_radius < axon.radius-axon.beading_amplitude*axon.radius) 
-    { 
-        prev_radius = axon.radius-axon.beading_amplitude*axon.radius; 
-    } 
-    else if (prev_radius > axon.radius+axon.beading_amplitude*axon.radius) 
-    { 
-        prev_radius = axon.radius+axon.beading_amplitude*axon.radius; 
-    } 
-    double standard_deviation = axon.beading_amplitude * axon.radius / 3; 
+    double prev_radius_clamped = prev_radius;
 
-    std::normal_distribution<double> dis(prev_radius, standard_deviation); 
+    if (prev_radius_clamped < axon.radius-axon.beading_amplitude*axon.radius) 
+    { 
+        prev_radius_clamped = axon.radius-axon.beading_amplitude*axon.radius; 
+    } 
+    else if (prev_radius_clamped > axon.radius+axon.beading_amplitude*axon.radius) 
+    { 
+        prev_radius_clamped = axon.radius+axon.beading_amplitude*axon.radius; 
+    } 
+
+    double standard_deviation = axon.radius * beading_std; 
+
+    std::normal_distribution<double> dis(prev_radius_clamped, standard_deviation); 
 
     double random_radius = dis(gen); 
 
-    while (random_radius > prev_radius+3* standard_deviation || random_radius < prev_radius-3*standard_deviation) 
+    while (random_radius > prev_radius_clamped+3* standard_deviation || random_radius < prev_radius_clamped-3*standard_deviation) 
     { 
         random_radius = dis(gen); 
     } 
@@ -2467,7 +2145,8 @@ double AxonGammaDistribution::RandomradiusVariation(Axon &axon)
     { 
         random_radius = min_radius; 
     } 
-return random_radius; }
+    return random_radius; 
+}
 
 /*
 double AxonGammaDistribution::RandomradiusVariation(Axon& axon)   // you pass an id or index for the axon
@@ -2561,7 +2240,7 @@ bool AxonGammaDistribution::shrinkRadius(AxonGrowth &growth, const double &radiu
         {
             rad -= intervals;
             can_grow_ = growth.AddOneSphere(rad, true, 0, factor);
-            axons = growth.axons;
+            axons = growth.AX();
         }
         if (can_grow_)
         {
@@ -2592,7 +2271,7 @@ void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
 
     out << "cell_type cell_id component component_id X Y Z inner_radius outer_radius" << endl;
     std::sort(final_axons.begin(), final_axons.end(), [](const Axon a, Axon b) -> bool
-              { return a.radius < b.radius; }); // sort by size
+              { return a.radius > b.radius; }); // sort by size
 
     double cos_2_all = 0.0;
     for (long unsigned int i = 0; i < final_axons.size(); i++)

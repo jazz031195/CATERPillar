@@ -16,27 +16,25 @@ using namespace std::chrono;
 AxonGrowth::~AxonGrowth() {}
 
 AxonGrowth::AxonGrowth(Axon &axon_to_grow_,
-                       const std::vector<Glial> &astrocytes,
-                       const std::vector<Glial> &oligodendrocytes,
-                       const std::vector<Axon> &axons_,
+                       const std::vector<Glial>* glial_pop1_,
+                       const std::vector<Glial>* glial_pop2_,
+                       const std::vector<Axon>* axons_,
                        const Eigen::Vector3d &extended_min_limits_,
                        const Eigen::Vector3d &extended_max_limits_,
                        const Eigen::Vector3d &min_limits_,
                        const Eigen::Vector3d &max_limits_,
                        const double &std_dev_,
                        const double &min_radius_)
-    : CellGrowth(axons_, astrocytes, oligodendrocytes,
+    : CellGrowth(axons_, glial_pop1_, glial_pop2_,
                  extended_min_limits_, extended_max_limits_,
                  min_limits_, max_limits_,
                  std_dev_, min_radius_),
-      axon_to_grow(axon_to_grow_), 
-      axons(axons_)
+      axon_to_grow(axon_to_grow_)
 {}
 
 AxonGrowth::AxonGrowth(const AxonGrowth &other)
     : CellGrowth(other), // call base copy constructor
-      axon_to_grow(other.axon_to_grow),
-      axons(other.axons) {}
+      axon_to_grow(other.axon_to_grow) {}
 
 
 bool AxonGrowth::pushAxonSpheres(Axon &axon, const Sphere &sph) {
@@ -113,62 +111,7 @@ Eigen::Vector3d AxonGrowth::readapt_sphere_position(const Sphere &s, const Axon 
     }
 }
 
-bool AxonGrowth::checkAxonsOverlap(Sphere &sph){
-    const int max_iterations = 10;
-    int iteration = 0;
-    bool moved = true;
 
-    while (moved && iteration < max_iterations) {
-        moved = false;
-        for (const auto& axon : axons) {
-            if (!(axon.id == sph.object_id && sph.object_type == 0)) {
-                if (axon.isSphereInsideAxon(sph)) {
-                    // bool can_readapt = false;
-                    //Eigen::Vector3d new_center = readapt_sphere_position(sph, axon, can_readapt);
-                    //if (can_readapt) {
-                    //    sph.center = new_center;
-                    //    moved = true;  // we moved, need to recheck all
-                    //    break;         // break to restart loop from beginning
-                    //} else {
-                    return false;  // can't resolve
-                    //}
-                }
-            }
-        }
-        iteration++;
-    }
-    if (iteration >= max_iterations){
-        return false; // if we moved, it means we are maybe colliding
-    }
-    else{
-        return true;  // if we get here, it's placed safely
-    }
-}
-
-bool AxonGrowth::canSpherebePlaced(Sphere &sph){
-
-    bool axons_check = checkAxonsOverlap(sph);
-
-    if (!axons_check){
-        return false;
-    }
-
-    // check collision other glial cells 
-    for (auto &glial : glial_cells)
-    {
-        if (glial.soma.CollideswithSphere(sph, barrier_tickness)){
-            return false; // collides with soma
-        }
-    }
-
-
-    return true;
-} 
-
-bool AxonGrowth::isSphereCollidingwithAxon(Axon ax, Sphere sph){
-
-    return ax.isSphereInsideAxon(sph);
-}
 
 
 Eigen::Vector3d AxonGrowth::find_next_center_straight(const double distance, const Sphere &s, const std::vector<Sphere> &spheres)
@@ -371,32 +314,6 @@ void AxonGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const int &
     
 }
 
-Eigen::Vector3d AxonGrowth::find_closest_neighbour(const Sphere &sphere){
-    double min_distance = std::numeric_limits<double>::max();
-    Eigen::Vector3d centre_closest_sphere = Eigen::Vector3d::Zero();
-    bool found = false;
-
-    for (const auto &axon : axons) {
-        if (axon.isNearAxon(sphere.center, 2 * sphere.radius + barrier_tickness)) {
-            if (axon.id != sphere.object_id) {
-                for (const auto &sph : axon.outer_spheres) {
-                    double distance = (sphere.center - sph.center).norm() - (sphere.radius + sph.radius);
-                    if (distance < min_distance && distance < 2 * sphere.radius + barrier_tickness) {
-                        min_distance = distance;
-                        centre_closest_sphere = sph.center;
-                        found = true;
-                    }
-                }
-            }
-        }
-    }
-
-    if (found) {
-        return (centre_closest_sphere - sphere.center);
-    } else {
-        return Eigen::Vector3d::Zero();  // explicitly handle no-neighbor-found case
-    }
-}
 
 Eigen::Vector3d AxonGrowth::find_next_center(const Sphere &s, const double dist_, 
                                              const std::vector<Sphere> &spheres, 

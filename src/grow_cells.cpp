@@ -17,7 +17,8 @@ CellGrowth::~CellGrowth() {}
 
 CellGrowth::CellGrowth(const CellGrowth &other)
   : axons(other.axons),
-    glial_cells(other.glial_cells),
+    glial_pop1(other.glial_pop1),
+    glial_pop2(other.glial_pop2),
     min_limits(other.min_limits),
     max_limits(other.max_limits),
     extended_min_limits(other.extended_min_limits),
@@ -28,6 +29,18 @@ CellGrowth::CellGrowth(const CellGrowth &other)
     finished(other.finished)
 {}
 
+
+const std::vector<Axon>& CellGrowth::AX() const { return *axons; }
+
+const std::vector<Axon>* CellGrowth::AXptr() const { return axons; }
+
+void CellGrowth::update_environment(const std::vector<Axon>* axons_,
+                                const std::vector<Glial>* glial_pop1_,
+                                const std::vector<Glial>* glial_pop2_) noexcept {
+    axons      = axons_;
+    glial_pop1 = glial_pop1_;
+    glial_pop2 = glial_pop2_;
+}
 
 // Function to check if a point is inside a dilated box
 bool CellGrowth::check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border) {
@@ -103,32 +116,40 @@ Eigen::Vector3d CellGrowth::apply_bias_toward_target(const Eigen::Vector3d &poin
 }
 
 
-bool CellGrowth::canSpherebePlaced(const Sphere &sph){
+bool CellGrowth::checkAxonsOverlap(Sphere &sph){
 
-    for (auto &axon : axons)
-    {
-        if (!(axon.id == sph.object_id && sph.object_type == 0))
-        {
-            // Check overlap
-            if (axon.isSphereInsideAxon(sph)) 
-            {
+    for (const auto& axon : *axons) {
+        if (axon.isSphereInsideAxon(sph)) {
+            return false;  
+            
+        }
+    }
+    return true; 
+    
+}
 
-                return false;
-                
-            }
+
+bool CellGrowth::canSpherebePlaced(Sphere &sph){
+
+
+    bool axons_check = checkAxonsOverlap(sph);
+
+    if (!axons_check){
+        return false;
+    }
+    // check collision other glial cells 
+    for (const Glial& glial : *glial_pop1) {
+        if (glial.collides_with_GlialCell(sph, barrier_tickness)) {
+            return false;
         }
     }
 
-    // check collision other glial cells 
-    for (auto &glial : glial_cells)
-    {
-        if (glial.collides_with_GlialCell(sph, barrier_tickness)){
+    for (const Glial& glial : *glial_pop2) {
+        if (glial.collides_with_GlialCell(sph, barrier_tickness)) {
             return false;
-        } 
+        }
     }
+
 
     return true;
 } 
-
-
-

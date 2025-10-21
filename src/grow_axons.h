@@ -16,15 +16,14 @@
 class AxonGrowth : public CellGrowth
 {
 public:
-    Axon& axon_to_grow;
-    std::vector<Axon> axons;  
+    Axon& axon_to_grow; 
 
     AxonGrowth() = delete;
 
     AxonGrowth(Axon& axon_to_grow_,
-               const std::vector<Glial>& astrocytes,
-               const std::vector<Glial>& oligodendrocytes,
-               const std::vector<Axon>& axons_,
+               const std::vector<Glial>* glial_pop1,
+               const std::vector<Glial>* glial_pop2,
+               const std::vector<Axon>* axons_,
                const Eigen::Vector3d& extended_min_limits_,
                const Eigen::Vector3d& extended_max_limits_,
                const Eigen::Vector3d& min_limits_,
@@ -56,17 +55,12 @@ public:
                           const Eigen::Vector3d& target,
                           const bool& is_axon);
 
-    // Collision detection
-    bool isSphereCollidingwithAxon(Axon ax, Sphere sph);
 
     // Override if needed
     bool pushAxonSpheres(Axon &axon, const Sphere &sph);
 
-    bool canSpherebePlaced(Sphere &sph);
-
-    bool checkAxonsOverlap(Sphere &sph);
     Eigen::Vector3d readapt_sphere_position(const Sphere &s, const Axon &neighbour_axon, bool can_readapt);
-    Eigen::Vector3d find_closest_neighbour(const Sphere &sphere);
+
 };
 
 #endif // AXONGROWTH_H
