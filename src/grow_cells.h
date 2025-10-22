@@ -32,7 +32,7 @@ public:
     const std::vector<Axon>& AX() const;
     const std::vector<Axon>* AXptr() const;
 
-    int finished = 0;
+    bool finished = false;
 
 protected:
 
@@ -67,7 +67,7 @@ protected:
           std_dev(std_dev_),
           min_radius(min_radius_),
           grow_straight(std_dev_ == 0.0 ? 0 : 1),
-          finished(0),
+          finished(false),
           axons(axons_),
           glial_pop1(glial_pop1_),
           glial_pop2(glial_pop2_) {

@@ -31,6 +31,7 @@ public:
     std::vector<Eigen::Vector2d> Box;               /*!< Box with <min, max> for each axis (x,y,z) */
     int growth_attempts;                            /*!< Number of attempts to grow axon in a row*/
     double beading_amplitude;                       /*!< Amplitude of beading */
+    double beading_std;                          /*!< Standard deviation of beading */
     double phase_shift;                             /*!< Phase shift of beading */
     bool myelin_sheath;                                /*!< Axon has myelin */
     double volume;                                  /*!< Volume of axon */
@@ -40,7 +41,7 @@ public:
     bool outside_voxel;
     bool has_shrunk;                            /*!< Axon has shrunk */
     double z_stat_rad_variation;                  /*!< Standard deviation of radius variation along z axis */
-
+    int undulation_factor;                          /*!< Factor for ondulation */
 
     /*!
      *  \brief Default constructor. Does nothing
@@ -49,7 +50,7 @@ public:
 
     ~Axon();
 
-    Axon(const int &id_, const Eigen::Vector3d &begin_, const Eigen::Vector3d &end_, const double &radius_, const double &beading_amplitude_, const bool &myelin_sheath_, const double& angle_, const bool &outside_voxel_ = false)
+    Axon(const int &id_, const Eigen::Vector3d &begin_, const Eigen::Vector3d &end_, const double &radius_, const double &beading_amplitude_, const double &beading_std_, const double &undulation_factor_, const bool &myelin_sheath_, const double& angle_, const bool &outside_voxel_ = false)
     {
         id = id_;
         begin = begin_;
@@ -61,6 +62,8 @@ public:
         Box.clear();
         growth_attempts = 0;
         beading_amplitude = beading_amplitude_;
+        beading_std = beading_std_;
+        undulation_factor = undulation_factor_;
         myelin_sheath = myelin_sheath_;
         // random phase shift between 0 and 0.5
         phase_shift = abs((double)rand() / (RAND_MAX + 1.0))/2;
@@ -85,6 +88,8 @@ public:
             Box = ax.Box;
             growth_attempts = ax.growth_attempts;
             beading_amplitude = ax.beading_amplitude;
+            undulation_factor = ax.undulation_factor;
+            beading_std = ax.beading_std;
             phase_shift = ax.phase_shift;
             myelin_sheath = ax.myelin_sheath;
             volume = ax.volume;

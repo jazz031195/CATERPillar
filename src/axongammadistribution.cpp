@@ -43,7 +43,7 @@ std::vector<std::string> _split_line(const std::string &s, char delim)
 
 AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &glial_pop1_icvf_soma_, const double &glial_pop1_icvf_branches_, const double &glial_pop2_icvf_soma_, const double &glial_pop2_icvf_branches_, const double &a, const double &b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
-                                              const int &regrow_thr_, const double &beading_variation_, const double &beading_variation_std, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
+                                              const int &regrow_thr_, const double &beading_variation_, const double &beading_variation_std, const double &std_dev_, const int &undulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
                                               const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
                                               const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_,
                                               const double &c1_, const double &c2_, const double &c3_)
@@ -85,7 +85,7 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
     beading_variation = beading_variation_;
     beading_std = beading_variation_std;
     std_dev = std_dev_;
-    ondulation_factor = ondulation_factor_;
+    undulation_factor = undulation_factor_;
 
     glial_pop1_radius_mean = glial_pop1_radius_mean_;
     glial_pop1_radius_std = glial_pop1_radius_std_;
@@ -421,7 +421,7 @@ void AxonGammaDistribution::generate_radii(std::vector<double> &radii_, std::vec
 bool AxonGammaDistribution::PlaceAxon(const int &axon_id, const double &radius_for_axon, const Eigen::Vector3d &Q, const Eigen::Vector3d &D, std::vector<Axon> &new_axons, const bool &has_myelin, const double &angle_, const bool &outside_voxel)
 {
 
-    Axon ax = Axon(axon_id, Q, D, radius_for_axon, beading_variation, has_myelin, angle_, outside_voxel); // axons for regrow batch
+    Axon ax = Axon(axon_id, Q, D, radius_for_axon, beading_variation, beading_std, undulation_factor, has_myelin, angle_, outside_voxel); // axons for regrow batch
 
     if (has_myelin) {
         double inner_radius = findInnerRadius(radius_for_axon);
@@ -1507,229 +1507,17 @@ bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons,
 }
 
 
-void update_straight(bool can_grow_, int &grow_straight, int &straight_growths, int ondulation_factor)
-{
-
-    if (can_grow_)
-    {
-
-        if (grow_straight == 1)
-        {
-            if (straight_growths >= ondulation_factor) // if axon has been growing straight for a number of spheres in a row
-            {
-                grow_straight = 0; // set to false so that next step doesn't go straight
-                straight_growths = 0;
-            }
-            else
-            {
-                straight_growths += 1;
-            }
-        }
-        else
-        {
-            // if the sphere hadn't grown straight previously . set to straight for next "ondulation_factor" spheres
-            grow_straight = 1; // set to true
-        }
-    }
-    else
-    {
-        if (grow_straight == 1) // if when growing straight it collides with environment
-        {
-            grow_straight = 0; // set to false so that next step doesn't go straight
-            straight_growths = 0;
-        }
-    }
-}
-
-void AxonGammaDistribution::growthThread(
-    std::vector<Axon>& axs,
-    Axon& axon,
-    AxonGrowth& growth,
-    int& finished,
-    int& grow_straight,
-    int& straight_growths,
-    double& stuck_radius,
-    int& stuck_index
-) {
-
-
-    double varied_radius = axon.radius;
-    // 1) Possibly vary the radius (beading)
-    if (beading_variation > 0){
-        varied_radius =RandomradiusVariation(axon);
-        
-    }
-
-
-    // 2) Attempt to add a sphere (returns true if successful)
-    bool can_grow = growth.AddOneSphere(varied_radius, /*create_sphere=*/true, grow_straight, factor);
-    // 3) Sync axon data back
-    //    growth.axon_to_grow updated by AddOneSphere
-    growth.axon_to_grow.growth_attempts = axon.growth_attempts; 
-
-    // 4) Check if axon is finished
-    if (growth.finished) {
-        //cout << "axon " << axon.id << " is finished" << endl;
-        finished = 1; 
-        stuck_radius = -1;
-        stuck_index = -1;
-    }
-    else { 
-        // The axon is still growing
-        if (!can_grow && axon_can_shrink) {
-            // We tried adding a sphere and failed to grow. Attempt to shrink radius.
-            bool shrinkOk = shrinkRadius(growth, varied_radius, axon); 
-            if (!shrinkOk) {
-                // If shrinking didn't help either
-                if (axon.growth_attempts < 3) {
-                    //cout <<"axon will try again on same spot" << endl;
-                    // Retry with a new attempt
-                    axon.keep_one_sphere();  // Revert the last sphere or do whatever keep_one_sphere does
-                    growth.axon_to_grow = axon;
-                    finished = 0;
-                    stuck_radius = -1;
-                    stuck_index = -1;
-                    //cout << "axon " << axon.id << " is stuck, growth attempts : "<<  axon.growth_attempts<< " center : (" << axon.begin[0] << ", " << axon.begin[1]<< ", "<< axon.begin[2] << ")" << endl;
-                }
-                else {
-                    //cout <<"axon is stuck and will try again somewhere else" << endl;
-                    // The axon is stuck
-                    axon.destroy(); 
-                    finished = 1;
-                    stuck_radius = axon.radius;
-                    stuck_index = axon.id;
-                    //cout <<"try axon in different position" << endl;
-                }
-            }
-            else {
-                //cout <<"axon " << axon.id << " shrank successfully" << endl;
-                // We shrank successfully and placed a sphere 
-                if (growth.finished) {
-                    finished = 1;
-                }
-            }
-        }
-        else if (!can_grow && !axon_can_shrink) {
-            if (axon.growth_attempts < 3) {
-                // Retry at same positions 10 times
-                axon.keep_one_sphere();  // Revert the last sphere or do whatever keep_one_sphere does
-                growth.axon_to_grow = axon;
-                finished = 0;
-              
-            }
-            else {
-                //cout <<"axon " << axon.id << " is stuck" << endl;
-                // The axon is stuck
-                axon.destroy(); 
-                finished = 1;
-                stuck_radius = axon.radius;
-                stuck_index = axon.id;
-
-            }
-        }
-        else if (can_grow) {
-            finished = 0;
-        }
-    }
-
-    // 5) Update "straightness" logic
-    update_straight(can_grow, grow_straight, straight_growths, ondulation_factor);
-}
-
 
 void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stuck_radius, int& stuck_index) {
-    int finished = 0;
-    int grow_straight = 0;
-    int straight_growths = 0;
 
-    // adjust growth axis
-    /* 
-    int i;
-    double maxVal = axon_to_grow.begin.cwiseAbs().minCoeff(&i);
-    if (i != axon_to_grow.growth_axis) {
-        axon_to_grow.growth_axis = i; // set growth axis to the one with the smallest absolute value
-        cout << "axon " << axon_to_grow.id << " growth axis changed to " << axon_to_grow.growth_axis << endl;
-
-    }
-    */
-
-
-    // Possibly alter the beading amplitude if beading_variation > 0
-    if (beading_variation > 0) {
-
-        axon_to_grow.beading_amplitude = beading_variation;
-        // Clamp beading amplitude between 0 and 1
-        if (axon_to_grow.beading_amplitude < 0.0) {
-            axon_to_grow.beading_amplitude = 0.0;
-        }
-        else if (axon_to_grow.beading_amplitude > 1.0) {
-            axon_to_grow.beading_amplitude = 1.0;
-        }
-    }
 
     // Initialize a Growth object for this axon
     AxonGrowth growth(axon_to_grow, &glial_pop1, &glial_pop2, &axons, min_limits, max_limits, min_limits, max_limits, std_dev, min_radius);
 
-    int tries_  = 0;
-    int max_nbr_tries = 1e10; // growth class stops itself anyway
-    // Keep trying to grow until finished
-    while (finished == 0 && tries_ < max_nbr_tries) {
+    growth.growthThread(stuck_radius, stuck_index, factor, axon_can_shrink);
 
-        if (!axon_to_grow.outer_spheres.empty()) {
-            // Attempt a single growth step
-            growthThread(axons, axon_to_grow, growth, finished, grow_straight, straight_growths, stuck_radius, stuck_index);
-
-            if (stuck_radius>0) {
-                tries_ += 1;
-            }
-        }
-        else {
-            //cout <<"finished = 1" << endl;
-            cout <<"discarded axon " << axon_to_grow.id << " with radius " << axon_to_grow.radius << endl;
-            // Axon is empty => it was discarded or destroyed
-            finished = 1;
-        }
-
-    }
-
-    if (axon_to_grow.outer_spheres.size()==1) {
-        assert(0);
-    }
-    else if (tries_ == max_nbr_tries) {
-        //cout << "axon " << axon_to_grow.id << " is stuck" << endl;
-        axon_to_grow.destroy();
-        stuck_radius = axon_to_grow.radius;
-        stuck_index = axon_to_grow.id;
-        //ind_axons_pushed = {};
-    }
-    if (finished == 1 && !axon_to_grow.outer_spheres.empty()){
-        Sphere last_sphere = axon_to_grow.outer_spheres.back();
-        if (!(last_sphere.center[axon_to_grow.growth_axis] + last_sphere.radius > max_limits[axon_to_grow.growth_axis])) {
-            cout << " not close to target limits, axon " << axon_to_grow.id << " is finished" << endl;
-            cout <<"axon_to_grow.growth_axis : " << axon_to_grow.growth_axis << endl;
-            //assert(0);
-        }
-        if (axon_to_grow.outer_spheres.size() < 10){
-            cout << "Axon " << axon_to_grow.id << " has too few spheres: " << axon_to_grow.outer_spheres.size() << endl;
-            cout <<"growth axis : " << axon_to_grow.growth_axis << endl;
-            cout << "starting point : (" << axon_to_grow.begin[0] << ", " << axon_to_grow.begin[1] << ", " << axon_to_grow.begin[2] << ")" << endl;
-            int i;
-            double maxVal = axon_to_grow.begin.cwiseAbs().minCoeff(&i);
-            cout << " growth axis should be : " << i << endl;
-            axon_to_grow.destroy();
-            stuck_radius = axon_to_grow.radius;
-            stuck_index = axon_to_grow.id;
-        }
-    }
-    /*
-    else{
-        ind_axons_pushed =  growth.ind_axons_pushed;
-        for (int i : ind_axons_pushed) {
-            axons_pushed.push_back(growth.modified_axons[i]);
-        }
-    }
-    */
 }
+
 void AxonGammaDistribution::processBatchWithThreadPool(
     std::vector<Axon>& axons_to_grow,
     std::vector<int>& indices,
@@ -2116,79 +1904,9 @@ double get_axonal_length(Axon axon)
 }
 
 
-double AxonGammaDistribution::RandomradiusVariation(Axon &axon) 
-{ 
-    double prev_radius = axon.outer_spheres[axon.outer_spheres.size()-1].radius; 
 
-    double prev_radius_clamped = prev_radius;
 
-    if (prev_radius_clamped < axon.radius-axon.beading_amplitude*axon.radius) 
-    { 
-        prev_radius_clamped = axon.radius-axon.beading_amplitude*axon.radius; 
-    } 
-    else if (prev_radius_clamped > axon.radius+axon.beading_amplitude*axon.radius) 
-    { 
-        prev_radius_clamped = axon.radius+axon.beading_amplitude*axon.radius; 
-    } 
 
-    double standard_deviation = axon.radius * beading_std; 
-
-    std::normal_distribution<double> dis(prev_radius_clamped, standard_deviation); 
-
-    double random_radius = dis(gen); 
-
-    while (random_radius > prev_radius_clamped+3* standard_deviation || random_radius < prev_radius_clamped-3*standard_deviation) 
-    { 
-        random_radius = dis(gen); 
-    } 
-    if (random_radius < min_radius) 
-    { 
-        random_radius = min_radius; 
-    } 
-    return random_radius; 
-}
-
-/*
-double AxonGammaDistribution::RandomradiusVariation(Axon& axon)   // you pass an id or index for the axon
-{
-
-    std::mt19937_64 rng{std::random_device{}()};
-    std::normal_distribution<double> N01{0.0, 1.0};
-    double corr_len = 5.0;
-
-    double prev_radius = axon.outer_spheres[axon.outer_spheres.size()-1].radius;
-    const double R_mean = axon.radius;
-    const double A      = axon.beading_amplitude; 
-    const double Rmin   = R_mean * (1.0 - A);
-    const double Rmax   = R_mean * (1.0 + A);
-
-    // step length
-    double ds = prev_radius/factor;
-    const double ds_min = 1e-6 * std::max(1.0, R_mean);
-    ds = std::max(ds, ds_min);
-
-    // OU/AR(1) update
-    const double alpha     = std::exp(-ds / std::max(1e-12, corr_len));
-    const double sigma_eps = std::sqrt(std::max(0.0, 1.0 - alpha*alpha));
-
-    double z = axon.z_stat_rad_variation;
-    z = alpha * z + sigma_eps * N01(rng);
-
-    // map latent Gaussian into [1-A, 1+A]
-    double m = 1.0 + A * std::tanh(z);
-    double R = R_mean * m;
-
-    // enforce bounds
-    if (R < min_radius) R = min_radius;
-    if (R < Rmin) R = Rmin;
-    if (R > Rmax) R = Rmax;
-
-    axon.z_stat_rad_variation = z; // store updated latent state
-
-    return R;
-
-}
-*/
 // Axon growth
 double AxonGammaDistribution::radiusVariation(const Axon &axon)
 {
@@ -2214,46 +1932,6 @@ double AxonGammaDistribution::radiusVariation(const Axon &axon)
     return r;
 }
 
-bool AxonGammaDistribution::shrinkRadius(AxonGrowth &growth, const double &radius_to_shrink, Axon &axon)
-{
-
-    bool can_grow_;
-    // find position that works for smallest radius
-    can_grow_ = false;
-    double rad = radius_to_shrink;
-    double initial_rad = radius_to_shrink;
-    bool can_grow_min_rad = growth.AddOneSphere(min_radius, false, 0, factor);
-    double intervals = (initial_rad) / 10;
-
-    if(!axon_can_shrink){
-        return false;
-    }
-    if (!can_grow_min_rad)
-    {
-        // cout << "minimum radius doesn't fit, min rad :"<< min_radius << endl;
-        return false;
-    }
-    else
-    {
-
-        while (!can_grow_ && rad > min_radius+intervals)
-        {
-            rad -= intervals;
-            can_grow_ = growth.AddOneSphere(rad, true, 0, factor);
-            axons = growth.AX();
-        }
-        if (can_grow_)
-        {
-            axon = growth.axon_to_grow;
-            return true;
-        }
-        else
-        {
-            // cout << "cannot shrink after dichotomy" << endl;
-            return false;
-        }
-    }
-}
 
 
 double volumeFrustumCone(double r1, double r2, double h)

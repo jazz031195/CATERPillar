@@ -46,20 +46,16 @@ public:
 
     // Positioning
     Eigen::Vector3d find_next_center_straight(const double distance,
-                                   const Sphere& s,
                                    const std::vector<Sphere>& spheres);
 
-    Eigen::Vector3d find_next_center(const Sphere& s,
-                          const double dist_,
+    Eigen::Vector3d find_next_center(const double dist_,
                           const std::vector<Sphere>& spheres,
-                          const Eigen::Vector3d& target,
-                          const bool& is_axon);
+                          const Eigen::Vector3d& target);
 
-
-    // Override if needed
-    bool pushAxonSpheres(Axon &axon, const Sphere &sph);
-
-    Eigen::Vector3d readapt_sphere_position(const Sphere &s, const Axon &neighbour_axon, bool can_readapt);
+    void growthThread(double& stuck_radius, int& stuck_index, int factor, bool axon_can_shrink);
+    double RandomradiusVariation();
+    bool shrinkRadius(const double &radius_to_shrink, const bool& axon_can_shrink, const int &factor);
+    void update_straight(bool can_grow_, int &grow_straight, int &straight_growths);
 
 };
 

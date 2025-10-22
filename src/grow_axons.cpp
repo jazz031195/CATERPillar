@@ -37,84 +37,8 @@ AxonGrowth::AxonGrowth(const AxonGrowth &other)
       axon_to_grow(other.axon_to_grow) {}
 
 
-bool AxonGrowth::pushAxonSpheres(Axon &axon, const Sphere &sph) {
 
-    int count = 0;
-    for (int i = 0; i < axon.outer_spheres.size(); i++) {
-        Sphere &other_sphere = axon.outer_spheres[i];
-        Sphere sph_before;
-        Sphere sph_after;
-        if (i > 0){
-            sph_before = axon.outer_spheres[i - 1];
-        }
-        if (i < axon.outer_spheres.size() - 1){
-            sph_after = axon.outer_spheres[i + 1];
-        }
-        double distance = (sph.center - other_sphere.center).norm();
-        double overlap = sph.radius + other_sphere.radius + 1e-6 - distance;
-
-        if (distance < sph.radius + other_sphere.radius) {
-            count += 1;
-            Eigen::Vector3d push_vector = (other_sphere.center - sph.center).normalized() * overlap;
-            Sphere new_sphere = Sphere(other_sphere.id, other_sphere.object_id, other_sphere.object_type,
-                                       other_sphere.center + push_vector, other_sphere.radius);
-            
-            if (i > 0) {
-                double distance_to_sphere_before = (new_sphere.center - sph_before.center).norm();
-                if (distance_to_sphere_before > max(sph_before.radius, new_sphere.radius)) {
-                    return false;
-                }
-            }
-
-            if (i < axon.outer_spheres.size() - 1) {
-                double distance_to_sphere_after = (new_sphere.center - sph_after.center).norm();
-                if (distance_to_sphere_after > max(sph_before.radius, new_sphere.radius)) {
-                    return false;
-                }
-            }
-
-            if (canSpherebePlaced(new_sphere) && check_borders(extended_min_limits, extended_max_limits, new_sphere.center, new_sphere.radius)) {
-                axon.outer_spheres[i] = std::move(new_sphere); // Update the sphere
-                //cout <<"sphere : " << new_sphere.id << " axon : "<< new_sphere.object_id << " can be pushed" << endl;
-            } 
-            else {
-                return false; // Cannot place the sphere
-            }
-        }
-    }
-    axon.updateBox();
-
-    return true;
-}
-
-Eigen::Vector3d AxonGrowth::readapt_sphere_position(const Sphere &s, const Axon &neighbour_axon, bool can_readapt){
-
-    Eigen::Vector3d sphere_center = s.center;
-    for (int i = 0; i < neighbour_axon.outer_spheres.size(); i++) {
-        const Sphere& other_sphere = neighbour_axon.outer_spheres[i];
-        double distance = (sphere_center - other_sphere.center).norm();
-        double overlap = s.radius + other_sphere.radius + 1e-6 - distance;
-        if (overlap > 0){
-            Eigen::Vector3d vector = (sphere_center - other_sphere.center).normalized()*(overlap);
-            sphere_center += vector;
-        }
-    }
-    const Sphere& prev_sphere = axon_to_grow.outer_spheres[axon_to_grow.outer_spheres.size() - 1];
-    double new_distance = (sphere_center - prev_sphere.center).norm();
-    if (new_distance > max(prev_sphere.radius, s.radius)){
-        can_readapt = true;
-        return sphere_center;
-    }
-    else{
-        can_readapt = false;
-        return {0, 0, 0}; // Return a zero vector if the sphere cannot be placed
-    }
-}
-
-
-
-
-Eigen::Vector3d AxonGrowth::find_next_center_straight(const double distance, const Sphere &s, const std::vector<Sphere> &spheres)
+Eigen::Vector3d AxonGrowth::find_next_center_straight(const double distance, const std::vector<Sphere> &spheres)
 {
     if (spheres.size() < 2){
         assert(0);
@@ -130,16 +54,6 @@ Eigen::Vector3d AxonGrowth::find_next_center_straight(const double distance, con
 
 bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_straight, const int &factor)
 {
-    /*
-    // adjust growth axis 
-    int i;
-    double maxVal = axon_to_grow.begin.cwiseAbs().minCoeff(&i);
-    if (i != axon_to_grow.growth_axis) {
-        axon_to_grow.growth_axis = i; // set growth axis to the one with the smallest absolute value
-        //cout << "axon " << axon_to_grow.id << " growth axis changed to " << axon_to_grow.growth_axis << endl;
-
-    }
-    */
 
     // Basic validation
     if (axon_to_grow.outer_spheres.empty()) {
@@ -197,13 +111,13 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         if (std_dev != 0.0) {
             // If grow_straight is set, use the straight function, else the normal function
             if (grow_straight == 1) {
-                candidate.center= find_next_center_straight(distance, candidate, axon_to_grow.outer_spheres);
+                candidate.center= find_next_center_straight(distance, axon_to_grow.outer_spheres);
             } else {
-                candidate.center= find_next_center(candidate, distance, axon_to_grow.outer_spheres, axon_to_grow.end, true);
+                candidate.center= find_next_center(distance, axon_to_grow.outer_spheres, axon_to_grow.end);
             }
         } else {
             // If std_dev == 0, we skip the "straight vs. random" logic and always use find_next_center
-            candidate.center= find_next_center(candidate, distance, axon_to_grow.outer_spheres, axon_to_grow.end, true);
+            candidate.center= find_next_center(distance, axon_to_grow.outer_spheres, axon_to_grow.end);
         }
 
         // 2) Check if inside
@@ -315,9 +229,9 @@ void AxonGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const int &
 }
 
 
-Eigen::Vector3d AxonGrowth::find_next_center(const Sphere &s, const double dist_, 
+Eigen::Vector3d AxonGrowth::find_next_center(const double dist_, 
                                              const std::vector<Sphere> &spheres, 
-                                             const Eigen::Vector3d &target, const bool &is_axon)
+                                             const Eigen::Vector3d &target)
 {
     Eigen::Vector3d last_center = spheres.back().center;
     Eigen::Vector3d target_direction = (target - last_center).normalized();
@@ -332,12 +246,10 @@ Eigen::Vector3d AxonGrowth::find_next_center(const Sphere &s, const double dist_
         generate_random_point_on_sphere(std_dev), target_direction
     );
 
-    Eigen::Vector3d combined_vector = biased_random_vector.normalized();
-    
     
     if (spheres.size() > 2) {
         Eigen::Vector3d previous_vector = (last_center - spheres[spheres.size() - 2].center).normalized();
-        double cos_angle = previous_vector.dot(combined_vector.normalized());
+        double cos_angle = previous_vector.dot(biased_random_vector.normalized());
         cos_angle = std::max(-1.0, std::min(1.0, cos_angle)); // clamp to [-1, 1]
 
         double angle = acos(cos_angle);
@@ -348,24 +260,208 @@ Eigen::Vector3d AxonGrowth::find_next_center(const Sphere &s, const double dist_
             biased_random_vector = apply_bias_toward_target(
                 generate_random_point_on_sphere(std_dev), target_direction
             );
-            //if (has_valid_neighbor) {
-            //    combined_vector = (0.9 * biased_random_vector + 0.1 * neighbor_vector.normalized()).normalized();
-            //} else {
-            combined_vector = biased_random_vector.normalized();
-            //}
-            cos_angle = previous_vector.dot(combined_vector.normalized());
+
+            cos_angle = previous_vector.dot(biased_random_vector.normalized());
             cos_angle = std::max(-1.0, std::min(1.0, cos_angle)); // clamp to [-1, 1]
             angle = acos(cos_angle);
             nbr_tries += 1;
+
         }
         
         if (angle > angle_limit) {
-            combined_vector = previous_vector;
+            biased_random_vector = previous_vector;
         }
         
         
     }
     
 
-    return last_center + dist_ * combined_vector;
+    return last_center + dist_ * biased_random_vector;
 }
+
+double AxonGrowth::RandomradiusVariation() 
+{ 
+    double prev_radius = axon_to_grow.outer_spheres[axon_to_grow.outer_spheres.size()-1].radius; 
+
+    double prev_radius_clamped = prev_radius;
+
+    if (prev_radius_clamped < axon_to_grow.radius-axon_to_grow.beading_amplitude*axon_to_grow.radius) 
+    { 
+        prev_radius_clamped = axon_to_grow.radius-axon_to_grow.beading_amplitude*axon_to_grow.radius; 
+    } 
+    else if (prev_radius_clamped > axon_to_grow.radius+axon_to_grow.beading_amplitude*axon_to_grow.radius) 
+    { 
+        prev_radius_clamped = axon_to_grow.radius+axon_to_grow.beading_amplitude*axon_to_grow.radius; 
+    } 
+
+    double standard_deviation = axon_to_grow.radius * axon_to_grow.beading_std; 
+
+    std::normal_distribution<double> dis(prev_radius_clamped, standard_deviation); 
+
+    double random_radius = dis(gen); 
+
+    while (random_radius > prev_radius_clamped+3* standard_deviation || random_radius < prev_radius_clamped-3*standard_deviation) 
+    { 
+        random_radius = dis(gen); 
+    } 
+    if (random_radius < min_radius) 
+    { 
+        random_radius = min_radius; 
+    } 
+    return random_radius; 
+}
+
+bool AxonGrowth::shrinkRadius(const double &radius_to_shrink, const bool& axon_can_shrink, const int &factor)
+{
+
+    bool can_grow_;
+    // find position that works for smallest radius
+    can_grow_ = false;
+    double rad = radius_to_shrink;
+    double initial_rad = radius_to_shrink;
+    bool can_grow_min_rad = AddOneSphere(min_radius, false, 0, factor);
+    double intervals = (initial_rad) / 10;
+
+    if(!axon_can_shrink){
+        return false;
+    }
+    if (!can_grow_min_rad)
+    {
+        // cout << "minimum radius doesn't fit, min rad :"<< min_radius << endl;
+        return false;
+    }
+    else
+    {
+        while (!can_grow_ && rad > min_radius+intervals)
+        {
+            rad -= intervals;
+            can_grow_ = AddOneSphere(rad, true, 0, factor);
+        }
+        if (can_grow_)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+}
+
+void AxonGrowth::update_straight(bool can_grow_, int &grow_straight, int &straight_growths)
+{
+
+    if (can_grow_)
+    {
+
+        if (grow_straight == 1)
+        {
+            if (straight_growths >= axon_to_grow.undulation_factor) // if axon has been growing straight for a number of spheres in a row
+            {
+                grow_straight = 0; // set to false so that next step doesn't go straight
+                straight_growths = 0;
+            }
+            else
+            {
+                straight_growths += 1;
+            }
+        }
+        else
+        {
+            // if the sphere hadn't grown straight previously . set to straight for next "undulation_factor" spheres
+            grow_straight = 1; // set to true
+        }
+    }
+    else
+    {
+        if (grow_straight == 1) // if when growing straight it collides with environment
+        {
+            grow_straight = 0; // set to false so that next step doesn't go straight
+            straight_growths = 0;
+        }
+    }
+}
+
+void AxonGrowth::growthThread(
+    double& stuck_radius,
+    int& stuck_index,
+    int factor,
+    bool axon_can_shrink
+) {
+    auto set_stuck = [&](bool done) {
+        finished = done ? true : false;                  // explicit member
+        stuck_radius   = done ? axon_to_grow.radius : -1.0;
+        stuck_index    = done ? axon_to_grow.id     : -1;
+    };
+    int  grow_straight     = 0;
+    int  straight_growths  = 0;
+
+    std::size_t tries = 0;
+    const std::size_t max_tries = 10000;  // large enough; growth logic should end earlier
+
+    while (!finished && tries < max_tries) {
+        ++tries;
+
+        // Radius beading
+        double varied_radius = axon_to_grow.radius;
+        if (axon_to_grow.beading_amplitude > 0) {
+            varied_radius = RandomradiusVariation();
+        }
+
+        // Try to place a sphere
+        const bool grew = AddOneSphere(varied_radius, /*create_sphere=*/true, grow_straight, factor);
+
+        // Growth process may have marked itself finished
+        if (finished) {
+            set_stuck(false);
+            update_straight(grew, grow_straight, straight_growths);
+            break;
+        }
+
+        if (grew) {
+            set_stuck(false);
+            update_straight(true, grow_straight, straight_growths);
+            tries = 0;
+            continue;
+        }
+
+        // Could not grow: try shrinking if allowed
+        if (axon_can_shrink) {
+            const bool shrank_and_grew = shrinkRadius(varied_radius, axon_can_shrink, factor);
+            if (shrank_and_grew) {
+                set_stuck(false);
+                update_straight(true, grow_straight, straight_growths);
+                continue;
+            }
+            // fall through to retry/destroy
+        }
+
+        // No shrink or shrink failed → retry a few times, then give up
+        if (axon_to_grow.growth_attempts < 3) {
+            axon_to_grow.keep_one_sphere();  // retry from same position
+            set_stuck(false);
+        } else {
+            axon_to_grow.destroy();
+            set_stuck(true);
+            break;
+        }
+
+        update_straight(false, grow_straight, straight_growths);
+    }
+
+    if (tries >= max_tries && !finished) {
+        // safety stop
+        axon_to_grow.destroy();
+        set_stuck(true);
+    }
+
+    if (finished && !axon_to_grow.outer_spheres.empty()) {
+        if (axon_to_grow.outer_spheres.size() < 10) {
+
+            axon_to_grow.destroy();
+            set_stuck(true);
+        }
+    }
+
+}
+

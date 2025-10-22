@@ -44,6 +44,10 @@ private slots:
     void PlotCells(const bool& axons_plot, const bool& glial_pop1_plot, const bool& glial_pop2_plot);
     void ReadGlialCellsFromSWC(const QString& filePath);
     void ReadAxonsFromSWC(const QString& filePath);
+    void ReadAxonsFromCSV(const QString& fileName);
+    void ReadAxonsFromFile(const QString& fileName);
+    void ReadGlialCellsFromFile(const QString& fileName);
+    void ReadGlialCellsFromCSV(const QString& fileName);
 
 private:
     QGroupBox* createControls(const QString &title);

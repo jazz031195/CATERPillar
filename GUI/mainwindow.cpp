@@ -84,12 +84,17 @@ Window::Window(QWidget *parent)
 }
 
 void Window::SelectSWCFileButton() {
-    QString filePath = QFileDialog::getOpenFileName(this, tr("Select SWC File"), "", tr("SWC Files (*.swc)"));
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        tr("Select SWC or CSV File"),
+        "",
+        tr("Data Files (*.csv *.swc);;CSV Files (*.csv);;SWC Files (*.swc)")
+    );
     if (!filePath.isEmpty()) {
         SWCFile = filePath;  // Assuming you have a QString member named SWCFile
-        qDebug() << "Selected SWC file:" << SWCFile;
-        ReadAxonsFromSWC(SWCFile);       // Load axons
-        ReadGlialCellsFromSWC(SWCFile);  // Load glial cells
+        qDebug() << "Selected CSV or SWC file:" << SWCFile;
+        ReadAxonsFromFile(SWCFile);       // Load axons
+        ReadGlialCellsFromFile(SWCFile);  // Load glial cells
         PlotCells(true, true, true);              // Visualize
     }
 }
@@ -666,7 +671,92 @@ void Window::onSaveButtonClicked()
 
 }
 
+void Window::ReadAxonsFromFile(const QString& fileName){
 
+    if (fileName.endsWith(".csv")) {
+        ReadAxonsFromCSV(fileName);
+    } else if (fileName.endsWith(".swc")) {
+        ReadAxonsFromSWC(fileName);
+    } else {
+        QMessageBox::warning(this, tr("Error"), tr("Unsupported file format. Please select a CSV or SWC file."));
+    }
+}
+void Window::ReadAxonsFromCSV(const QString& fileName){
+    X_axons.clear();
+    Y_axons.clear();
+    Z_axons.clear();
+    R_axons.clear();
+
+    if (fileName.isEmpty()) {
+        return; // User canceled the file dialog
+    }
+
+
+    std::ifstream swcFile(fileName.toStdString());
+    if (!swcFile.is_open()) {
+        QMessageBox::warning(this, tr("Error"), tr("Could not open the SWC file."));
+        return;
+    }
+
+    std::vector<double> x_ = {};
+    std::vector<double> y_ = {};
+    std::vector<double> z_ = {};
+    std::vector<double> r_ = {};
+
+    std::string line;
+    while (std::getline(swcFile, line)) {
+        std::istringstream iss(line);
+        double id_cell, component_id;
+        std::string type, component;
+        double x, y, z, radius_in, parent, radius_out;
+
+        //skip first line
+        if (line[0] == 'c') {
+            continue;
+        }
+
+
+        if (!(iss >> type >> id_cell >> component >> component_id >> x >> y >> z >> radius_in >> radius_out)) {
+            QMessageBox::warning(this, tr("Error"), tr("Invalid CSV file format for Axons."));
+            return;
+        }
+        
+        if (type == "axon") {
+            
+            if (component_id == 0) {
+                if (x_.size() > 0) {
+                    X_axons.push_back(x_);
+                    Y_axons.push_back(y_);
+                    Z_axons.push_back(z_);
+                    R_axons.push_back(r_);
+                }
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
+                x_.push_back(x);
+                y_.push_back(y);
+                z_.push_back(z);
+                r_.push_back(radius_out);
+            }
+            else {
+                x_.push_back(x);
+                y_.push_back(y);
+                z_.push_back(z);
+                r_.push_back(radius_out);
+            }
+        }
+    }
+    // Add the last axon
+    if (x_.size() > 0) {
+        X_axons.push_back(x_);
+        Y_axons.push_back(y_);
+        Z_axons.push_back(z_);
+        R_axons.push_back(r_);
+    }
+
+    swcFile.close();
+}
 
 void Window::ReadAxonsFromSWC(const QString& fileName){
 
@@ -745,7 +835,99 @@ void Window::ReadAxonsFromSWC(const QString& fileName){
 
     swcFile.close();
 }
+void Window::ReadGlialCellsFromFile(const QString& fileName){
+    if (fileName.endsWith(".csv")) {
+        ReadGlialCellsFromCSV(fileName);
+    } else if (fileName.endsWith(".swc")) {
+        ReadGlialCellsFromSWC(fileName);
+    } else {
+        QMessageBox::warning(this, tr("Error"), tr("Unsupported file format. Please select a CSV or SWC file."));
+    }
+}
+void Window::ReadGlialCellsFromCSV(const QString& fileName){
 
+    X_glial_pop1.clear();
+    Y_glial_pop1.clear();
+    Z_glial_pop1.clear();
+    R_glial_pop1.clear();
+    Branch_glial_pop1.clear();
+
+    if (fileName.isEmpty()) {
+        return; // User canceled the file dialog
+    }
+
+    std::ifstream swcFile(fileName.toStdString());
+    if (!swcFile.is_open()) {
+        QMessageBox::warning(this, tr("Error"), tr("Could not open the CSV file."));
+        assert(0);
+        return;
+    }
+
+    int previous_branch_id = -2;
+    int id_previous_cell = -1;
+
+    std::vector<double> x_;
+    std::vector<double> y_;
+    std::vector<double> z_;
+    std::vector<double> r_;
+    std::vector<int> b_;
+
+    std::string line;
+    while (std::getline(swcFile, line)) {
+
+        //skip first line
+        if (line[0] == 'c') {
+            continue;
+        }
+
+        std::istringstream iss(line);
+        double component_id, id_cell;
+        std::string type, component;
+
+        double x, y, z, radius_in, parent, radius_out;
+
+        if (!(iss >> type >> id_cell >> component >> component_id >> x >> y >> z >> radius_in >> radius_out)) {
+            QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format for Glial Cells."));
+            return;
+        }
+
+        if (type != "axon") {
+
+            if (id_cell != id_previous_cell) {
+                if (id_previous_cell != -1) {
+                    X_glial_pop1.push_back(x_);
+                    Y_glial_pop1.push_back(y_);
+                    Z_glial_pop1.push_back(z_);
+                    R_glial_pop1.push_back(r_);
+                    Branch_glial_pop1.push_back(b_);
+
+                }
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
+                b_.clear();
+            }
+            x_.push_back(x);
+            y_.push_back(y);
+            z_.push_back(z);
+            r_.push_back(radius_out);
+            b_.push_back(component_id);
+            id_previous_cell = id_cell;
+        }
+        
+    }
+
+    if (!x_.empty()) {
+        X_glial_pop1.push_back(x_);
+        Y_glial_pop1.push_back(y_);
+        Z_glial_pop1.push_back(z_);
+        R_glial_pop1.push_back(r_);
+        Branch_glial_pop1.push_back(b_);
+    }
+
+    swcFile.close();
+}
 
 void Window::ReadGlialCellsFromSWC(const QString& fileName){
 

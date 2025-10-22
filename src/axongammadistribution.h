@@ -83,7 +83,7 @@ public:
     double beading_variation;              /*!< For beading: percentage of variation between the maximum radius and minimum radius in each axon. If set to 1, there is no "beading" */
     double beading_std;                    /*!< Standard deviation of the variation in beading */
     double std_dev;                     /*< Standard deviation for gaussian distribution in generation of directions to grow in */ 
-    int ondulation_factor;              /*!< axon ondulation factor : the number of spheres during whoch the axon grows straight before picking a direction from gaussian distribution  */
+    int undulation_factor;              /*!< axon ondulation factor : the number of spheres during whoch the axon grows straight before picking a direction from gaussian distribution  */
     double mean_glial_pop1_process_length;   /*!< Mean length of glial processes */
     double std_glial_pop1_process_length;    /*!< Standard deviation of glial processes */
     int nbr_primary_processes_pop1;          /*!< Number of primary processes for glial cells */
@@ -114,7 +114,7 @@ public:
      */
     AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &glial_pop1_icvf_soma_, const double &glial_pop1_icvf_branches_, const double &glial_pop2_icvf_soma_, const double &glial_pop2_icvf_branches_, const double &a, const double &b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
-                                              const int &regrow_thr_, const double &beading_variation_,const double &beading_variation_std, const double &std_dev_, const int &ondulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
+                                              const int &regrow_thr_, const double &beading_variation_,const double &beading_variation_std, const double &std_dev_, const int &undulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
                                               const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
                                               const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_,
                                               const double &c1_, const double &c2_, const double &c3_);
