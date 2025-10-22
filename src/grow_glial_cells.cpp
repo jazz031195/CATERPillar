@@ -270,14 +270,15 @@ std::vector<Sphere> GlialCellGrowth::addIntermediateSpheres(const Sphere &random
 void GlialCellGrowth::growFirstPrimaryBranches(const int &number_ramification_points, int &nbr_spheres, const double &mean_process_length, const double &std_process_length, const int &factor)
 {
     int nbr_tries = 0;
+    int max_nbr_tries = 1000;
     for (int j = 0; j < number_ramification_points; j++)
     {
         bool has_grown = growPrimaryBranch(nbr_spheres, mean_process_length, std_process_length, factor);
-        if (!has_grown && nbr_tries < 100){
+        if (!has_grown && nbr_tries < max_nbr_tries){
             j = j - 1;
             nbr_tries += 1;
         }
-        else if (nbr_tries >= 1000){
+        else if (nbr_tries >= max_nbr_tries){
             cout << "Failed to grow glial cell" << endl;
         }
         else{
@@ -297,7 +298,7 @@ bool GlialCellGrowth::growPrimaryBranch(int &nbr_spheres, const double &mean_pri
     std::mt19937 generator(rd());
     std::normal_distribution<double> length_dist(mean_primary_process_length, std_primary_process_length);
     double length = length_dist(generator);
-    double min_length = 0.75*length; // Minimum length to grow a branch
+    double min_length = 0.5*length; // Minimum length to grow a branch
     int tries = 0;
     while (length < min_length && tries < 100) {
         length = length_dist(generator);
@@ -427,7 +428,7 @@ bool GlialCellGrowth::growSecondaryBranch(int &nbr_spheres, const double &mean_p
 
     std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution<int> branch_dist(0, nbr_branches - 1);
-    bool finished = false;
+    finished = false;
 
     // finding source of branching
     int nbr_spheres_between = factor - 1;
