@@ -397,7 +397,8 @@ void AxonGrowth::growthThread(
     int  straight_growths  = 0;
 
     std::size_t tries = 0;
-    const std::size_t max_tries = 10000;  // large enough; growth logic should end earlier
+    const std::size_t max_tries = 1000000;  // large enough; growth logic should end earlier
+    int total_nbr_growth_attempts = 10;
 
     while (!finished && tries < max_tries) {
         ++tries;
@@ -437,7 +438,7 @@ void AxonGrowth::growthThread(
         }
 
         // No shrink or shrink failed → retry a few times, then give up
-        if (axon_to_grow.growth_attempts < 3) {
+        if (axon_to_grow.growth_attempts < total_nbr_growth_attempts) {
             axon_to_grow.keep_one_sphere();  // retry from same position
             set_stuck(false);
         } else {

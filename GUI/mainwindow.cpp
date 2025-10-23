@@ -694,7 +694,7 @@ void Window::ReadAxonsFromCSV(const QString& fileName){
 
     std::ifstream swcFile(fileName.toStdString());
     if (!swcFile.is_open()) {
-        QMessageBox::warning(this, tr("Error"), tr("Could not open the SWC file."));
+        QMessageBox::warning(this, tr("Error"), tr("Could not open the CSV file."));
         return;
     }
 
@@ -702,6 +702,8 @@ void Window::ReadAxonsFromCSV(const QString& fileName){
     std::vector<double> y_ = {};
     std::vector<double> z_ = {};
     std::vector<double> r_ = {};
+
+    int old_cell_id = -1;
 
     std::string line;
     while (std::getline(swcFile, line)) {
@@ -723,28 +725,26 @@ void Window::ReadAxonsFromCSV(const QString& fileName){
         
         if (type == "axon") {
             
-            if (component_id == 0) {
-                if (x_.size() > 0) {
-                    X_axons.push_back(x_);
-                    Y_axons.push_back(y_);
-                    Z_axons.push_back(z_);
-                    R_axons.push_back(r_);
+            if (old_cell_id != id_cell) {
+                if (old_cell_id != -1){
+                    if (x_.size() > 0) {
+                        X_axons.push_back(x_);
+                        Y_axons.push_back(y_);
+                        Z_axons.push_back(z_);
+                        R_axons.push_back(r_);
+                    }
                 }
                 x_.clear();
                 y_.clear();
                 z_.clear();
                 r_.clear();
-                x_.push_back(x);
-                y_.push_back(y);
-                z_.push_back(z);
-                r_.push_back(radius_out);
             }
-            else {
-                x_.push_back(x);
-                y_.push_back(y);
-                z_.push_back(z);
-                r_.push_back(radius_out);
-            }
+
+            x_.push_back(x);
+            y_.push_back(y);
+            z_.push_back(z);
+            r_.push_back(radius_out);
+            old_cell_id = id_cell;
         }
     }
     // Add the last axon

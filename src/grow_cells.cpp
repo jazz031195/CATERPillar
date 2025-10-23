@@ -121,7 +121,6 @@ bool CellGrowth::checkAxonsOverlap(Sphere &sph){
     for (const auto& axon : *axons) {
         if (axon.isSphereInsideAxon(sph)) {
             return false;  
-            
         }
     }
     return true; 
@@ -137,11 +136,16 @@ bool CellGrowth::canSpherebePlaced(Sphere &sph){
     if (!axons_check){
         return false;
     }
+
+
     // check collision other glial cells 
     for (const Glial& glial : *glial_pop1) {
+
         if (glial.collides_with_GlialCell(sph, barrier_tickness)) {
+
             return false;
         }
+
     }
 
     for (const Glial& glial : *glial_pop2) {

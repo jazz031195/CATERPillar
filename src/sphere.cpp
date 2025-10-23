@@ -30,17 +30,10 @@ bool Sphere::isInside(Eigen::Vector3d pos, double distance_to_be_inside){
     return d_ <= distance_to_be_inside;
 }
 
-
-bool Sphere::CollideswithSphere(const Sphere &sphere_,const double &distance_to_be_inside) const{
-    double d_ = (sphere_.center - this->center).norm();
-    if (d_ <= sphere_.radius + this->radius + distance_to_be_inside){
-        return true;
-    }
-    else{
-        return false;
-    }
+bool Sphere::CollideswithSphere(const Sphere &other, const double &tolerance) const {
+    double dist = (other.center - center).norm();
+    return dist <= (other.radius + radius + tolerance);
 }
-
 
 void Sphere::getPointOnSphereSurface(Eigen::Vector3d &point, Eigen::Vector3d &vector, const Eigen::Vector3d &vector2, const bool& primary_process) const {
     // random device

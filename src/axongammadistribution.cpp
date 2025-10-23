@@ -518,8 +518,10 @@ bool AxonGammaDistribution::canSpherebePlaced(const Sphere &sph, const std::vect
     std::vector<Glial> glial_cells = astros;    
     glial_cells.insert(glial_cells.end(), oligos.begin(), oligos.end());
     // check collision other glial cells 
+
     for (auto &glial : glial_cells)
     {
+        
         if (glial.collides_with_GlialCell(sph, barrier_tickness)){
             return false;
         }

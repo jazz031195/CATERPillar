@@ -87,7 +87,7 @@ public:
      *  \param distance_to_be_inside Distance to be inside sphere
      *  \brief checks if this sphere collides with another sohere
      */
-    bool CollideswithSphere(const Sphere &sphere_,const double &distance_to_be_inside) const;
+    bool CollideswithSphere(const Sphere &other, const double &tolerance) const;
     
     void getPointOnSphereSurface(Eigen::Vector3d &point, Eigen::Vector3d &vector, const Eigen::Vector3d &vector2, const bool& primary_process) const;
 

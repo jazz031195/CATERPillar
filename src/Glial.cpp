@@ -167,17 +167,18 @@ bool Glial::collidesWithItsOwnRamification(const Sphere &sph, const double &dist
 bool Glial::collides_with_GlialCell(const Sphere &sph, const double &distance_to_be_inside) const{
 
 
-    if (sph.object_type == 1 && sph.object_id == this->id || sph.object_type == 0){
+    if (sph.object_type == 1 && sph.object_id == this->id){
         return false; // do not collide with itself
     }  
+    else if (this->soma.CollideswithSphere(sph, distance_to_be_inside)) // check if sphere collides with soma
+    {
+        return true; // overlap
+    }
+    
     else if (!isNearGlialCell(sph.center, sph.radius + distance_to_be_inside)) // check if sphere is near glial cell
     {
         return false; 
     } 
-    else if (soma.CollideswithSphere(sph, distance_to_be_inside)) // check if sphere collides with soma
-    {
-        return true; // overlap
-    }
     else if (collidesWithRamification(sph.center, sph.radius + distance_to_be_inside)) // overlap
     {
         return true;
