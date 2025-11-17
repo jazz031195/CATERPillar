@@ -77,6 +77,9 @@ void Parameters::readConfFile(std::string conf_file_path)
         else if (str_dist(tmp,"beading_variation") <= 2){
             in >> beading_variation;
         }
+        else if (str_dist(tmp,"beading_variation_std") <= 2){
+            in >> beading_variation_std;
+        }
         else if (str_dist(tmp,"nbr_threads") <= 2){
             in >> nbr_threads;
         }
@@ -160,6 +163,9 @@ void Parameters::readConfFile(std::string conf_file_path)
         }
         else if ((str_dist(tmp,"axons_with_myelin_icvf") <= 2)){
             in >> axons_w_myelin_icvf;
+        }
+        else if ((str_dist(tmp,"blood_vessels_icvf") <= 2)){
+            in >> blood_vessels_icvf;
         }
         else if ((str_dist(tmp,"spheres_overlap_factor") <= 2)){
 

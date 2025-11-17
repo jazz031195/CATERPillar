@@ -67,6 +67,8 @@ SOURCES       = main.cpp \
 		../src/parameters.cpp \
 		../src/sphere.cpp \
 		../src/threads.cpp \
+		../src/grow_blood_vessels.cpp \
+		../src/Blood_Vessel.cpp \
 		qcustomplot-source/qcustomplot.cpp moc_mainwindow.cpp \
 		moc_slidergroup.cpp \
 		moc_openglwindow.cpp \
@@ -87,6 +89,8 @@ OBJECTS       = main.o \
 		parameters.o \
 		sphere.o \
 		threads.o \
+		grow_blood_vessels.o \
+		Blood_Vessel.o \
 		qcustomplot.o \
 		moc_mainwindow.o \
 		moc_slidergroup.o \
@@ -187,6 +191,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		../src/sphere.h \
 		../src/threads.h \
 		../src/constants.h \
+		../src/grow_blood_vessels.h \
+		../src/Blood_Vessels.h \
 		qcustomplot-source/qcustomplot.h main.cpp \
 		mainwindow.cpp \
 		slidergroup.cpp \
@@ -202,6 +208,8 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		../src/parameters.cpp \
 		../src/sphere.cpp \
 		../src/threads.cpp \
+		../src/grow_blood_vessels.cpp \
+		../src/Blood_Vessel.cpp \
 		qcustomplot-source/qcustomplot.cpp
 QMAKE_TARGET  = Caterpillar
 DESTDIR       = 
@@ -390,8 +398,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents mainwindow.h slidergroup.h openglwindow.h ScatterDataModifier.h ../src/Axon.h ../src/axongammadistribution.h ../src/Glial.h ../src/grow_axons.h ../src/grow_cells.h ../src/grow_glial_cells.h ../src/obstacle.h ../src/parameters.h ../src/sphere.h ../src/threads.h ../src/constants.h qcustomplot-source/qcustomplot.h $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp mainwindow.cpp slidergroup.cpp openglwindow.cpp ScatterDataModifier.cpp ../src/Axon.cpp ../src/axongammadistribution.cpp ../src/Glial.cpp ../src/grow_axons.cpp ../src/grow_cells.cpp ../src/grow_glial_cells.cpp ../src/obstacle.cpp ../src/parameters.cpp ../src/sphere.cpp ../src/threads.cpp qcustomplot-source/qcustomplot.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents mainwindow.h slidergroup.h openglwindow.h ScatterDataModifier.h ../src/Axon.h ../src/axongammadistribution.h ../src/Glial.h ../src/grow_axons.h ../src/grow_cells.h ../src/grow_glial_cells.h ../src/obstacle.h ../src/parameters.h ../src/sphere.h ../src/threads.h ../src/constants.h ../src/grow_blood_vessels.h ../src/Blood_Vessels.h qcustomplot-source/qcustomplot.h $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp mainwindow.cpp slidergroup.cpp openglwindow.cpp ScatterDataModifier.cpp ../src/Axon.cpp ../src/axongammadistribution.cpp ../src/Glial.cpp ../src/grow_axons.cpp ../src/grow_cells.cpp ../src/grow_glial_cells.cpp ../src/obstacle.cpp ../src/parameters.cpp ../src/sphere.cpp ../src/threads.cpp ../src/grow_blood_vessels.cpp ../src/Blood_Vessel.cpp qcustomplot-source/qcustomplot.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents mainwindow.ui $(DISTDIR)/
 
 
@@ -428,67 +436,6 @@ compiler_moc_header_make_all: moc_mainwindow.cpp moc_slidergroup.cpp moc_openglw
 compiler_moc_header_clean:
 	-$(DEL_FILE) moc_mainwindow.cpp moc_slidergroup.cpp moc_openglwindow.cpp moc_ScatterDataModifier.cpp moc_qcustomplot.cpp
 moc_mainwindow.cpp: mainwindow.h \
-		slidergroup.h \
-		ScatterDataModifier.h \
-		openglwindow.h \
-		moc_predefs.h \
-		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include mainwindow.h -o moc_mainwindow.cpp
-
-moc_slidergroup.cpp: slidergroup.h \
-		moc_predefs.h \
-		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include slidergroup.h -o moc_slidergroup.cpp
-
-moc_openglwindow.cpp: openglwindow.h \
-		moc_predefs.h \
-		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include openglwindow.h -o moc_openglwindow.cpp
-
-moc_ScatterDataModifier.cpp: ScatterDataModifier.h \
-		openglwindow.h \
-		moc_predefs.h \
-		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ScatterDataModifier.h -o moc_ScatterDataModifier.cpp
-
-moc_qcustomplot.cpp: qcustomplot-source/qcustomplot.h \
-		moc_predefs.h \
-		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include qcustomplot-source/qcustomplot.h -o moc_qcustomplot.cpp
-
-compiler_moc_objc_header_make_all:
-compiler_moc_objc_header_clean:
-compiler_moc_source_make_all:
-compiler_moc_source_clean:
-compiler_uic_make_all: ui_mainwindow.h
-compiler_uic_clean:
-	-$(DEL_FILE) ui_mainwindow.h
-ui_mainwindow.h: mainwindow.ui \
-		/usr/lib/qt5/bin/uic
-	/usr/lib/qt5/bin/uic mainwindow.ui -o ui_mainwindow.h
-
-compiler_yacc_decl_make_all:
-compiler_yacc_decl_clean:
-compiler_yacc_impl_make_all:
-compiler_yacc_impl_clean:
-compiler_lex_make_all:
-compiler_lex_clean:
-compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_uic_clean 
-
-####### Compile
-
-main.o: main.cpp mainwindow.h \
-		slidergroup.h \
-		ScatterDataModifier.h \
-		openglwindow.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
-
-mainwindow.o: mainwindow.cpp mainwindow.h \
-		slidergroup.h \
-		ScatterDataModifier.h \
-		openglwindow.h \
-		ui_mainwindow.h \
-		../src/axongammadistribution.h \
 		../src/Eigen/Core \
 		../src/Eigen/src/Core/util/DisableStupidWarnings.h \
 		../src/Eigen/src/Core/util/Macros.h \
@@ -655,12 +602,403 @@ mainwindow.o: mainwindow.cpp mainwindow.h \
 		../src/Eigen/src/Core/Assign_MKL.h \
 		../src/Eigen/src/Core/GlobalFunctions.h \
 		../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
+		slidergroup.h \
+		ScatterDataModifier.h \
+		openglwindow.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include mainwindow.h -o moc_mainwindow.cpp
+
+moc_slidergroup.cpp: slidergroup.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include slidergroup.h -o moc_slidergroup.cpp
+
+moc_openglwindow.cpp: openglwindow.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include openglwindow.h -o moc_openglwindow.cpp
+
+moc_ScatterDataModifier.cpp: ScatterDataModifier.h \
+		openglwindow.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ScatterDataModifier.h -o moc_ScatterDataModifier.cpp
+
+moc_qcustomplot.cpp: qcustomplot-source/qcustomplot.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/localadmin/Documents/CATERPillar/GUI/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/localadmin/Documents/CATERPillar/GUI -I/home/localadmin/Documents/CATERPillar/src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include qcustomplot-source/qcustomplot.h -o moc_qcustomplot.cpp
+
+compiler_moc_objc_header_make_all:
+compiler_moc_objc_header_clean:
+compiler_moc_source_make_all:
+compiler_moc_source_clean:
+compiler_uic_make_all: ui_mainwindow.h
+compiler_uic_clean:
+	-$(DEL_FILE) ui_mainwindow.h
+ui_mainwindow.h: mainwindow.ui \
+		/usr/lib/qt5/bin/uic
+	/usr/lib/qt5/bin/uic mainwindow.ui -o ui_mainwindow.h
+
+compiler_yacc_decl_make_all:
+compiler_yacc_decl_clean:
+compiler_yacc_impl_make_all:
+compiler_yacc_impl_clean:
+compiler_lex_make_all:
+compiler_lex_clean:
+compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_uic_clean 
+
+####### Compile
+
+main.o: main.cpp mainwindow.h \
+		../src/Eigen/Core \
+		../src/Eigen/src/Core/util/DisableStupidWarnings.h \
+		../src/Eigen/src/Core/util/Macros.h \
+		../src/Eigen/src/Core/util/ConfigureVectorization.h \
+		../src/Eigen/src/Core/util/MKL_support.h \
+		../src/Eigen/src/misc/blas.h \
+		../src/Eigen/src/Core/util/Constants.h \
+		../src/Eigen/src/Core/util/Meta.h \
+		../src/Eigen/src/Core/arch/HIP/hcc/math_constants.h \
+		../src/Eigen/src/Core/util/ForwardDeclarations.h \
+		../src/Eigen/src/Core/util/StaticAssert.h \
+		../src/Eigen/src/Core/util/XprHelper.h \
+		../src/Eigen/src/Core/util/Memory.h \
+		../src/Eigen/src/Core/util/IntegralConstant.h \
+		../src/Eigen/src/Core/util/SymbolicIndex.h \
+		../src/Eigen/src/Core/NumTraits.h \
+		../src/Eigen/src/Core/MathFunctions.h \
+		../src/Eigen/src/Core/GenericPacketMath.h \
+		../src/Eigen/src/Core/MathFunctionsImpl.h \
+		../src/Eigen/src/Core/arch/Default/ConjHelper.h \
+		../src/Eigen/src/Core/arch/Default/Half.h \
+		../src/Eigen/src/Core/arch/Default/TypeCasting.h \
+		../src/Eigen/src/Core/arch/Default/GenericPacketMathFunctionsFwd.h \
+		../src/Eigen/src/Core/arch/SSE/PacketMath.h \
+		../src/Eigen/src/Core/arch/SSE/TypeCasting.h \
+		../src/Eigen/src/Core/arch/SSE/Complex.h \
+		../src/Eigen/src/Core/arch/AVX/PacketMath.h \
+		../src/Eigen/src/Core/arch/AVX/TypeCasting.h \
+		../src/Eigen/src/Core/arch/AVX/Complex.h \
+		../src/Eigen/src/Core/arch/AVX512/PacketMath.h \
+		../src/Eigen/src/Core/arch/AVX512/TypeCasting.h \
+		../src/Eigen/src/Core/arch/AVX512/Complex.h \
+		../src/Eigen/src/Core/arch/SSE/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AVX/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AVX512/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AltiVec/PacketMath.h \
+		../src/Eigen/src/Core/arch/AltiVec/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AltiVec/Complex.h \
+		../src/Eigen/src/Core/arch/NEON/PacketMath.h \
+		../src/Eigen/src/Core/arch/NEON/TypeCasting.h \
+		../src/Eigen/src/Core/arch/NEON/MathFunctions.h \
+		../src/Eigen/src/Core/arch/NEON/Complex.h \
+		../src/Eigen/src/Core/arch/ZVector/PacketMath.h \
+		../src/Eigen/src/Core/arch/ZVector/MathFunctions.h \
+		../src/Eigen/src/Core/arch/ZVector/Complex.h \
+		../src/Eigen/src/Core/arch/MSA/PacketMath.h \
+		../src/Eigen/src/Core/arch/MSA/MathFunctions.h \
+		../src/Eigen/src/Core/arch/MSA/Complex.h \
+		../src/Eigen/src/Core/arch/GPU/PacketMath.h \
+		../src/Eigen/src/Core/arch/GPU/MathFunctions.h \
+		../src/Eigen/src/Core/arch/GPU/TypeCasting.h \
+		../src/Eigen/src/Core/arch/SYCL/SyclMemoryModel.h \
+		../src/Eigen/src/Core/arch/SYCL/InteropHeaders.h \
+		../src/Eigen/src/Core/arch/SYCL/PacketMath.h \
+		../src/Eigen/src/Core/arch/SYCL/MathFunctions.h \
+		../src/Eigen/src/Core/arch/SYCL/TypeCasting.h \
+		../src/Eigen/src/Core/arch/Default/Settings.h \
+		../src/Eigen/src/Core/arch/Default/GenericPacketMathFunctions.h \
+		../src/Eigen/src/Core/functors/TernaryFunctors.h \
+		../src/Eigen/src/Core/functors/BinaryFunctors.h \
+		../src/Eigen/src/Core/functors/UnaryFunctors.h \
+		../src/Eigen/src/Core/functors/NullaryFunctors.h \
+		../src/Eigen/src/Core/functors/StlFunctors.h \
+		../src/Eigen/src/Core/functors/AssignmentFunctors.h \
+		../src/Eigen/src/Core/arch/CUDA/Complex.h \
+		../src/Eigen/src/Core/util/IndexedViewHelper.h \
+		../src/Eigen/src/Core/util/ReshapedHelper.h \
+		../src/Eigen/src/Core/ArithmeticSequence.h \
+		../src/Eigen/src/Core/IO.h \
+		../src/Eigen/src/Core/DenseCoeffsBase.h \
+		../src/Eigen/src/Core/DenseBase.h \
+		../src/Eigen/src/plugins/CommonCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/BlockMethods.h \
+		../src/Eigen/src/plugins/IndexedViewMethods.h \
+		../src/Eigen/src/plugins/ReshapedMethods.h \
+		../src/Eigen/src/Core/MatrixBase.h \
+		../src/Eigen/src/plugins/CommonCwiseBinaryOps.h \
+		../src/Eigen/src/plugins/MatrixCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/MatrixCwiseBinaryOps.h \
+		../src/Eigen/src/Core/EigenBase.h \
+		../src/Eigen/src/Core/Product.h \
+		../src/Eigen/src/Core/CoreEvaluators.h \
+		../src/Eigen/src/Core/AssignEvaluator.h \
+		../src/Eigen/src/Core/Assign.h \
+		../src/Eigen/src/Core/ArrayBase.h \
+		../src/Eigen/src/plugins/ArrayCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/ArrayCwiseBinaryOps.h \
+		../src/Eigen/src/Core/util/BlasUtil.h \
+		../src/Eigen/src/Core/DenseStorage.h \
+		../src/Eigen/src/Core/NestByValue.h \
+		../src/Eigen/src/Core/ReturnByValue.h \
+		../src/Eigen/src/Core/NoAlias.h \
+		../src/Eigen/src/Core/PlainObjectBase.h \
+		../src/Eigen/src/Core/Matrix.h \
+		../src/Eigen/src/Core/Array.h \
+		../src/Eigen/src/Core/CwiseTernaryOp.h \
+		../src/Eigen/src/Core/CwiseBinaryOp.h \
+		../src/Eigen/src/Core/CwiseUnaryOp.h \
+		../src/Eigen/src/Core/CwiseNullaryOp.h \
+		../src/Eigen/src/Core/CwiseUnaryView.h \
+		../src/Eigen/src/Core/SelfCwiseBinaryOp.h \
+		../src/Eigen/src/Core/Dot.h \
+		../src/Eigen/src/Core/StableNorm.h \
+		../src/Eigen/src/Core/Stride.h \
+		../src/Eigen/src/Core/MapBase.h \
+		../src/Eigen/src/Core/Map.h \
+		../src/Eigen/src/Core/Ref.h \
+		../src/Eigen/src/Core/Block.h \
+		../src/Eigen/src/Core/VectorBlock.h \
+		../src/Eigen/src/Core/IndexedView.h \
+		../src/Eigen/src/Core/Reshaped.h \
+		../src/Eigen/src/Core/Transpose.h \
+		../src/Eigen/src/Core/DiagonalMatrix.h \
+		../src/Eigen/src/Core/Diagonal.h \
+		../src/Eigen/src/Core/DiagonalProduct.h \
+		../src/Eigen/src/Core/Redux.h \
+		../src/Eigen/src/Core/Visitor.h \
+		../src/Eigen/src/Core/Fuzzy.h \
+		../src/Eigen/src/Core/Swap.h \
+		../src/Eigen/src/Core/CommaInitializer.h \
+		../src/Eigen/src/Core/GeneralProduct.h \
+		../src/Eigen/src/Core/Solve.h \
+		../src/Eigen/src/Core/Inverse.h \
+		../src/Eigen/src/Core/SolverBase.h \
+		../src/Eigen/src/Core/PermutationMatrix.h \
+		../src/Eigen/src/Core/Transpositions.h \
+		../src/Eigen/src/Core/TriangularMatrix.h \
+		../src/Eigen/src/Core/SelfAdjointView.h \
+		../src/Eigen/src/Core/products/GeneralBlockPanelKernel.h \
+		../src/Eigen/src/Core/products/Parallelizer.h \
+		../src/Eigen/src/Core/ProductEvaluators.h \
+		../src/Eigen/src/Core/products/GeneralMatrixVector.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrix.h \
+		../src/Eigen/src/Core/SolveTriangular.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixVector.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixMatrix.h \
+		../src/Eigen/src/Core/products/SelfadjointProduct.h \
+		../src/Eigen/src/Core/products/SelfadjointRank2Update.h \
+		../src/Eigen/src/Core/products/TriangularMatrixVector.h \
+		../src/Eigen/src/Core/products/TriangularMatrixMatrix.h \
+		../src/Eigen/src/Core/products/TriangularSolverMatrix.h \
+		../src/Eigen/src/Core/products/TriangularSolverVector.h \
+		../src/Eigen/src/Core/BandMatrix.h \
+		../src/Eigen/src/Core/CoreIterators.h \
+		../src/Eigen/src/Core/ConditionEstimator.h \
+		../src/Eigen/src/Core/BooleanRedux.h \
+		../src/Eigen/src/Core/Select.h \
+		../src/Eigen/src/Core/VectorwiseOp.h \
+		../src/Eigen/src/Core/PartialReduxEvaluator.h \
+		../src/Eigen/src/Core/Random.h \
+		../src/Eigen/src/Core/Replicate.h \
+		../src/Eigen/src/Core/Reverse.h \
+		../src/Eigen/src/Core/ArrayWrapper.h \
+		../src/Eigen/src/Core/StlIterators.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/GeneralMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_BLAS.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularSolverMatrix_BLAS.h \
+		../src/Eigen/src/Core/Assign_MKL.h \
+		../src/Eigen/src/Core/GlobalFunctions.h \
+		../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
+		slidergroup.h \
+		ScatterDataModifier.h \
+		openglwindow.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
+
+mainwindow.o: mainwindow.cpp mainwindow.h \
+		../src/Eigen/Core \
+		../src/Eigen/src/Core/util/DisableStupidWarnings.h \
+		../src/Eigen/src/Core/util/Macros.h \
+		../src/Eigen/src/Core/util/ConfigureVectorization.h \
+		../src/Eigen/src/Core/util/MKL_support.h \
+		../src/Eigen/src/misc/blas.h \
+		../src/Eigen/src/Core/util/Constants.h \
+		../src/Eigen/src/Core/util/Meta.h \
+		../src/Eigen/src/Core/arch/HIP/hcc/math_constants.h \
+		../src/Eigen/src/Core/util/ForwardDeclarations.h \
+		../src/Eigen/src/Core/util/StaticAssert.h \
+		../src/Eigen/src/Core/util/XprHelper.h \
+		../src/Eigen/src/Core/util/Memory.h \
+		../src/Eigen/src/Core/util/IntegralConstant.h \
+		../src/Eigen/src/Core/util/SymbolicIndex.h \
+		../src/Eigen/src/Core/NumTraits.h \
+		../src/Eigen/src/Core/MathFunctions.h \
+		../src/Eigen/src/Core/GenericPacketMath.h \
+		../src/Eigen/src/Core/MathFunctionsImpl.h \
+		../src/Eigen/src/Core/arch/Default/ConjHelper.h \
+		../src/Eigen/src/Core/arch/Default/Half.h \
+		../src/Eigen/src/Core/arch/Default/TypeCasting.h \
+		../src/Eigen/src/Core/arch/Default/GenericPacketMathFunctionsFwd.h \
+		../src/Eigen/src/Core/arch/SSE/PacketMath.h \
+		../src/Eigen/src/Core/arch/SSE/TypeCasting.h \
+		../src/Eigen/src/Core/arch/SSE/Complex.h \
+		../src/Eigen/src/Core/arch/AVX/PacketMath.h \
+		../src/Eigen/src/Core/arch/AVX/TypeCasting.h \
+		../src/Eigen/src/Core/arch/AVX/Complex.h \
+		../src/Eigen/src/Core/arch/AVX512/PacketMath.h \
+		../src/Eigen/src/Core/arch/AVX512/TypeCasting.h \
+		../src/Eigen/src/Core/arch/AVX512/Complex.h \
+		../src/Eigen/src/Core/arch/SSE/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AVX/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AVX512/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AltiVec/PacketMath.h \
+		../src/Eigen/src/Core/arch/AltiVec/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AltiVec/Complex.h \
+		../src/Eigen/src/Core/arch/NEON/PacketMath.h \
+		../src/Eigen/src/Core/arch/NEON/TypeCasting.h \
+		../src/Eigen/src/Core/arch/NEON/MathFunctions.h \
+		../src/Eigen/src/Core/arch/NEON/Complex.h \
+		../src/Eigen/src/Core/arch/ZVector/PacketMath.h \
+		../src/Eigen/src/Core/arch/ZVector/MathFunctions.h \
+		../src/Eigen/src/Core/arch/ZVector/Complex.h \
+		../src/Eigen/src/Core/arch/MSA/PacketMath.h \
+		../src/Eigen/src/Core/arch/MSA/MathFunctions.h \
+		../src/Eigen/src/Core/arch/MSA/Complex.h \
+		../src/Eigen/src/Core/arch/GPU/PacketMath.h \
+		../src/Eigen/src/Core/arch/GPU/MathFunctions.h \
+		../src/Eigen/src/Core/arch/GPU/TypeCasting.h \
+		../src/Eigen/src/Core/arch/SYCL/SyclMemoryModel.h \
+		../src/Eigen/src/Core/arch/SYCL/InteropHeaders.h \
+		../src/Eigen/src/Core/arch/SYCL/PacketMath.h \
+		../src/Eigen/src/Core/arch/SYCL/MathFunctions.h \
+		../src/Eigen/src/Core/arch/SYCL/TypeCasting.h \
+		../src/Eigen/src/Core/arch/Default/Settings.h \
+		../src/Eigen/src/Core/arch/Default/GenericPacketMathFunctions.h \
+		../src/Eigen/src/Core/functors/TernaryFunctors.h \
+		../src/Eigen/src/Core/functors/BinaryFunctors.h \
+		../src/Eigen/src/Core/functors/UnaryFunctors.h \
+		../src/Eigen/src/Core/functors/NullaryFunctors.h \
+		../src/Eigen/src/Core/functors/StlFunctors.h \
+		../src/Eigen/src/Core/functors/AssignmentFunctors.h \
+		../src/Eigen/src/Core/arch/CUDA/Complex.h \
+		../src/Eigen/src/Core/util/IndexedViewHelper.h \
+		../src/Eigen/src/Core/util/ReshapedHelper.h \
+		../src/Eigen/src/Core/ArithmeticSequence.h \
+		../src/Eigen/src/Core/IO.h \
+		../src/Eigen/src/Core/DenseCoeffsBase.h \
+		../src/Eigen/src/Core/DenseBase.h \
+		../src/Eigen/src/plugins/CommonCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/BlockMethods.h \
+		../src/Eigen/src/plugins/IndexedViewMethods.h \
+		../src/Eigen/src/plugins/ReshapedMethods.h \
+		../src/Eigen/src/Core/MatrixBase.h \
+		../src/Eigen/src/plugins/CommonCwiseBinaryOps.h \
+		../src/Eigen/src/plugins/MatrixCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/MatrixCwiseBinaryOps.h \
+		../src/Eigen/src/Core/EigenBase.h \
+		../src/Eigen/src/Core/Product.h \
+		../src/Eigen/src/Core/CoreEvaluators.h \
+		../src/Eigen/src/Core/AssignEvaluator.h \
+		../src/Eigen/src/Core/Assign.h \
+		../src/Eigen/src/Core/ArrayBase.h \
+		../src/Eigen/src/plugins/ArrayCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/ArrayCwiseBinaryOps.h \
+		../src/Eigen/src/Core/util/BlasUtil.h \
+		../src/Eigen/src/Core/DenseStorage.h \
+		../src/Eigen/src/Core/NestByValue.h \
+		../src/Eigen/src/Core/ReturnByValue.h \
+		../src/Eigen/src/Core/NoAlias.h \
+		../src/Eigen/src/Core/PlainObjectBase.h \
+		../src/Eigen/src/Core/Matrix.h \
+		../src/Eigen/src/Core/Array.h \
+		../src/Eigen/src/Core/CwiseTernaryOp.h \
+		../src/Eigen/src/Core/CwiseBinaryOp.h \
+		../src/Eigen/src/Core/CwiseUnaryOp.h \
+		../src/Eigen/src/Core/CwiseNullaryOp.h \
+		../src/Eigen/src/Core/CwiseUnaryView.h \
+		../src/Eigen/src/Core/SelfCwiseBinaryOp.h \
+		../src/Eigen/src/Core/Dot.h \
+		../src/Eigen/src/Core/StableNorm.h \
+		../src/Eigen/src/Core/Stride.h \
+		../src/Eigen/src/Core/MapBase.h \
+		../src/Eigen/src/Core/Map.h \
+		../src/Eigen/src/Core/Ref.h \
+		../src/Eigen/src/Core/Block.h \
+		../src/Eigen/src/Core/VectorBlock.h \
+		../src/Eigen/src/Core/IndexedView.h \
+		../src/Eigen/src/Core/Reshaped.h \
+		../src/Eigen/src/Core/Transpose.h \
+		../src/Eigen/src/Core/DiagonalMatrix.h \
+		../src/Eigen/src/Core/Diagonal.h \
+		../src/Eigen/src/Core/DiagonalProduct.h \
+		../src/Eigen/src/Core/Redux.h \
+		../src/Eigen/src/Core/Visitor.h \
+		../src/Eigen/src/Core/Fuzzy.h \
+		../src/Eigen/src/Core/Swap.h \
+		../src/Eigen/src/Core/CommaInitializer.h \
+		../src/Eigen/src/Core/GeneralProduct.h \
+		../src/Eigen/src/Core/Solve.h \
+		../src/Eigen/src/Core/Inverse.h \
+		../src/Eigen/src/Core/SolverBase.h \
+		../src/Eigen/src/Core/PermutationMatrix.h \
+		../src/Eigen/src/Core/Transpositions.h \
+		../src/Eigen/src/Core/TriangularMatrix.h \
+		../src/Eigen/src/Core/SelfAdjointView.h \
+		../src/Eigen/src/Core/products/GeneralBlockPanelKernel.h \
+		../src/Eigen/src/Core/products/Parallelizer.h \
+		../src/Eigen/src/Core/ProductEvaluators.h \
+		../src/Eigen/src/Core/products/GeneralMatrixVector.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrix.h \
+		../src/Eigen/src/Core/SolveTriangular.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixVector.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixMatrix.h \
+		../src/Eigen/src/Core/products/SelfadjointProduct.h \
+		../src/Eigen/src/Core/products/SelfadjointRank2Update.h \
+		../src/Eigen/src/Core/products/TriangularMatrixVector.h \
+		../src/Eigen/src/Core/products/TriangularMatrixMatrix.h \
+		../src/Eigen/src/Core/products/TriangularSolverMatrix.h \
+		../src/Eigen/src/Core/products/TriangularSolverVector.h \
+		../src/Eigen/src/Core/BandMatrix.h \
+		../src/Eigen/src/Core/CoreIterators.h \
+		../src/Eigen/src/Core/ConditionEstimator.h \
+		../src/Eigen/src/Core/BooleanRedux.h \
+		../src/Eigen/src/Core/Select.h \
+		../src/Eigen/src/Core/VectorwiseOp.h \
+		../src/Eigen/src/Core/PartialReduxEvaluator.h \
+		../src/Eigen/src/Core/Random.h \
+		../src/Eigen/src/Core/Replicate.h \
+		../src/Eigen/src/Core/Reverse.h \
+		../src/Eigen/src/Core/ArrayWrapper.h \
+		../src/Eigen/src/Core/StlIterators.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/GeneralMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_BLAS.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularSolverMatrix_BLAS.h \
+		../src/Eigen/src/Core/Assign_MKL.h \
+		../src/Eigen/src/Core/GlobalFunctions.h \
+		../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
+		slidergroup.h \
+		ScatterDataModifier.h \
+		openglwindow.h \
+		ui_mainwindow.h \
+		../src/axongammadistribution.h \
 		../src/constants.h \
 		../src/Axon.h \
 		../src/sphere.h \
 		../src/obstacle.h \
-		../src/Glial.h \
-		../src/grow_axons.h \
 		../src/Eigen/Dense \
 		../src/Eigen/LU \
 		../src/Eigen/src/misc/Kernel.h \
@@ -728,6 +1066,9 @@ mainwindow.o: mainwindow.cpp mainwindow.h \
 		../src/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
+		../src/Glial.h \
+		../src/Blood_Vessel.h \
+		../src/grow_axons.h \
 		../src/grow_cells.h \
 		../src/threads.h \
 		../src/parameters.h \
@@ -735,6 +1076,172 @@ mainwindow.o: mainwindow.cpp mainwindow.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mainwindow.o mainwindow.cpp
 
 slidergroup.o: slidergroup.cpp mainwindow.h \
+		../src/Eigen/Core \
+		../src/Eigen/src/Core/util/DisableStupidWarnings.h \
+		../src/Eigen/src/Core/util/Macros.h \
+		../src/Eigen/src/Core/util/ConfigureVectorization.h \
+		../src/Eigen/src/Core/util/MKL_support.h \
+		../src/Eigen/src/misc/blas.h \
+		../src/Eigen/src/Core/util/Constants.h \
+		../src/Eigen/src/Core/util/Meta.h \
+		../src/Eigen/src/Core/arch/HIP/hcc/math_constants.h \
+		../src/Eigen/src/Core/util/ForwardDeclarations.h \
+		../src/Eigen/src/Core/util/StaticAssert.h \
+		../src/Eigen/src/Core/util/XprHelper.h \
+		../src/Eigen/src/Core/util/Memory.h \
+		../src/Eigen/src/Core/util/IntegralConstant.h \
+		../src/Eigen/src/Core/util/SymbolicIndex.h \
+		../src/Eigen/src/Core/NumTraits.h \
+		../src/Eigen/src/Core/MathFunctions.h \
+		../src/Eigen/src/Core/GenericPacketMath.h \
+		../src/Eigen/src/Core/MathFunctionsImpl.h \
+		../src/Eigen/src/Core/arch/Default/ConjHelper.h \
+		../src/Eigen/src/Core/arch/Default/Half.h \
+		../src/Eigen/src/Core/arch/Default/TypeCasting.h \
+		../src/Eigen/src/Core/arch/Default/GenericPacketMathFunctionsFwd.h \
+		../src/Eigen/src/Core/arch/SSE/PacketMath.h \
+		../src/Eigen/src/Core/arch/SSE/TypeCasting.h \
+		../src/Eigen/src/Core/arch/SSE/Complex.h \
+		../src/Eigen/src/Core/arch/AVX/PacketMath.h \
+		../src/Eigen/src/Core/arch/AVX/TypeCasting.h \
+		../src/Eigen/src/Core/arch/AVX/Complex.h \
+		../src/Eigen/src/Core/arch/AVX512/PacketMath.h \
+		../src/Eigen/src/Core/arch/AVX512/TypeCasting.h \
+		../src/Eigen/src/Core/arch/AVX512/Complex.h \
+		../src/Eigen/src/Core/arch/SSE/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AVX/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AVX512/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AltiVec/PacketMath.h \
+		../src/Eigen/src/Core/arch/AltiVec/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AltiVec/Complex.h \
+		../src/Eigen/src/Core/arch/NEON/PacketMath.h \
+		../src/Eigen/src/Core/arch/NEON/TypeCasting.h \
+		../src/Eigen/src/Core/arch/NEON/MathFunctions.h \
+		../src/Eigen/src/Core/arch/NEON/Complex.h \
+		../src/Eigen/src/Core/arch/ZVector/PacketMath.h \
+		../src/Eigen/src/Core/arch/ZVector/MathFunctions.h \
+		../src/Eigen/src/Core/arch/ZVector/Complex.h \
+		../src/Eigen/src/Core/arch/MSA/PacketMath.h \
+		../src/Eigen/src/Core/arch/MSA/MathFunctions.h \
+		../src/Eigen/src/Core/arch/MSA/Complex.h \
+		../src/Eigen/src/Core/arch/GPU/PacketMath.h \
+		../src/Eigen/src/Core/arch/GPU/MathFunctions.h \
+		../src/Eigen/src/Core/arch/GPU/TypeCasting.h \
+		../src/Eigen/src/Core/arch/SYCL/SyclMemoryModel.h \
+		../src/Eigen/src/Core/arch/SYCL/InteropHeaders.h \
+		../src/Eigen/src/Core/arch/SYCL/PacketMath.h \
+		../src/Eigen/src/Core/arch/SYCL/MathFunctions.h \
+		../src/Eigen/src/Core/arch/SYCL/TypeCasting.h \
+		../src/Eigen/src/Core/arch/Default/Settings.h \
+		../src/Eigen/src/Core/arch/Default/GenericPacketMathFunctions.h \
+		../src/Eigen/src/Core/functors/TernaryFunctors.h \
+		../src/Eigen/src/Core/functors/BinaryFunctors.h \
+		../src/Eigen/src/Core/functors/UnaryFunctors.h \
+		../src/Eigen/src/Core/functors/NullaryFunctors.h \
+		../src/Eigen/src/Core/functors/StlFunctors.h \
+		../src/Eigen/src/Core/functors/AssignmentFunctors.h \
+		../src/Eigen/src/Core/arch/CUDA/Complex.h \
+		../src/Eigen/src/Core/util/IndexedViewHelper.h \
+		../src/Eigen/src/Core/util/ReshapedHelper.h \
+		../src/Eigen/src/Core/ArithmeticSequence.h \
+		../src/Eigen/src/Core/IO.h \
+		../src/Eigen/src/Core/DenseCoeffsBase.h \
+		../src/Eigen/src/Core/DenseBase.h \
+		../src/Eigen/src/plugins/CommonCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/BlockMethods.h \
+		../src/Eigen/src/plugins/IndexedViewMethods.h \
+		../src/Eigen/src/plugins/ReshapedMethods.h \
+		../src/Eigen/src/Core/MatrixBase.h \
+		../src/Eigen/src/plugins/CommonCwiseBinaryOps.h \
+		../src/Eigen/src/plugins/MatrixCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/MatrixCwiseBinaryOps.h \
+		../src/Eigen/src/Core/EigenBase.h \
+		../src/Eigen/src/Core/Product.h \
+		../src/Eigen/src/Core/CoreEvaluators.h \
+		../src/Eigen/src/Core/AssignEvaluator.h \
+		../src/Eigen/src/Core/Assign.h \
+		../src/Eigen/src/Core/ArrayBase.h \
+		../src/Eigen/src/plugins/ArrayCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/ArrayCwiseBinaryOps.h \
+		../src/Eigen/src/Core/util/BlasUtil.h \
+		../src/Eigen/src/Core/DenseStorage.h \
+		../src/Eigen/src/Core/NestByValue.h \
+		../src/Eigen/src/Core/ReturnByValue.h \
+		../src/Eigen/src/Core/NoAlias.h \
+		../src/Eigen/src/Core/PlainObjectBase.h \
+		../src/Eigen/src/Core/Matrix.h \
+		../src/Eigen/src/Core/Array.h \
+		../src/Eigen/src/Core/CwiseTernaryOp.h \
+		../src/Eigen/src/Core/CwiseBinaryOp.h \
+		../src/Eigen/src/Core/CwiseUnaryOp.h \
+		../src/Eigen/src/Core/CwiseNullaryOp.h \
+		../src/Eigen/src/Core/CwiseUnaryView.h \
+		../src/Eigen/src/Core/SelfCwiseBinaryOp.h \
+		../src/Eigen/src/Core/Dot.h \
+		../src/Eigen/src/Core/StableNorm.h \
+		../src/Eigen/src/Core/Stride.h \
+		../src/Eigen/src/Core/MapBase.h \
+		../src/Eigen/src/Core/Map.h \
+		../src/Eigen/src/Core/Ref.h \
+		../src/Eigen/src/Core/Block.h \
+		../src/Eigen/src/Core/VectorBlock.h \
+		../src/Eigen/src/Core/IndexedView.h \
+		../src/Eigen/src/Core/Reshaped.h \
+		../src/Eigen/src/Core/Transpose.h \
+		../src/Eigen/src/Core/DiagonalMatrix.h \
+		../src/Eigen/src/Core/Diagonal.h \
+		../src/Eigen/src/Core/DiagonalProduct.h \
+		../src/Eigen/src/Core/Redux.h \
+		../src/Eigen/src/Core/Visitor.h \
+		../src/Eigen/src/Core/Fuzzy.h \
+		../src/Eigen/src/Core/Swap.h \
+		../src/Eigen/src/Core/CommaInitializer.h \
+		../src/Eigen/src/Core/GeneralProduct.h \
+		../src/Eigen/src/Core/Solve.h \
+		../src/Eigen/src/Core/Inverse.h \
+		../src/Eigen/src/Core/SolverBase.h \
+		../src/Eigen/src/Core/PermutationMatrix.h \
+		../src/Eigen/src/Core/Transpositions.h \
+		../src/Eigen/src/Core/TriangularMatrix.h \
+		../src/Eigen/src/Core/SelfAdjointView.h \
+		../src/Eigen/src/Core/products/GeneralBlockPanelKernel.h \
+		../src/Eigen/src/Core/products/Parallelizer.h \
+		../src/Eigen/src/Core/ProductEvaluators.h \
+		../src/Eigen/src/Core/products/GeneralMatrixVector.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrix.h \
+		../src/Eigen/src/Core/SolveTriangular.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixVector.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixMatrix.h \
+		../src/Eigen/src/Core/products/SelfadjointProduct.h \
+		../src/Eigen/src/Core/products/SelfadjointRank2Update.h \
+		../src/Eigen/src/Core/products/TriangularMatrixVector.h \
+		../src/Eigen/src/Core/products/TriangularMatrixMatrix.h \
+		../src/Eigen/src/Core/products/TriangularSolverMatrix.h \
+		../src/Eigen/src/Core/products/TriangularSolverVector.h \
+		../src/Eigen/src/Core/BandMatrix.h \
+		../src/Eigen/src/Core/CoreIterators.h \
+		../src/Eigen/src/Core/ConditionEstimator.h \
+		../src/Eigen/src/Core/BooleanRedux.h \
+		../src/Eigen/src/Core/Select.h \
+		../src/Eigen/src/Core/VectorwiseOp.h \
+		../src/Eigen/src/Core/PartialReduxEvaluator.h \
+		../src/Eigen/src/Core/Random.h \
+		../src/Eigen/src/Core/Replicate.h \
+		../src/Eigen/src/Core/Reverse.h \
+		../src/Eigen/src/Core/ArrayWrapper.h \
+		../src/Eigen/src/Core/StlIterators.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/GeneralMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_BLAS.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularSolverMatrix_BLAS.h \
+		../src/Eigen/src/Core/Assign_MKL.h \
+		../src/Eigen/src/Core/GlobalFunctions.h \
+		../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
 		slidergroup.h \
 		ScatterDataModifier.h \
 		openglwindow.h \
@@ -917,7 +1424,6 @@ Axon.o: ../src/Axon.cpp ../src/Axon.h \
 		../src/Eigen/src/Core/GlobalFunctions.h \
 		../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
 		../src/obstacle.h \
-		../src/constants.h \
 		../src/Eigen/Dense \
 		../src/Eigen/LU \
 		../src/Eigen/src/misc/Kernel.h \
@@ -984,7 +1490,8 @@ Axon.o: ../src/Axon.cpp ../src/Axon.h \
 		../src/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
 		../src/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
-		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h
+		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
+		../src/constants.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Axon.o ../src/Axon.cpp
 
 axongammadistribution.o: ../src/axongammadistribution.cpp ../src/axongammadistribution.h \
@@ -1158,8 +1665,6 @@ axongammadistribution.o: ../src/axongammadistribution.cpp ../src/axongammadistri
 		../src/Axon.h \
 		../src/sphere.h \
 		../src/obstacle.h \
-		../src/Glial.h \
-		../src/grow_axons.h \
 		../src/Eigen/Dense \
 		../src/Eigen/LU \
 		../src/Eigen/src/misc/Kernel.h \
@@ -1227,9 +1732,13 @@ axongammadistribution.o: ../src/axongammadistribution.cpp ../src/axongammadistri
 		../src/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
+		../src/Glial.h \
+		../src/Blood_Vessel.h \
+		../src/grow_axons.h \
 		../src/grow_cells.h \
 		../src/threads.h \
-		../src/grow_glial_cells.h
+		../src/grow_glial_cells.h \
+		../src/grow_blood_vessels.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o axongammadistribution.o ../src/axongammadistribution.cpp
 
 Glial.o: ../src/Glial.cpp ../src/Glial.h \
@@ -1642,8 +2151,6 @@ grow_axons.o: ../src/grow_axons.cpp ../src/axongammadistribution.h \
 		../src/Axon.h \
 		../src/sphere.h \
 		../src/obstacle.h \
-		../src/Glial.h \
-		../src/grow_axons.h \
 		../src/Eigen/Dense \
 		../src/Eigen/LU \
 		../src/Eigen/src/misc/Kernel.h \
@@ -1711,6 +2218,9 @@ grow_axons.o: ../src/grow_axons.cpp ../src/axongammadistribution.h \
 		../src/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
+		../src/Glial.h \
+		../src/Blood_Vessel.h \
+		../src/grow_axons.h \
 		../src/grow_cells.h \
 		../src/threads.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o grow_axons.o ../src/grow_axons.cpp
@@ -1886,8 +2396,6 @@ grow_cells.o: ../src/grow_cells.cpp ../src/axongammadistribution.h \
 		../src/Axon.h \
 		../src/sphere.h \
 		../src/obstacle.h \
-		../src/Glial.h \
-		../src/grow_axons.h \
 		../src/Eigen/Dense \
 		../src/Eigen/LU \
 		../src/Eigen/src/misc/Kernel.h \
@@ -1955,6 +2463,9 @@ grow_cells.o: ../src/grow_cells.cpp ../src/axongammadistribution.h \
 		../src/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
+		../src/Glial.h \
+		../src/Blood_Vessel.h \
+		../src/grow_axons.h \
 		../src/grow_cells.h \
 		../src/threads.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o grow_cells.o ../src/grow_cells.cpp
@@ -2130,8 +2641,6 @@ grow_glial_cells.o: ../src/grow_glial_cells.cpp ../src/axongammadistribution.h \
 		../src/Axon.h \
 		../src/sphere.h \
 		../src/obstacle.h \
-		../src/Glial.h \
-		../src/grow_axons.h \
 		../src/Eigen/Dense \
 		../src/Eigen/LU \
 		../src/Eigen/src/misc/Kernel.h \
@@ -2199,12 +2708,16 @@ grow_glial_cells.o: ../src/grow_glial_cells.cpp ../src/axongammadistribution.h \
 		../src/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
 		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
+		../src/Glial.h \
+		../src/Blood_Vessel.h \
+		../src/grow_axons.h \
 		../src/grow_cells.h \
 		../src/threads.h \
 		../src/grow_glial_cells.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o grow_glial_cells.o ../src/grow_glial_cells.cpp
 
 obstacle.o: ../src/obstacle.cpp ../src/obstacle.h \
+		../src/Eigen/Dense \
 		../src/Eigen/Core \
 		../src/Eigen/src/Core/util/DisableStupidWarnings.h \
 		../src/Eigen/src/Core/util/Macros.h \
@@ -2370,7 +2883,73 @@ obstacle.o: ../src/obstacle.cpp ../src/obstacle.h \
 		../src/Eigen/src/Core/products/TriangularSolverMatrix_BLAS.h \
 		../src/Eigen/src/Core/Assign_MKL.h \
 		../src/Eigen/src/Core/GlobalFunctions.h \
-		../src/Eigen/src/Core/util/ReenableStupidWarnings.h
+		../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
+		../src/Eigen/LU \
+		../src/Eigen/src/misc/Kernel.h \
+		../src/Eigen/src/misc/Image.h \
+		../src/Eigen/src/LU/FullPivLU.h \
+		../src/Eigen/src/LU/PartialPivLU.h \
+		../src/Eigen/src/misc/lapacke.h \
+		../src/Eigen/src/misc/lapacke_mangling.h \
+		../src/Eigen/src/LU/PartialPivLU_LAPACKE.h \
+		../src/Eigen/src/LU/Determinant.h \
+		../src/Eigen/src/LU/InverseImpl.h \
+		../src/Eigen/src/LU/arch/Inverse_SSE.h \
+		../src/Eigen/Cholesky \
+		../src/Eigen/Jacobi \
+		../src/Eigen/src/Jacobi/Jacobi.h \
+		../src/Eigen/src/Cholesky/LLT.h \
+		../src/Eigen/src/Cholesky/LDLT.h \
+		../src/Eigen/src/Cholesky/LLT_LAPACKE.h \
+		../src/Eigen/QR \
+		../src/Eigen/Householder \
+		../src/Eigen/src/Householder/Householder.h \
+		../src/Eigen/src/Householder/HouseholderSequence.h \
+		../src/Eigen/src/Householder/BlockHouseholder.h \
+		../src/Eigen/src/QR/HouseholderQR.h \
+		../src/Eigen/src/QR/FullPivHouseholderQR.h \
+		../src/Eigen/src/QR/ColPivHouseholderQR.h \
+		../src/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
+		../src/Eigen/src/QR/HouseholderQR_LAPACKE.h \
+		../src/Eigen/src/QR/ColPivHouseholderQR_LAPACKE.h \
+		../src/Eigen/SVD \
+		../src/Eigen/src/misc/RealSvd2x2.h \
+		../src/Eigen/src/SVD/UpperBidiagonalization.h \
+		../src/Eigen/src/SVD/SVDBase.h \
+		../src/Eigen/src/SVD/JacobiSVD.h \
+		../src/Eigen/src/SVD/BDCSVD.h \
+		../src/Eigen/src/SVD/JacobiSVD_LAPACKE.h \
+		../src/Eigen/Geometry \
+		../src/Eigen/src/Geometry/OrthoMethods.h \
+		../src/Eigen/src/Geometry/EulerAngles.h \
+		../src/Eigen/src/Geometry/Homogeneous.h \
+		../src/Eigen/src/Geometry/RotationBase.h \
+		../src/Eigen/src/Geometry/Rotation2D.h \
+		../src/Eigen/src/Geometry/Quaternion.h \
+		../src/Eigen/src/Geometry/AngleAxis.h \
+		../src/Eigen/src/Geometry/Transform.h \
+		../src/Eigen/src/Geometry/Translation.h \
+		../src/Eigen/src/Geometry/Scaling.h \
+		../src/Eigen/src/Geometry/Hyperplane.h \
+		../src/Eigen/src/Geometry/ParametrizedLine.h \
+		../src/Eigen/src/Geometry/AlignedBox.h \
+		../src/Eigen/src/Geometry/Umeyama.h \
+		../src/Eigen/src/Geometry/arch/Geometry_SSE.h \
+		../src/Eigen/Eigenvalues \
+		../src/Eigen/src/Eigenvalues/Tridiagonalization.h \
+		../src/Eigen/src/Eigenvalues/RealSchur.h \
+		../src/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+		../src/Eigen/src/Eigenvalues/EigenSolver.h \
+		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/ComplexSchur.h \
+		../src/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/RealQZ.h \
+		../src/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+		../src/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
+		../src/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
+		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obstacle.o ../src/obstacle.cpp
 
 parameters.o: ../src/parameters.cpp ../src/parameters.h \
@@ -2710,11 +3289,563 @@ sphere.o: ../src/sphere.cpp ../src/sphere.h \
 		../src/Eigen/src/Core/GlobalFunctions.h \
 		../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
 		../src/obstacle.h \
+		../src/Eigen/Dense \
+		../src/Eigen/LU \
+		../src/Eigen/src/misc/Kernel.h \
+		../src/Eigen/src/misc/Image.h \
+		../src/Eigen/src/LU/FullPivLU.h \
+		../src/Eigen/src/LU/PartialPivLU.h \
+		../src/Eigen/src/misc/lapacke.h \
+		../src/Eigen/src/misc/lapacke_mangling.h \
+		../src/Eigen/src/LU/PartialPivLU_LAPACKE.h \
+		../src/Eigen/src/LU/Determinant.h \
+		../src/Eigen/src/LU/InverseImpl.h \
+		../src/Eigen/src/LU/arch/Inverse_SSE.h \
+		../src/Eigen/Cholesky \
+		../src/Eigen/Jacobi \
+		../src/Eigen/src/Jacobi/Jacobi.h \
+		../src/Eigen/src/Cholesky/LLT.h \
+		../src/Eigen/src/Cholesky/LDLT.h \
+		../src/Eigen/src/Cholesky/LLT_LAPACKE.h \
+		../src/Eigen/QR \
+		../src/Eigen/Householder \
+		../src/Eigen/src/Householder/Householder.h \
+		../src/Eigen/src/Householder/HouseholderSequence.h \
+		../src/Eigen/src/Householder/BlockHouseholder.h \
+		../src/Eigen/src/QR/HouseholderQR.h \
+		../src/Eigen/src/QR/FullPivHouseholderQR.h \
+		../src/Eigen/src/QR/ColPivHouseholderQR.h \
+		../src/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
+		../src/Eigen/src/QR/HouseholderQR_LAPACKE.h \
+		../src/Eigen/src/QR/ColPivHouseholderQR_LAPACKE.h \
+		../src/Eigen/SVD \
+		../src/Eigen/src/misc/RealSvd2x2.h \
+		../src/Eigen/src/SVD/UpperBidiagonalization.h \
+		../src/Eigen/src/SVD/SVDBase.h \
+		../src/Eigen/src/SVD/JacobiSVD.h \
+		../src/Eigen/src/SVD/BDCSVD.h \
+		../src/Eigen/src/SVD/JacobiSVD_LAPACKE.h \
+		../src/Eigen/Geometry \
+		../src/Eigen/src/Geometry/OrthoMethods.h \
+		../src/Eigen/src/Geometry/EulerAngles.h \
+		../src/Eigen/src/Geometry/Homogeneous.h \
+		../src/Eigen/src/Geometry/RotationBase.h \
+		../src/Eigen/src/Geometry/Rotation2D.h \
+		../src/Eigen/src/Geometry/Quaternion.h \
+		../src/Eigen/src/Geometry/AngleAxis.h \
+		../src/Eigen/src/Geometry/Transform.h \
+		../src/Eigen/src/Geometry/Translation.h \
+		../src/Eigen/src/Geometry/Scaling.h \
+		../src/Eigen/src/Geometry/Hyperplane.h \
+		../src/Eigen/src/Geometry/ParametrizedLine.h \
+		../src/Eigen/src/Geometry/AlignedBox.h \
+		../src/Eigen/src/Geometry/Umeyama.h \
+		../src/Eigen/src/Geometry/arch/Geometry_SSE.h \
+		../src/Eigen/Eigenvalues \
+		../src/Eigen/src/Eigenvalues/Tridiagonalization.h \
+		../src/Eigen/src/Eigenvalues/RealSchur.h \
+		../src/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+		../src/Eigen/src/Eigenvalues/EigenSolver.h \
+		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/ComplexSchur.h \
+		../src/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/RealQZ.h \
+		../src/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+		../src/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
+		../src/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
+		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
 		../src/constants.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o sphere.o ../src/sphere.cpp
 
 threads.o: ../src/threads.cpp ../src/threads.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o threads.o ../src/threads.cpp
+
+grow_blood_vessels.o: ../src/grow_blood_vessels.cpp ../src/axongammadistribution.h \
+		../src/Eigen/Core \
+		../src/Eigen/src/Core/util/DisableStupidWarnings.h \
+		../src/Eigen/src/Core/util/Macros.h \
+		../src/Eigen/src/Core/util/ConfigureVectorization.h \
+		../src/Eigen/src/Core/util/MKL_support.h \
+		../src/Eigen/src/misc/blas.h \
+		../src/Eigen/src/Core/util/Constants.h \
+		../src/Eigen/src/Core/util/Meta.h \
+		../src/Eigen/src/Core/arch/HIP/hcc/math_constants.h \
+		../src/Eigen/src/Core/util/ForwardDeclarations.h \
+		../src/Eigen/src/Core/util/StaticAssert.h \
+		../src/Eigen/src/Core/util/XprHelper.h \
+		../src/Eigen/src/Core/util/Memory.h \
+		../src/Eigen/src/Core/util/IntegralConstant.h \
+		../src/Eigen/src/Core/util/SymbolicIndex.h \
+		../src/Eigen/src/Core/NumTraits.h \
+		../src/Eigen/src/Core/MathFunctions.h \
+		../src/Eigen/src/Core/GenericPacketMath.h \
+		../src/Eigen/src/Core/MathFunctionsImpl.h \
+		../src/Eigen/src/Core/arch/Default/ConjHelper.h \
+		../src/Eigen/src/Core/arch/Default/Half.h \
+		../src/Eigen/src/Core/arch/Default/TypeCasting.h \
+		../src/Eigen/src/Core/arch/Default/GenericPacketMathFunctionsFwd.h \
+		../src/Eigen/src/Core/arch/SSE/PacketMath.h \
+		../src/Eigen/src/Core/arch/SSE/TypeCasting.h \
+		../src/Eigen/src/Core/arch/SSE/Complex.h \
+		../src/Eigen/src/Core/arch/AVX/PacketMath.h \
+		../src/Eigen/src/Core/arch/AVX/TypeCasting.h \
+		../src/Eigen/src/Core/arch/AVX/Complex.h \
+		../src/Eigen/src/Core/arch/AVX512/PacketMath.h \
+		../src/Eigen/src/Core/arch/AVX512/TypeCasting.h \
+		../src/Eigen/src/Core/arch/AVX512/Complex.h \
+		../src/Eigen/src/Core/arch/SSE/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AVX/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AVX512/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AltiVec/PacketMath.h \
+		../src/Eigen/src/Core/arch/AltiVec/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AltiVec/Complex.h \
+		../src/Eigen/src/Core/arch/NEON/PacketMath.h \
+		../src/Eigen/src/Core/arch/NEON/TypeCasting.h \
+		../src/Eigen/src/Core/arch/NEON/MathFunctions.h \
+		../src/Eigen/src/Core/arch/NEON/Complex.h \
+		../src/Eigen/src/Core/arch/ZVector/PacketMath.h \
+		../src/Eigen/src/Core/arch/ZVector/MathFunctions.h \
+		../src/Eigen/src/Core/arch/ZVector/Complex.h \
+		../src/Eigen/src/Core/arch/MSA/PacketMath.h \
+		../src/Eigen/src/Core/arch/MSA/MathFunctions.h \
+		../src/Eigen/src/Core/arch/MSA/Complex.h \
+		../src/Eigen/src/Core/arch/GPU/PacketMath.h \
+		../src/Eigen/src/Core/arch/GPU/MathFunctions.h \
+		../src/Eigen/src/Core/arch/GPU/TypeCasting.h \
+		../src/Eigen/src/Core/arch/SYCL/SyclMemoryModel.h \
+		../src/Eigen/src/Core/arch/SYCL/InteropHeaders.h \
+		../src/Eigen/src/Core/arch/SYCL/PacketMath.h \
+		../src/Eigen/src/Core/arch/SYCL/MathFunctions.h \
+		../src/Eigen/src/Core/arch/SYCL/TypeCasting.h \
+		../src/Eigen/src/Core/arch/Default/Settings.h \
+		../src/Eigen/src/Core/arch/Default/GenericPacketMathFunctions.h \
+		../src/Eigen/src/Core/functors/TernaryFunctors.h \
+		../src/Eigen/src/Core/functors/BinaryFunctors.h \
+		../src/Eigen/src/Core/functors/UnaryFunctors.h \
+		../src/Eigen/src/Core/functors/NullaryFunctors.h \
+		../src/Eigen/src/Core/functors/StlFunctors.h \
+		../src/Eigen/src/Core/functors/AssignmentFunctors.h \
+		../src/Eigen/src/Core/arch/CUDA/Complex.h \
+		../src/Eigen/src/Core/util/IndexedViewHelper.h \
+		../src/Eigen/src/Core/util/ReshapedHelper.h \
+		../src/Eigen/src/Core/ArithmeticSequence.h \
+		../src/Eigen/src/Core/IO.h \
+		../src/Eigen/src/Core/DenseCoeffsBase.h \
+		../src/Eigen/src/Core/DenseBase.h \
+		../src/Eigen/src/plugins/CommonCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/BlockMethods.h \
+		../src/Eigen/src/plugins/IndexedViewMethods.h \
+		../src/Eigen/src/plugins/ReshapedMethods.h \
+		../src/Eigen/src/Core/MatrixBase.h \
+		../src/Eigen/src/plugins/CommonCwiseBinaryOps.h \
+		../src/Eigen/src/plugins/MatrixCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/MatrixCwiseBinaryOps.h \
+		../src/Eigen/src/Core/EigenBase.h \
+		../src/Eigen/src/Core/Product.h \
+		../src/Eigen/src/Core/CoreEvaluators.h \
+		../src/Eigen/src/Core/AssignEvaluator.h \
+		../src/Eigen/src/Core/Assign.h \
+		../src/Eigen/src/Core/ArrayBase.h \
+		../src/Eigen/src/plugins/ArrayCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/ArrayCwiseBinaryOps.h \
+		../src/Eigen/src/Core/util/BlasUtil.h \
+		../src/Eigen/src/Core/DenseStorage.h \
+		../src/Eigen/src/Core/NestByValue.h \
+		../src/Eigen/src/Core/ReturnByValue.h \
+		../src/Eigen/src/Core/NoAlias.h \
+		../src/Eigen/src/Core/PlainObjectBase.h \
+		../src/Eigen/src/Core/Matrix.h \
+		../src/Eigen/src/Core/Array.h \
+		../src/Eigen/src/Core/CwiseTernaryOp.h \
+		../src/Eigen/src/Core/CwiseBinaryOp.h \
+		../src/Eigen/src/Core/CwiseUnaryOp.h \
+		../src/Eigen/src/Core/CwiseNullaryOp.h \
+		../src/Eigen/src/Core/CwiseUnaryView.h \
+		../src/Eigen/src/Core/SelfCwiseBinaryOp.h \
+		../src/Eigen/src/Core/Dot.h \
+		../src/Eigen/src/Core/StableNorm.h \
+		../src/Eigen/src/Core/Stride.h \
+		../src/Eigen/src/Core/MapBase.h \
+		../src/Eigen/src/Core/Map.h \
+		../src/Eigen/src/Core/Ref.h \
+		../src/Eigen/src/Core/Block.h \
+		../src/Eigen/src/Core/VectorBlock.h \
+		../src/Eigen/src/Core/IndexedView.h \
+		../src/Eigen/src/Core/Reshaped.h \
+		../src/Eigen/src/Core/Transpose.h \
+		../src/Eigen/src/Core/DiagonalMatrix.h \
+		../src/Eigen/src/Core/Diagonal.h \
+		../src/Eigen/src/Core/DiagonalProduct.h \
+		../src/Eigen/src/Core/Redux.h \
+		../src/Eigen/src/Core/Visitor.h \
+		../src/Eigen/src/Core/Fuzzy.h \
+		../src/Eigen/src/Core/Swap.h \
+		../src/Eigen/src/Core/CommaInitializer.h \
+		../src/Eigen/src/Core/GeneralProduct.h \
+		../src/Eigen/src/Core/Solve.h \
+		../src/Eigen/src/Core/Inverse.h \
+		../src/Eigen/src/Core/SolverBase.h \
+		../src/Eigen/src/Core/PermutationMatrix.h \
+		../src/Eigen/src/Core/Transpositions.h \
+		../src/Eigen/src/Core/TriangularMatrix.h \
+		../src/Eigen/src/Core/SelfAdjointView.h \
+		../src/Eigen/src/Core/products/GeneralBlockPanelKernel.h \
+		../src/Eigen/src/Core/products/Parallelizer.h \
+		../src/Eigen/src/Core/ProductEvaluators.h \
+		../src/Eigen/src/Core/products/GeneralMatrixVector.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrix.h \
+		../src/Eigen/src/Core/SolveTriangular.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixVector.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixMatrix.h \
+		../src/Eigen/src/Core/products/SelfadjointProduct.h \
+		../src/Eigen/src/Core/products/SelfadjointRank2Update.h \
+		../src/Eigen/src/Core/products/TriangularMatrixVector.h \
+		../src/Eigen/src/Core/products/TriangularMatrixMatrix.h \
+		../src/Eigen/src/Core/products/TriangularSolverMatrix.h \
+		../src/Eigen/src/Core/products/TriangularSolverVector.h \
+		../src/Eigen/src/Core/BandMatrix.h \
+		../src/Eigen/src/Core/CoreIterators.h \
+		../src/Eigen/src/Core/ConditionEstimator.h \
+		../src/Eigen/src/Core/BooleanRedux.h \
+		../src/Eigen/src/Core/Select.h \
+		../src/Eigen/src/Core/VectorwiseOp.h \
+		../src/Eigen/src/Core/PartialReduxEvaluator.h \
+		../src/Eigen/src/Core/Random.h \
+		../src/Eigen/src/Core/Replicate.h \
+		../src/Eigen/src/Core/Reverse.h \
+		../src/Eigen/src/Core/ArrayWrapper.h \
+		../src/Eigen/src/Core/StlIterators.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/GeneralMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_BLAS.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularSolverMatrix_BLAS.h \
+		../src/Eigen/src/Core/Assign_MKL.h \
+		../src/Eigen/src/Core/GlobalFunctions.h \
+		../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
+		../src/constants.h \
+		../src/Axon.h \
+		../src/sphere.h \
+		../src/obstacle.h \
+		../src/Eigen/Dense \
+		../src/Eigen/LU \
+		../src/Eigen/src/misc/Kernel.h \
+		../src/Eigen/src/misc/Image.h \
+		../src/Eigen/src/LU/FullPivLU.h \
+		../src/Eigen/src/LU/PartialPivLU.h \
+		../src/Eigen/src/misc/lapacke.h \
+		../src/Eigen/src/misc/lapacke_mangling.h \
+		../src/Eigen/src/LU/PartialPivLU_LAPACKE.h \
+		../src/Eigen/src/LU/Determinant.h \
+		../src/Eigen/src/LU/InverseImpl.h \
+		../src/Eigen/src/LU/arch/Inverse_SSE.h \
+		../src/Eigen/Cholesky \
+		../src/Eigen/Jacobi \
+		../src/Eigen/src/Jacobi/Jacobi.h \
+		../src/Eigen/src/Cholesky/LLT.h \
+		../src/Eigen/src/Cholesky/LDLT.h \
+		../src/Eigen/src/Cholesky/LLT_LAPACKE.h \
+		../src/Eigen/QR \
+		../src/Eigen/Householder \
+		../src/Eigen/src/Householder/Householder.h \
+		../src/Eigen/src/Householder/HouseholderSequence.h \
+		../src/Eigen/src/Householder/BlockHouseholder.h \
+		../src/Eigen/src/QR/HouseholderQR.h \
+		../src/Eigen/src/QR/FullPivHouseholderQR.h \
+		../src/Eigen/src/QR/ColPivHouseholderQR.h \
+		../src/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
+		../src/Eigen/src/QR/HouseholderQR_LAPACKE.h \
+		../src/Eigen/src/QR/ColPivHouseholderQR_LAPACKE.h \
+		../src/Eigen/SVD \
+		../src/Eigen/src/misc/RealSvd2x2.h \
+		../src/Eigen/src/SVD/UpperBidiagonalization.h \
+		../src/Eigen/src/SVD/SVDBase.h \
+		../src/Eigen/src/SVD/JacobiSVD.h \
+		../src/Eigen/src/SVD/BDCSVD.h \
+		../src/Eigen/src/SVD/JacobiSVD_LAPACKE.h \
+		../src/Eigen/Geometry \
+		../src/Eigen/src/Geometry/OrthoMethods.h \
+		../src/Eigen/src/Geometry/EulerAngles.h \
+		../src/Eigen/src/Geometry/Homogeneous.h \
+		../src/Eigen/src/Geometry/RotationBase.h \
+		../src/Eigen/src/Geometry/Rotation2D.h \
+		../src/Eigen/src/Geometry/Quaternion.h \
+		../src/Eigen/src/Geometry/AngleAxis.h \
+		../src/Eigen/src/Geometry/Transform.h \
+		../src/Eigen/src/Geometry/Translation.h \
+		../src/Eigen/src/Geometry/Scaling.h \
+		../src/Eigen/src/Geometry/Hyperplane.h \
+		../src/Eigen/src/Geometry/ParametrizedLine.h \
+		../src/Eigen/src/Geometry/AlignedBox.h \
+		../src/Eigen/src/Geometry/Umeyama.h \
+		../src/Eigen/src/Geometry/arch/Geometry_SSE.h \
+		../src/Eigen/Eigenvalues \
+		../src/Eigen/src/Eigenvalues/Tridiagonalization.h \
+		../src/Eigen/src/Eigenvalues/RealSchur.h \
+		../src/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+		../src/Eigen/src/Eigenvalues/EigenSolver.h \
+		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/ComplexSchur.h \
+		../src/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/RealQZ.h \
+		../src/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+		../src/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
+		../src/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
+		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
+		../src/Glial.h \
+		../src/Blood_Vessel.h \
+		../src/grow_axons.h \
+		../src/grow_cells.h \
+		../src/threads.h \
+		../src/grow_blood_vessels.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o grow_blood_vessels.o ../src/grow_blood_vessels.cpp
+
+Blood_Vessel.o: ../src/Blood_Vessel.cpp ../src/Blood_Vessel.h \
+		../src/sphere.h \
+		../src/Eigen/Core \
+		../src/Eigen/src/Core/util/DisableStupidWarnings.h \
+		../src/Eigen/src/Core/util/Macros.h \
+		../src/Eigen/src/Core/util/ConfigureVectorization.h \
+		../src/Eigen/src/Core/util/MKL_support.h \
+		../src/Eigen/src/misc/blas.h \
+		../src/Eigen/src/Core/util/Constants.h \
+		../src/Eigen/src/Core/util/Meta.h \
+		../src/Eigen/src/Core/arch/HIP/hcc/math_constants.h \
+		../src/Eigen/src/Core/util/ForwardDeclarations.h \
+		../src/Eigen/src/Core/util/StaticAssert.h \
+		../src/Eigen/src/Core/util/XprHelper.h \
+		../src/Eigen/src/Core/util/Memory.h \
+		../src/Eigen/src/Core/util/IntegralConstant.h \
+		../src/Eigen/src/Core/util/SymbolicIndex.h \
+		../src/Eigen/src/Core/NumTraits.h \
+		../src/Eigen/src/Core/MathFunctions.h \
+		../src/Eigen/src/Core/GenericPacketMath.h \
+		../src/Eigen/src/Core/MathFunctionsImpl.h \
+		../src/Eigen/src/Core/arch/Default/ConjHelper.h \
+		../src/Eigen/src/Core/arch/Default/Half.h \
+		../src/Eigen/src/Core/arch/Default/TypeCasting.h \
+		../src/Eigen/src/Core/arch/Default/GenericPacketMathFunctionsFwd.h \
+		../src/Eigen/src/Core/arch/SSE/PacketMath.h \
+		../src/Eigen/src/Core/arch/SSE/TypeCasting.h \
+		../src/Eigen/src/Core/arch/SSE/Complex.h \
+		../src/Eigen/src/Core/arch/AVX/PacketMath.h \
+		../src/Eigen/src/Core/arch/AVX/TypeCasting.h \
+		../src/Eigen/src/Core/arch/AVX/Complex.h \
+		../src/Eigen/src/Core/arch/AVX512/PacketMath.h \
+		../src/Eigen/src/Core/arch/AVX512/TypeCasting.h \
+		../src/Eigen/src/Core/arch/AVX512/Complex.h \
+		../src/Eigen/src/Core/arch/SSE/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AVX/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AVX512/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AltiVec/PacketMath.h \
+		../src/Eigen/src/Core/arch/AltiVec/MathFunctions.h \
+		../src/Eigen/src/Core/arch/AltiVec/Complex.h \
+		../src/Eigen/src/Core/arch/NEON/PacketMath.h \
+		../src/Eigen/src/Core/arch/NEON/TypeCasting.h \
+		../src/Eigen/src/Core/arch/NEON/MathFunctions.h \
+		../src/Eigen/src/Core/arch/NEON/Complex.h \
+		../src/Eigen/src/Core/arch/ZVector/PacketMath.h \
+		../src/Eigen/src/Core/arch/ZVector/MathFunctions.h \
+		../src/Eigen/src/Core/arch/ZVector/Complex.h \
+		../src/Eigen/src/Core/arch/MSA/PacketMath.h \
+		../src/Eigen/src/Core/arch/MSA/MathFunctions.h \
+		../src/Eigen/src/Core/arch/MSA/Complex.h \
+		../src/Eigen/src/Core/arch/GPU/PacketMath.h \
+		../src/Eigen/src/Core/arch/GPU/MathFunctions.h \
+		../src/Eigen/src/Core/arch/GPU/TypeCasting.h \
+		../src/Eigen/src/Core/arch/SYCL/SyclMemoryModel.h \
+		../src/Eigen/src/Core/arch/SYCL/InteropHeaders.h \
+		../src/Eigen/src/Core/arch/SYCL/PacketMath.h \
+		../src/Eigen/src/Core/arch/SYCL/MathFunctions.h \
+		../src/Eigen/src/Core/arch/SYCL/TypeCasting.h \
+		../src/Eigen/src/Core/arch/Default/Settings.h \
+		../src/Eigen/src/Core/arch/Default/GenericPacketMathFunctions.h \
+		../src/Eigen/src/Core/functors/TernaryFunctors.h \
+		../src/Eigen/src/Core/functors/BinaryFunctors.h \
+		../src/Eigen/src/Core/functors/UnaryFunctors.h \
+		../src/Eigen/src/Core/functors/NullaryFunctors.h \
+		../src/Eigen/src/Core/functors/StlFunctors.h \
+		../src/Eigen/src/Core/functors/AssignmentFunctors.h \
+		../src/Eigen/src/Core/arch/CUDA/Complex.h \
+		../src/Eigen/src/Core/util/IndexedViewHelper.h \
+		../src/Eigen/src/Core/util/ReshapedHelper.h \
+		../src/Eigen/src/Core/ArithmeticSequence.h \
+		../src/Eigen/src/Core/IO.h \
+		../src/Eigen/src/Core/DenseCoeffsBase.h \
+		../src/Eigen/src/Core/DenseBase.h \
+		../src/Eigen/src/plugins/CommonCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/BlockMethods.h \
+		../src/Eigen/src/plugins/IndexedViewMethods.h \
+		../src/Eigen/src/plugins/ReshapedMethods.h \
+		../src/Eigen/src/Core/MatrixBase.h \
+		../src/Eigen/src/plugins/CommonCwiseBinaryOps.h \
+		../src/Eigen/src/plugins/MatrixCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/MatrixCwiseBinaryOps.h \
+		../src/Eigen/src/Core/EigenBase.h \
+		../src/Eigen/src/Core/Product.h \
+		../src/Eigen/src/Core/CoreEvaluators.h \
+		../src/Eigen/src/Core/AssignEvaluator.h \
+		../src/Eigen/src/Core/Assign.h \
+		../src/Eigen/src/Core/ArrayBase.h \
+		../src/Eigen/src/plugins/ArrayCwiseUnaryOps.h \
+		../src/Eigen/src/plugins/ArrayCwiseBinaryOps.h \
+		../src/Eigen/src/Core/util/BlasUtil.h \
+		../src/Eigen/src/Core/DenseStorage.h \
+		../src/Eigen/src/Core/NestByValue.h \
+		../src/Eigen/src/Core/ReturnByValue.h \
+		../src/Eigen/src/Core/NoAlias.h \
+		../src/Eigen/src/Core/PlainObjectBase.h \
+		../src/Eigen/src/Core/Matrix.h \
+		../src/Eigen/src/Core/Array.h \
+		../src/Eigen/src/Core/CwiseTernaryOp.h \
+		../src/Eigen/src/Core/CwiseBinaryOp.h \
+		../src/Eigen/src/Core/CwiseUnaryOp.h \
+		../src/Eigen/src/Core/CwiseNullaryOp.h \
+		../src/Eigen/src/Core/CwiseUnaryView.h \
+		../src/Eigen/src/Core/SelfCwiseBinaryOp.h \
+		../src/Eigen/src/Core/Dot.h \
+		../src/Eigen/src/Core/StableNorm.h \
+		../src/Eigen/src/Core/Stride.h \
+		../src/Eigen/src/Core/MapBase.h \
+		../src/Eigen/src/Core/Map.h \
+		../src/Eigen/src/Core/Ref.h \
+		../src/Eigen/src/Core/Block.h \
+		../src/Eigen/src/Core/VectorBlock.h \
+		../src/Eigen/src/Core/IndexedView.h \
+		../src/Eigen/src/Core/Reshaped.h \
+		../src/Eigen/src/Core/Transpose.h \
+		../src/Eigen/src/Core/DiagonalMatrix.h \
+		../src/Eigen/src/Core/Diagonal.h \
+		../src/Eigen/src/Core/DiagonalProduct.h \
+		../src/Eigen/src/Core/Redux.h \
+		../src/Eigen/src/Core/Visitor.h \
+		../src/Eigen/src/Core/Fuzzy.h \
+		../src/Eigen/src/Core/Swap.h \
+		../src/Eigen/src/Core/CommaInitializer.h \
+		../src/Eigen/src/Core/GeneralProduct.h \
+		../src/Eigen/src/Core/Solve.h \
+		../src/Eigen/src/Core/Inverse.h \
+		../src/Eigen/src/Core/SolverBase.h \
+		../src/Eigen/src/Core/PermutationMatrix.h \
+		../src/Eigen/src/Core/Transpositions.h \
+		../src/Eigen/src/Core/TriangularMatrix.h \
+		../src/Eigen/src/Core/SelfAdjointView.h \
+		../src/Eigen/src/Core/products/GeneralBlockPanelKernel.h \
+		../src/Eigen/src/Core/products/Parallelizer.h \
+		../src/Eigen/src/Core/ProductEvaluators.h \
+		../src/Eigen/src/Core/products/GeneralMatrixVector.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrix.h \
+		../src/Eigen/src/Core/SolveTriangular.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixVector.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixMatrix.h \
+		../src/Eigen/src/Core/products/SelfadjointProduct.h \
+		../src/Eigen/src/Core/products/SelfadjointRank2Update.h \
+		../src/Eigen/src/Core/products/TriangularMatrixVector.h \
+		../src/Eigen/src/Core/products/TriangularMatrixMatrix.h \
+		../src/Eigen/src/Core/products/TriangularSolverMatrix.h \
+		../src/Eigen/src/Core/products/TriangularSolverVector.h \
+		../src/Eigen/src/Core/BandMatrix.h \
+		../src/Eigen/src/Core/CoreIterators.h \
+		../src/Eigen/src/Core/ConditionEstimator.h \
+		../src/Eigen/src/Core/BooleanRedux.h \
+		../src/Eigen/src/Core/Select.h \
+		../src/Eigen/src/Core/VectorwiseOp.h \
+		../src/Eigen/src/Core/PartialReduxEvaluator.h \
+		../src/Eigen/src/Core/Random.h \
+		../src/Eigen/src/Core/Replicate.h \
+		../src/Eigen/src/Core/Reverse.h \
+		../src/Eigen/src/Core/ArrayWrapper.h \
+		../src/Eigen/src/Core/StlIterators.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/GeneralMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_BLAS.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/SelfadjointMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularMatrixMatrix_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularMatrixVector_BLAS.h \
+		../src/Eigen/src/Core/products/TriangularSolverMatrix_BLAS.h \
+		../src/Eigen/src/Core/Assign_MKL.h \
+		../src/Eigen/src/Core/GlobalFunctions.h \
+		../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
+		../src/obstacle.h \
+		../src/Eigen/Dense \
+		../src/Eigen/LU \
+		../src/Eigen/src/misc/Kernel.h \
+		../src/Eigen/src/misc/Image.h \
+		../src/Eigen/src/LU/FullPivLU.h \
+		../src/Eigen/src/LU/PartialPivLU.h \
+		../src/Eigen/src/misc/lapacke.h \
+		../src/Eigen/src/misc/lapacke_mangling.h \
+		../src/Eigen/src/LU/PartialPivLU_LAPACKE.h \
+		../src/Eigen/src/LU/Determinant.h \
+		../src/Eigen/src/LU/InverseImpl.h \
+		../src/Eigen/src/LU/arch/Inverse_SSE.h \
+		../src/Eigen/Cholesky \
+		../src/Eigen/Jacobi \
+		../src/Eigen/src/Jacobi/Jacobi.h \
+		../src/Eigen/src/Cholesky/LLT.h \
+		../src/Eigen/src/Cholesky/LDLT.h \
+		../src/Eigen/src/Cholesky/LLT_LAPACKE.h \
+		../src/Eigen/QR \
+		../src/Eigen/Householder \
+		../src/Eigen/src/Householder/Householder.h \
+		../src/Eigen/src/Householder/HouseholderSequence.h \
+		../src/Eigen/src/Householder/BlockHouseholder.h \
+		../src/Eigen/src/QR/HouseholderQR.h \
+		../src/Eigen/src/QR/FullPivHouseholderQR.h \
+		../src/Eigen/src/QR/ColPivHouseholderQR.h \
+		../src/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
+		../src/Eigen/src/QR/HouseholderQR_LAPACKE.h \
+		../src/Eigen/src/QR/ColPivHouseholderQR_LAPACKE.h \
+		../src/Eigen/SVD \
+		../src/Eigen/src/misc/RealSvd2x2.h \
+		../src/Eigen/src/SVD/UpperBidiagonalization.h \
+		../src/Eigen/src/SVD/SVDBase.h \
+		../src/Eigen/src/SVD/JacobiSVD.h \
+		../src/Eigen/src/SVD/BDCSVD.h \
+		../src/Eigen/src/SVD/JacobiSVD_LAPACKE.h \
+		../src/Eigen/Geometry \
+		../src/Eigen/src/Geometry/OrthoMethods.h \
+		../src/Eigen/src/Geometry/EulerAngles.h \
+		../src/Eigen/src/Geometry/Homogeneous.h \
+		../src/Eigen/src/Geometry/RotationBase.h \
+		../src/Eigen/src/Geometry/Rotation2D.h \
+		../src/Eigen/src/Geometry/Quaternion.h \
+		../src/Eigen/src/Geometry/AngleAxis.h \
+		../src/Eigen/src/Geometry/Transform.h \
+		../src/Eigen/src/Geometry/Translation.h \
+		../src/Eigen/src/Geometry/Scaling.h \
+		../src/Eigen/src/Geometry/Hyperplane.h \
+		../src/Eigen/src/Geometry/ParametrizedLine.h \
+		../src/Eigen/src/Geometry/AlignedBox.h \
+		../src/Eigen/src/Geometry/Umeyama.h \
+		../src/Eigen/src/Geometry/arch/Geometry_SSE.h \
+		../src/Eigen/Eigenvalues \
+		../src/Eigen/src/Eigenvalues/Tridiagonalization.h \
+		../src/Eigen/src/Eigenvalues/RealSchur.h \
+		../src/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+		../src/Eigen/src/Eigenvalues/EigenSolver.h \
+		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/ComplexSchur.h \
+		../src/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/RealQZ.h \
+		../src/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+		../src/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+		../src/Eigen/src/Eigenvalues/RealSchur_LAPACKE.h \
+		../src/Eigen/src/Eigenvalues/ComplexSchur_LAPACKE.h \
+		../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_LAPACKE.h \
+		../src/constants.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Blood_Vessel.o ../src/Blood_Vessel.cpp
 
 qcustomplot.o: qcustomplot-source/qcustomplot.cpp qcustomplot-source/qcustomplot.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o qcustomplot.o qcustomplot-source/qcustomplot.cpp

@@ -19,11 +19,12 @@ GlialCellGrowth::GlialCellGrowth(Glial &glial_cell_to_grow_,
             const std::vector<Glial>* glial_pop1_,
             const std::vector<Glial>* glial_pop2_,
             const std::vector<Axon>* axons_,
+            const std::vector<Blood_Vessel>* blood_vessels_,
             const Eigen::Vector3d &extended_min_limits_,
             const Eigen::Vector3d &extended_max_limits_,
             const Eigen::Vector3d &min_limits_,
             const Eigen::Vector3d &max_limits_,
-            const double &min_radius_, const double &std_dev_) : CellGrowth(axons_, glial_pop1_, glial_pop2_, extended_min_limits_, extended_max_limits_, min_limits_, max_limits_, std_dev_, min_radius_), glial_cell_to_grow(glial_cell_to_grow_){}
+            const double &min_radius_, const double &std_dev_) : CellGrowth(axons_, glial_pop1_, glial_pop2_, blood_vessels_, extended_min_limits_, extended_max_limits_, min_limits_, max_limits_, std_dev_, min_radius_), glial_cell_to_grow(glial_cell_to_grow_){}
 
 GlialCellGrowth::GlialCellGrowth(const GlialCellGrowth &other)
   : CellGrowth(other),             // Call the base-class copy constructor

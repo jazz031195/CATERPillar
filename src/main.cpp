@@ -43,8 +43,10 @@ int main(int argn, char* argv[])
     double glial_pop2_icvf_processes = parameters.glial_pop2_icvf_processes;
     double axons_wo_myelin_icvf = parameters.axons_wo_myelin_icvf;
     double axons_w_myelin_icvf = parameters.axons_w_myelin_icvf;
+    double blood_vessels_icvf = parameters.blood_vessels_icvf;
     int spheres_overlap_factor = parameters.spheres_overlap_factor;
     double beading_variation = parameters.beading_variation;
+    double beading_variation_std = parameters.beading_variation_std;
     std::string directory = parameters.data_directory;
     std::string filename = parameters.filename;
     bool tortuous = parameters.tortuous;
@@ -87,8 +89,8 @@ int main(int argn, char* argv[])
             auto startTime = std::chrono::high_resolution_clock::now();
 
             AxonGammaDistribution* AxonDistribution = new AxonGammaDistribution(
-                axons_wo_myelin_icvf, axons_w_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, alpha, beta,
-                                             min_l, max_l, min_radius, regrow_thr, beading_variation, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
+                axons_wo_myelin_icvf, axons_w_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, blood_vessels_icvf, alpha, beta,
+                                             min_l, max_l, min_radius, regrow_thr, beading_variation, beading_variation_std, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
                                               mean_glial_process_length, std_glial_process_length, mean_glial_process_length, std_glial_process_length,
                                               glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, nbr_primary_processes_pop1, nbr_primary_processes_pop2, c1, c2, c3);
 

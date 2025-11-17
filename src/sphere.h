@@ -21,7 +21,7 @@ public:
     Eigen::Vector3d center;    /*!< Position of center of the sphere      */
     double radius;             /*!< Radius of the Sphere                  */
     int object_id;              /*!< ID of object to which the sphere belongs to     */
-    int object_type;         /*!< Type of object to which the sphere belongs to (0 : outer axon, 1:glial, 2: inner axon)    */
+    int object_type;         /*!< Type of object to which the sphere belongs to (0 : outer axon, 1:glial, 2: inner axon, 3 : blood_vessel)    */
     int branch_id;           /*!< ID of branch of glial cell to which the sphere belongs to     */
     int parent_id;           /*!< ID of parent sphere of the sphere     */
     /*!

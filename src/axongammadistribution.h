@@ -15,6 +15,7 @@
 #include <iostream>
 #include "Axon.h"
 #include "Glial.h"
+#include "Blood_Vessel.h"
 #include "grow_axons.h"
 #include "sphere.h"
 #include <thread>
@@ -31,6 +32,7 @@ public:
     std::vector<int> stuck_indices;    /*!< Indices of stuck axons, to regrow */
     std::vector<Glial> glial_pop1;     /*!< Vector of glial_pop1 */
     std::vector<Glial> glial_pop2;    /*!< Vector of glial_pop2s */
+    std::vector<Blood_Vessel> blood_vessels; /*!< Vector of blood vessels */
 
     int nbr_axons_populations;                /*!< Number of populations of axons (1-3) */
     int crossing_fibers_type;                /*!< Type of crossing fibers (0 : sheet crossing, 1 : interwoven crossing) */
@@ -51,6 +53,7 @@ public:
     double target_glial_pop1_branches_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
     double target_glial_pop2_soma_icvf;        /*!< glial_pop2 Intracellular Compartment Volume Fraction */
     double target_glial_pop2_branches_icvf;    /*!< glial_pop2 Intracellular Compartment Volume Fraction */
+    double target_blood_vessels_icvf;    /*!< Blood Vessel Compartment Volume Fraction */
     double total_volume; /*!< Total volume of the voxel */
     double target_axons_icvf;        
 
@@ -63,6 +66,7 @@ public:
     double axons_icvf;        /*!< Intracellular Compartment Volume Fraction of axons without myelin */
     double myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double extracellular_icvf;        /*!< Extracellular Compartment Volume Fraction */
+    double blood_vessels_icvf;    /*!< Blood Vessel Compartment Volume Fraction */
 
     int factor;                         /*!< Factor to divide the radii by */
     bool axon_can_shrink;               /*!< If true, the axons can shrink to allow passage between them */
@@ -112,9 +116,9 @@ public:
     /*!
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &glial_pop1_icvf_soma_, const double &glial_pop1_icvf_branches_, const double &glial_pop2_icvf_soma_, const double &glial_pop2_icvf_branches_, const double &a, const double &b,
+    AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &glial_pop1_icvf_soma_, const double &glial_pop1_icvf_branches_, const double &glial_pop2_icvf_soma_, const double &glial_pop2_icvf_branches_, const double &blood_vessels_icvf_, const double &a, const double &b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
-                                              const int &regrow_thr_, const double &beading_variation_,const double &beading_variation_std, const double &std_dev_, const int &undulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
+                                              const int &regrow_thr_, const double &beading_variation_, const double &beading_variation_std, const double &std_dev_, const int &undulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
                                               const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
                                               const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_,
                                               const double &c1_, const double &c2_, const double &c3_);
@@ -137,12 +141,6 @@ public:
      *  \brief Causes sinusoidal fluctuation of the radii
      */
     double radiusVariation(const Axon &axon);
-
-    /*!
-     *  \brief Creates a parallel growth of all axons
-     */
-    void parallelGrowth();
-
 
     /*!
        *  \param radiis List of axon radii
@@ -191,6 +189,8 @@ public:
      */
     void createSubstrate();
 
+    void PlaceBloodVessels();
+    void GrowBloodVessels();
     
     /*!
      *  \param growth Growth object with knowledge of the environment
@@ -206,7 +206,7 @@ public:
      * \param gls Glial cells to check overlapping with
      *  \brief Checks if a sphere overlaps with any of the axons in axs
      */
-    bool canSpherebePlaced(const Sphere &sph, const std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos);
+    bool canSpherebePlaced(const Sphere &sph, const std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos, const std::vector<Blood_Vessel> &bvs);
 
     /*!
      *  \param axs Axons to check overlapping with
@@ -349,7 +349,7 @@ public:
 
     void growBranches(const int &population_nbr);
 
-    void ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos);
+    void ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos, const std::vector<Blood_Vessel> &blood_vessels);
     
     std::vector<Sphere> addIntermediateSpheres(const Sphere &random_sphere, const Sphere &first_sphere, const int &branch_nbr, const int &nbr_spheres, const int &nbr_spheres_between);
     bool GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::Vector3d &attractor, const double &radius, const Sphere &sphere_to_emerge_from, const Eigen::Vector3d &vector_to_prev_center, const int &nbr_spheres, const int &nbr_spheres_between, const int &cell_id, const int &branch_id, const bool &primary_process);

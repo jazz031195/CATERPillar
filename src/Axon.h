@@ -40,7 +40,6 @@ public:
     double angle;
     bool outside_voxel;
     bool has_shrunk;                            /*!< Axon has shrunk */
-    double z_stat_rad_variation;                  /*!< Standard deviation of radius variation along z axis */
     int undulation_factor;                          /*!< Factor for ondulation */
 
     /*!
@@ -72,7 +71,6 @@ public:
         double maxVal = begin.cwiseAbs().minCoeff(&this->growth_axis); // gives growth_axis the position of the maximum value
         angle = angle_;
         outside_voxel = outside_voxel_;
-        z_stat_rad_variation = 0.0;
 
     };
 
@@ -98,7 +96,6 @@ public:
             angle = ax.angle;
             outside_voxel = ax.outside_voxel;
             inner_radius = ax.inner_radius;
-            z_stat_rad_variation = ax.z_stat_rad_variation;
 
         }
         return *this;
@@ -144,7 +141,7 @@ public:
     void updateBox();
 
     void update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits);
-    std::vector<int> isSphereInsideAxon_(const Sphere &sph);
+
 };
 
 #endif // AXON_H

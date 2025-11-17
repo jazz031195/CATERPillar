@@ -32,6 +32,7 @@ class GlialCellGrowth : public CellGrowth
             const std::vector<Glial>* glial_pop1_,
             const std::vector<Glial>* glial_pop2_,
             const std::vector<Axon>* axons_,
+            const std::vector<Blood_Vessel>* blood_vessels_,
             const Eigen::Vector3d &extended_min_limits_,
             const Eigen::Vector3d &extended_max_limits_,
             const Eigen::Vector3d &min_limits_,

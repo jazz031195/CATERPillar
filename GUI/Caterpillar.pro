@@ -27,6 +27,8 @@ SOURCES += \
     ../src/parameters.cpp \
     ../src/sphere.cpp \
     ../src/threads.cpp \
+    ../src/grow_blood_vessels.cpp \
+    ../src/Blood_Vessel.cpp \
 
     
 SOURCES += qcustomplot-source/qcustomplot.cpp
@@ -47,6 +49,8 @@ HEADERS += \
     ../src/sphere.h \
     ../src/threads.h \
     ../src/constants.h \
+    ../src/grow_blood_vessels.h\
+    ../src/Blood_Vessel.h \
     qcustomplot-source/qcustomplot.h
 
 

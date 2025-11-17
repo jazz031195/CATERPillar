@@ -20,9 +20,11 @@ public:
     void setSpheres(const std::vector<std::vector<double>>& x,
                     const std::vector<std::vector<double>>& y,
                     const std::vector<std::vector<double>>& z,
-                    const std::vector<std::vector<double>>& radius);
+                    const std::vector<std::vector<double>>& radius,
+                    const std::vector<int>& groupIds);
 
     void resetCamera();
+    enum class SphereGroup : int { Axon = 0, Glial1 = 1, Glial2 = 2, Blood = 3 };
 
 protected:
     void initializeGL() override;

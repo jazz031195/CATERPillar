@@ -2,6 +2,7 @@
 #include "Glial.h"
 #include "grow_axons.h"
 #include "grow_glial_cells.h"
+#include "grow_blood_vessels.h"
 #include <algorithm> // std::sort
 #include <random>
 #include <chrono>
@@ -41,7 +42,7 @@ std::vector<std::string> _split_line(const std::string &s, char delim)
     return elems;
 }
 
-AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &glial_pop1_icvf_soma_, const double &glial_pop1_icvf_branches_, const double &glial_pop2_icvf_soma_, const double &glial_pop2_icvf_branches_, const double &a, const double &b,
+AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &glial_pop1_icvf_soma_, const double &glial_pop1_icvf_branches_, const double &glial_pop2_icvf_soma_, const double &glial_pop2_icvf_branches_, const double &blood_vessels_icvf_, const double &a, const double &b,
                                              Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
                                               const int &regrow_thr_, const double &beading_variation_, const double &beading_variation_std, const double &std_dev_, const int &undulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
                                               const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
@@ -58,6 +59,8 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
     target_glial_pop1_branches_icvf = glial_pop1_icvf_branches_;
     target_glial_pop2_soma_icvf = glial_pop2_icvf_soma_;
     target_glial_pop2_branches_icvf = glial_pop2_icvf_branches_;
+    target_blood_vessels_icvf = blood_vessels_icvf_;
+    
     nbr_axons_populations = nbr_axons_populations_;
     expanded_for_glial_space = 0;
 
@@ -68,6 +71,7 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
     myelin_icvf = 0.0;
     axons_icvf = 0.0;
     extracellular_icvf = 0.0;
+    blood_vessels_icvf = 0.0;
 
     crossing_fibers_type = crossing_fibers_type_;
     nbr_primary_processes_pop1 = nbr_primary_processes_pop1_;
@@ -100,6 +104,7 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
     axons.clear();
     glial_pop1.clear();
     glial_pop2.clear();
+    blood_vessels.clear();
 
     total_volume = (max_l[0] - min_l[0]) * (max_l[1] - min_l[1]) * (max_l[2] - min_l[2]);
     nbr_threads = nbr_threads_;
@@ -143,57 +148,6 @@ void display_progress(double nbr_axons, double number_obstacles)
 }
 
 
-
-/*
-
-bool AxonGammaDistribution::growPartialBranch(){
-
-    auto draw_positive_radius = [&](std::normal_distribution<>& dis) {
-        double r;
-        do { r = dis(gen); } while (r <= 0.0);
-        return r;
-    };
-
-    std::uniform_real_distribution<double> udist(0, 1);
-    std::uniform_real_distribution<double> dist_const(3, 15);
-
-    auto generate_sphere = [&]() {
-
-        // find free spot on (0,0,0) (0,0,L) plane
-
-        double dist_x = udist(gen) * (max_limits[0] - min_limits[0]) + min_limits[0];
-        double dist_y = udist(gen) * (max_limits[1] - min_limits[1]) + min_limits[1];
-
-        Eigen::Vector3d point_on_plane = Eigen::Vector3d(dist_x, dist_y, min_limits[2]);
-
-        // find radius from normal distribution
-        std::normal_distribution<double> glial_pop1_radius_dist(glial_pop1_radius_mean, glial_pop1_radius_std);
-
-        double constant = dist_const(gen);
-        double radius_sphere= draw_positive_radius(glial_pop1_radius_dist)/constant;
-
-        Sphere sphere(0, -1, 1, point_on_plane, radius_sphere, -1, -1);
-
-        return sphere;
-    };
-
-    // create sphere on plane
-    Sphere sphere = generate_sphere();
-
-    bool canSpherebePlaced(sphere, axons, glial_pop1, glial_pop2);
-
-    int nbr_tries = 0;
-
-    while (!canSpherebePlaced && nbr_tries < 100) {
-        sphere = generate_sphere();
-        canSpherebePlaced = canSpherebePlaced(sphere, axons, glial_pop1, glial_pop2);
-    }
-
-    // define attractor 
-    Eigen::Vector3d attractor = sphere.center + Eigen::Vector3d(0, 0, max_limits[2] - min_limits[2]) + 10;
-
-}
-*/
 
 bool AxonGammaDistribution::get_begin_end_point(Eigen::Vector3d &Q, Eigen::Vector3d &D, double &angle)
 {
@@ -430,8 +384,8 @@ bool AxonGammaDistribution::PlaceAxon(const int &axon_id, const double &radius_f
 
     Sphere sphere = Sphere(0, ax.id, 0, Q, radius_for_axon);
 
-    bool no_overlap_axons = canSpherebePlaced(sphere, axons, glial_pop1, glial_pop2);
-    bool no_overlap_new_axons = canSpherebePlaced(sphere, new_axons, glial_pop1, glial_pop2);
+    bool no_overlap_axons = canSpherebePlaced(sphere, axons, glial_pop1, glial_pop2, blood_vessels);
+    bool no_overlap_new_axons = canSpherebePlaced(sphere, new_axons, glial_pop1, glial_pop2, blood_vessels);
 
     if (no_overlap_new_axons && no_overlap_axons)
     {
@@ -498,9 +452,22 @@ bool AxonGammaDistribution::check_borders(const Eigen::Vector3d&  min_l, const E
 }
 
 
-bool AxonGammaDistribution::canSpherebePlaced(const Sphere &sph, const std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos
+bool AxonGammaDistribution::canSpherebePlaced(const Sphere &sph, const std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos, const std::vector<Blood_Vessel> &bvs
 ) 
 {
+
+    for (int i = 0 ; i < bvs.size(); i++) {
+
+        if (!(bvs[i].id == sph.object_id && sph.object_type == 3))
+        {
+            // Check overlap
+            if (bvs[i].isSphereInsideBlood_Vessel(sph)) 
+            {
+                
+                return false;
+            }
+        }
+    }
 
     for (int i = 0 ; i < axs.size(); i++) {
 
@@ -531,7 +498,7 @@ bool AxonGammaDistribution::canSpherebePlaced(const Sphere &sph, const std::vect
 
 
 // Main function to perform the analysis with parallel threads
-void AxonGammaDistribution::ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos) {
+void AxonGammaDistribution::ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos, const std::vector<Blood_Vessel> &blood_vessels) {
 
 
     axons_w_myelin_icvf = 0.0;
@@ -562,6 +529,10 @@ void AxonGammaDistribution::ICVF(const std::vector<Axon> &axs, const std::vector
         glial_pop2_soma_icvf += glial.volume_soma;
     }
 
+    blood_vessels_icvf = 0.0;
+    for (const auto &bv : blood_vessels) {
+        blood_vessels_icvf += bv.volume;
+    }
 
     axons_w_myelin_icvf = axons_w_myelin_icvf / total_volume;
     axons_wo_myelin_icvf = axons_wo_myelin_icvf / total_volume;
@@ -571,7 +542,7 @@ void AxonGammaDistribution::ICVF(const std::vector<Axon> &axs, const std::vector
     glial_pop2_branches_icvf = glial_pop2_branches_icvf / total_volume;
     glial_pop2_soma_icvf = glial_pop2_soma_icvf / total_volume;
     extracellular_icvf = 1 - (axons_w_myelin_icvf + axons_wo_myelin_icvf + glial_pop1_branches_icvf + glial_pop1_soma_icvf + glial_pop2_branches_icvf + glial_pop2_soma_icvf);
-
+    blood_vessels_icvf = blood_vessels_icvf / total_volume;
 }
 
 // Interpolation helper function
@@ -855,10 +826,6 @@ void AxonGammaDistribution::setBatches(const int &num_axons, std::vector<int> &s
         }
     }
 }
-void AxonGammaDistribution::createSubstrate()
-{
-    parallelGrowth();
-}
 
 std::vector<double> AxonGammaDistribution::generate_angles(const int &num_samples){
 
@@ -919,7 +886,7 @@ void AxonGammaDistribution::GrowAllAxons(){
             std::vector<double> radii_to_regrow = stuck_radii;
             std::vector<int> indices_to_regrow = stuck_indices;
 
-            ICVF(axons, glial_pop1, glial_pop2);
+            ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
             cout << "ICVF axons :" << axons_icvf << endl;
 
             
@@ -958,7 +925,7 @@ bool AxonGammaDistribution::SwellSphere(Sphere &sph, const double &percentage){
     double R_ = R + percentage*R;
     Sphere sph_ = Sphere(sph.id, sph.object_id, sph.object_type, sph.center, R_);
     // if can be placed in the substrate
-    if (canSpherebePlaced(sph_, axons, glial_pop1, glial_pop2))
+    if (canSpherebePlaced(sph_, axons, glial_pop1, glial_pop2, blood_vessels))
     {
         sph = sph_;
         return true;
@@ -1012,16 +979,20 @@ void AxonGammaDistribution::SwellAxons(const double &percentage){
         axon.updateBox();
     }
     // check ICVF 
-    ICVF(axons, glial_pop1, glial_pop2);
+    ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
 
 }
 
 // Growing substrate
-void AxonGammaDistribution::parallelGrowth()
+void AxonGammaDistribution::createSubstrate()
 {
     // place glial cells
     cout << "nbr_threads :" << nbr_threads << endl;
     cout <<"overlapping_factor :" << factor << endl;
+
+    cout << "Place Blood Vessels" << endl;
+    PlaceBloodVessels();
+    GrowBloodVessels();
     cout << "Place Glial Cells" << endl;
     PlaceGlialCells();
     cout << "Grow all Axons" << endl;
@@ -1029,7 +1000,7 @@ void AxonGammaDistribution::parallelGrowth()
     cout << "Grow Myelin" << endl;
     add_Myelin();
 
-    ICVF(axons, glial_pop1, glial_pop2);
+    ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
 
     cout << "GrowAllGlialCells" << endl;
 
@@ -1049,7 +1020,94 @@ void AxonGammaDistribution::parallelGrowth()
         cout << "Axons Final check passed" << endl;
     }
     
-    ICVF(axons, glial_pop1, glial_pop2);
+    ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
+}
+
+void AxonGammaDistribution::PlaceBloodVessels(){
+
+    double mean_vessel_rad = 4;
+    double std_vessel_rad = 1;
+    double achieved_icvf = 0.0;
+    const int MAX_GLOBAL_FAILS = 10000;
+    bool placed = false;
+
+    blood_vessels.clear();
+
+    std::normal_distribution<> dis_blood_vessel(mean_vessel_rad, std_vessel_rad);
+
+    std::uniform_real_distribution<> base_x1(min_limits[0], max_limits[0]);
+    std::uniform_real_distribution<> base_y1(min_limits[1], max_limits[1]);
+
+    int global_fail_count = 0;
+
+    cout << "Target blood vessels icvf :" << target_blood_vessels_icvf << endl;
+    while(achieved_icvf < target_blood_vessels_icvf && global_fail_count < MAX_GLOBAL_FAILS){
+        Sphere s;
+        for (int attempt = 0; attempt < 100; ++attempt) {
+            double rad = dis_blood_vessel(gen);
+            s = Sphere(
+                /*object_id*/ 0,                        // keep your ID scheme if needed
+                /*object_index*/ static_cast<int>(blood_vessels.size()),
+                /*type*/ 3,
+                { base_x1(gen), base_y1(gen), 0},
+                rad
+            );
+            if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2, blood_vessels)) {
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) {
+            ++global_fail_count;
+            cout << "Could not place blood vessel after many attempts, trying another position..." << endl;
+            continue; // try placing another cell; loop terminates via MAX_GLOBAL_FAILS_1
+        }
+        else{
+            achieved_icvf += M_PI*std::pow(s.radius,2)*(max_limits[2]-min_limits[2])/total_volume;
+            int id = blood_vessels.size();
+            Eigen::Vector3d begin = s.center;
+            Eigen::Vector3d end = s.center + Eigen::Vector3d(0,0,(max_limits[2]-min_limits[2]));
+            Blood_Vessel bv (id, begin, end, s.radius, /*beading_amplitude=*/0.0, /*beading_std=*/0.0, /*undulation_fector=*/5);
+            bv.add_first_sphere(s);
+            blood_vessels.push_back(bv);
+        }
+    }
+    cout <<"number of blood vessels : " << blood_vessels.size() <<  endl;
+
+    blood_vessels_icvf = achieved_icvf;
+}
+
+void AxonGammaDistribution::GrowBloodVessels() {
+    bool   bv_can_shrink = false;
+    double stuck_radius  = 0.0;
+    int    stuck_index   = 0;
+
+    const std::size_t initial_n = blood_vessels.size();
+
+    for (std::size_t j = 0; j < initial_n; ++j) {
+        Blood_Vessel bv = blood_vessels[j];
+
+        // Prefer references instead of raw pointers where possible.
+        BloodVesselGrowth grow(
+            bv,  &glial_pop1, &glial_pop2, &axons, &blood_vessels,
+            min_limits, max_limits, min_limits, max_limits, 0.0, barrier_tickness 
+        );
+
+        // NOTE: name says "Thread"—ensure it is synchronous here (blocking).
+        // If it spawns async work, you must join before using results.
+        grow.growthThread(stuck_radius, stuck_index, factor, bv_can_shrink);
+
+        blood_vessels[j] = std::move(bv);
+        
+        display_progress(static_cast<int>(j), static_cast<int>(initial_n));
+    }
+
+    blood_vessels.erase(
+        std::remove_if(blood_vessels.begin() + initial_n, blood_vessels.end(),
+                    [](const Blood_Vessel& bv) { return bv.spheres.size() <= 1; }),
+        blood_vessels.end());
+
+    ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
 }
 
 void AxonGammaDistribution::GrowAllGlialCells() {
@@ -1102,7 +1160,7 @@ void AxonGammaDistribution::growBranches(const int &population_nbr) {
     growths.reserve(pop.size());
     for (size_t i = 0; i < pop.size(); ++i) {
         growths.emplace_back(pop[i], &glial_pop1, &glial_pop2,
-                             &axons, extended_min_limits, extended_max_limits,
+                             &axons, &blood_vessels, extended_min_limits, extended_max_limits,
                              min_limits, max_limits, min_radius);
     }
     
@@ -1111,7 +1169,7 @@ void AxonGammaDistribution::growBranches(const int &population_nbr) {
 
 
     for (size_t i = 0; i < growths.size(); ++i) {
-        growths[i].update_environment(&axons, &glial_pop1, &glial_pop2);
+        growths[i].update_environment(&axons, &glial_pop1, &glial_pop2, &blood_vessels);
 
         growths[i].growFirstPrimaryBranches(nbr_primary_processes,
                                             nbr_spheres[i], mean_len, std_len, factor);
@@ -1121,7 +1179,7 @@ void AxonGammaDistribution::growBranches(const int &population_nbr) {
 
     }
 
-    ICVF(axons, glial_pop1, glial_pop2); // updates glial_pop1_branches_icvf and glial_pop2_branches_icvf
+    ICVF(axons, glial_pop1, glial_pop2, blood_vessels); // updates glial_pop1_branches_icvf and glial_pop2_branches_icvf
     current_icvf = (population_nbr == 1) ? glial_pop1_branches_icvf
                                          : glial_pop2_branches_icvf;
     display_progress(current_icvf, target_icvf);
@@ -1137,7 +1195,7 @@ void AxonGammaDistribution::growBranches(const int &population_nbr) {
 
     while (current_icvf < target_icvf && nbr_tries <= max_tries) {
         for (size_t i = 0; i < growths.size(); ++i) {
-            growths[i].update_environment(&axons, &glial_pop1, &glial_pop2);
+            growths[i].update_environment(&axons, &glial_pop1, &glial_pop2, &blood_vessels);
             if (growths[i].glial_cell_to_grow.allow_branching) {
                 growths[i].growSecondaryBranch(nbr_spheres[i], mean_len, std_len, factor);
             } else {
@@ -1150,7 +1208,7 @@ void AxonGammaDistribution::growBranches(const int &population_nbr) {
             for (auto& g : pop) {
                 g.compute_processes_icvf(factor, min_limits, max_limits);
             }
-            ICVF(axons, glial_pop1, glial_pop2);
+            ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
             current_icvf = (population_nbr == 1) ? glial_pop1_branches_icvf
                                                  : glial_pop2_branches_icvf;
             display_progress(current_icvf, target_icvf);
@@ -1241,7 +1299,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
                 rad
             );
 
-            if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2)) {
+            if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2, blood_vessels)) {
                 fully_inside = (signed_box_margin(s) >= 0.0);
                 fully_outside = fully_outside_box(s);
                 placed = true;
@@ -1300,7 +1358,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
                         {x,y,z},
                         rad
                     );
-            if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2)) {
+            if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2, blood_vessels)) {
                 Glial glial_cell = Glial(s.object_id, s, glial_pop1_branching);
                 glial_pop1.push_back(glial_cell);
                 cout << "added extra glial cell pop1 at x :" << x << endl;
@@ -1342,7 +1400,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
                 rad
             );
 
-            if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2)) {
+            if (canSpherebePlaced(s, axons, glial_pop1, glial_pop2, blood_vessels)) {
                 fully_inside = (signed_box_margin(s) >= 0.0);
                 fully_outside = fully_outside_box(s);
                 placed = true;
@@ -1392,7 +1450,7 @@ void AxonGammaDistribution::PlaceGlialCells() {
                         {x,y,z},
                         rad
                     );
-            if (canSpherebePlaced(s, axons, glial_pop2, glial_pop2)) {
+            if (canSpherebePlaced(s, axons, glial_pop2, glial_pop2, blood_vessels)) {
                 Glial glial_cell = Glial(s.object_id, s, glial_pop2_branching);
                 glial_pop2.push_back(glial_cell);
             }
@@ -1411,7 +1469,7 @@ bool AxonGammaDistribution::FinalCheck(std::vector<Axon> &axs, std::vector<doubl
         bool all_spheres_can_be_placed = true;
         for (long unsigned int i = 0; i < axs[j].outer_spheres.size(); i++)
         { // for all spheres
-            if (!canSpherebePlaced(axs[j].outer_spheres[i], axs, glial_pop1, glial_pop2))
+            if (!canSpherebePlaced(axs[j].outer_spheres[i], axs, glial_pop1, glial_pop2, blood_vessels))
             {
                 std::cout << " Axon :" << axs[j].id << ", sphere : " << axs[j].outer_spheres[i].id << " collides with environment !" << endl;
                 all_spheres_can_be_placed = false;
@@ -1481,7 +1539,7 @@ bool AxonGammaDistribution::SanityCheck(std::vector<Axon>& growing_axons,
         if (axon.outer_spheres.empty()) continue;
 
         for (const auto& sphere : axon.outer_spheres) {
-            if (!canSpherebePlaced(sphere, axons_to_check_collision_with, glial_pop1, glial_pop2)) {
+            if (!canSpherebePlaced(sphere, axons_to_check_collision_with, glial_pop1, glial_pop2, blood_vessels)) {
                 collided_ids.insert(axon.id);
                 axons_to_check_collision_with.erase(
                     std::remove_if(axons_to_check_collision_with.begin(), axons_to_check_collision_with.end(),
@@ -1514,7 +1572,7 @@ void AxonGammaDistribution::growAxon(Axon& axon_to_grow, int &index, double& stu
 
 
     // Initialize a Growth object for this axon
-    AxonGrowth growth(axon_to_grow, &glial_pop1, &glial_pop2, &axons, min_limits, max_limits, min_limits, max_limits, std_dev, min_radius);
+    AxonGrowth growth(axon_to_grow, &glial_pop1, &glial_pop2, &axons, &blood_vessels, min_limits, max_limits, min_limits, max_limits, std_dev, min_radius);
 
     growth.growthThread(stuck_radius, stuck_index, factor, axon_can_shrink);
 
@@ -1594,12 +1652,12 @@ void AxonGammaDistribution::ModifyAxonsStartingPoint(std::vector<int> &stuck_ind
             Eigen::Vector3d initial_begin = axons[i].begin;
             bool outside_voxel = !get_begin_end_point(Q, D, angle_);
             Sphere sphere = Sphere(0, axons[i].id, 0, Q, axons[i].radius);
-            bool no_overlap_axons = canSpherebePlaced(sphere, axons, glial_pop1, glial_pop2);
+            bool no_overlap_axons = canSpherebePlaced(sphere, axons, glial_pop1, glial_pop2, blood_vessels);
             int nbr_tries = 0;
             while(!no_overlap_axons && nbr_tries < 1000){
                 outside_voxel = !get_begin_end_point(Q, D, angle_);
                 sphere = Sphere(0, axons[i].id, 0, Q, axons[i].radius);
-                no_overlap_axons = canSpherebePlaced(sphere, axons, glial_pop1, glial_pop2);
+                no_overlap_axons = canSpherebePlaced(sphere, axons, glial_pop1, glial_pop2, blood_vessels);
                 nbr_tries += 1;
             }
             if (no_overlap_axons) {
@@ -1688,13 +1746,6 @@ void AxonGammaDistribution::growBatch(int &number_axons_to_grow, std::vector<dou
 
     std::vector<int> all_stuck_indices(number_axons_to_grow, -1);   
 
-    //std::vector<std::vector<int>> ind_axons_pushed;  
-
-    //std::vector<std::vector<Axon>> axons_pushed;   
-
-    //ind_axons_pushed.resize(number_axons_to_grow);
-    //axons_pushed.resize(number_axons_to_grow); 
-
     processBatchWithThreadPool(batch_growing_axons, indices, all_stuck_radii, all_stuck_indices);
 
 
@@ -1708,43 +1759,8 @@ void AxonGammaDistribution::growBatch(int &number_axons_to_grow, std::vector<dou
         }
     }
 
-    /*
-    
-    std::vector<int> ind_growing_axons_to_remove = removeOverlappingVectors(ind_axons_pushed, axons_pushed);
-    
-    cout <<"number fo duplicates : " << ind_growing_axons_to_remove.size() << endl;
-
-    for (int i = 0; i < ind_growing_axons_to_remove.size(); i++) // for each axon
-    {
-        // growing axons that pushed the same static axons are labelled as stuck
-        stuck_radii_.push_back(all_stuck_radii[ind_growing_axons_to_remove[i]]);
-        stuck_indices_.push_back(all_stuck_indices[ind_growing_axons_to_remove[i]]);
-        batch_growing_axons[ind_growing_axons_to_remove[i]].destroy();
-    }
-
-    std::vector<int> all_indices;
-    for (const auto& vec : ind_axons_pushed) {
-        all_indices.insert(all_indices.end(), vec.begin(), vec.end());
-    }
-
-    // Sort and remove duplicates
-    std::sort(all_indices.begin(), all_indices.end());
-    all_indices.erase(std::unique(all_indices.begin(), all_indices.end()), all_indices.end());
-
-    cout <<" number of axons pushed : " << all_indices.size() << endl;
-
-    for (const auto& group : axons_pushed) {
-        batch_growing_axons.insert(batch_growing_axons.end(), group.begin(), group.end());
-    }
-    */
-    
-    //cout <<"number of axons to check in batch_growing_axons : " << batch_growing_axons.size() << endl;
-
-
     SanityCheck(batch_growing_axons, stuck_radii_, stuck_indices_);
         
-    //cout << stuck_radii_.size() << " axons are stuck" << endl;
-
     // add axons in batch that worked in axons
     for (int i = 0; i < batch_growing_axons.size(); i++)
     {
@@ -1781,8 +1797,6 @@ void AxonGammaDistribution::growBatch(int &number_axons_to_grow, std::vector<dou
         cout << "Final check passed" << endl;
     }
     */
-    
-    
     
     //cout << "axons.size() after check: " << axons.size() << endl;
 }
@@ -1980,7 +1994,7 @@ void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
             if (final_axons[i].inner_spheres.size() > 0)
             {
                 double inner_radius = final_axons[i].inner_spheres[j].radius;
-                out << cell_type << " " <<  cell_id << " " << component << " " << component_id << " " << x << " " << y << " " << z << " " << outer_radius << " " << inner_radius << endl;
+                out << cell_type << " " <<  cell_id << " " << component << " " << component_id << " " << x << " " << y << " " << z << " " << inner_radius << " " << outer_radius << endl;
             }
             else
             {
@@ -2052,6 +2066,24 @@ void AxonGammaDistribution ::create_SWC_file(std::ostream &out)
             }
         }
     }
+
+    for (auto &bv : blood_vessels)
+    {
+        for (auto &s : bv.spheres) {
+            int cell_id = bv.id;
+            int component_id = 0;
+            std::string cell_type = "blood_vessel";
+            std::string component = "blood_vessel";
+            double x = s.center[0];
+            double y = s.center[1];
+            double z = s.center[2];
+            double outer_radius = s.radius;
+
+            out << cell_type << " " <<  cell_id << " " << component << " " << component_id << " " << x << " " << y << " " << z << " " << outer_radius << " " << outer_radius << endl;
+            
+        }
+
+    }
 }
 
 void AxonGammaDistribution::simulation_file(std::ostream &out, const std::chrono::seconds &duration)
@@ -2067,10 +2099,11 @@ void AxonGammaDistribution::simulation_file(std::ostream &out, const std::chrono
     out << "Glial cell population 1 icvf branches " << glial_pop1_branches_icvf << endl;
     out << "Glial cell population 2 icvf soma " << glial_pop2_soma_icvf << endl;
     out << "Glial cell population 2 icvf branches " << glial_pop2_branches_icvf << endl;
+    out << "Blood vessel icvf " << blood_vessels_icvf << endl;
     out << "Tortuosity (std of gaussians) " << std_dev << endl;
     out << "Beading amplitude " << beading_variation << endl;
     out << "Overlapping factor " << factor << endl;
-    out << "Total icvf " << axons_w_myelin_icvf + axons_wo_myelin_icvf + glial_pop1_soma_icvf + glial_pop1_branches_icvf + glial_pop2_soma_icvf + glial_pop2_branches_icvf << endl;
+    out << "Total icvf " << axons_w_myelin_icvf + axons_wo_myelin_icvf + glial_pop1_soma_icvf + glial_pop1_branches_icvf + glial_pop2_soma_icvf + glial_pop2_branches_icvf + blood_vessels_icvf << endl;
     out << "C2 " << cosPhiSquared << endl;
     out << "Number of threads " << nbr_threads << endl;
 }

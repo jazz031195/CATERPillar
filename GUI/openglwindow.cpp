@@ -17,66 +17,127 @@ OpenGLWindow::OpenGLWindow(QWindow *parent)
 
 OpenGLWindow::~OpenGLWindow() {}
 
+template <typename T>
+constexpr const T& clamp(const T& v, const T& lo, const T& hi)
+{
+    return (v < lo) ? lo : (hi < v) ? hi : v;
+}
+
+namespace {
+    inline QColor lerp(const QColor& a, const QColor& b, double t) {
+        t = clamp(t, 0.0, 1.0);
+        return QColor(
+            static_cast<int>(a.red()   + t * (b.red()   - a.red())),
+            static_cast<int>(a.green() + t * (b.green() - a.green())),
+            static_cast<int>(a.blue()  + t * (b.blue()  - a.blue()))
+        );
+    }
+}
+
+
+
 void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
                               const std::vector<std::vector<double>>& y,
                               const std::vector<std::vector<double>>& z,
-                              const std::vector<std::vector<double>>& radius)
+                              const std::vector<std::vector<double>>& radius,
+                              const std::vector<int>& groupIds)
 {
     spherePositions.clear();
     sphereRadii.clear();
     axonColors.clear();
+    initialspherePositions.clear();
+    initialsphereRadii.clear();
+    initialaxonColors.clear();
 
-    std::vector<QColor> colors;
-    generateRandomColors(x.size(), colors);
+    // --- Build color per-bundle using groupIds ---
+    Q_ASSERT(static_cast<int>(x.size()) == static_cast<int>(groupIds.size()));
+    std::vector<QColor> colors(x.size());
 
-    double sumX = 0.0, sumY = 0.0 , sumZ = 0.0;
-    int count = 0;
+    // Collect bundle indices per group to make smooth gradients within each group
+    std::vector<size_t> idxAxon, idxG1, idxG2, idxBV;
+    for (size_t i = 0; i < groupIds.size(); ++i) {
+        switch (static_cast<SphereGroup>(groupIds[i])) {
+            case SphereGroup::Axon:   idxAxon.push_back(i); break;
+            case SphereGroup::Glial1: idxG1.push_back(i);   break;
+            case SphereGroup::Glial2: idxG2.push_back(i);   break;
+            case SphereGroup::Blood:  idxBV.push_back(i);   break;
+        }
+    }
 
-    // Populate sphere positions and calculate sums of x and y coordinates and max z
+    auto assignGradient = [&](const std::vector<size_t>& idx,
+                              const QColor& c0, const QColor& c1)
+    {
+        if (idx.empty()) return;
+        if (idx.size() == 1) {
+            colors[idx[0]] = c1;
+            return;
+        }
+        for (size_t k = 0; k < idx.size(); ++k) {
+            double t = static_cast<double>(k) / static_cast<double>(idx.size() - 1);
+            colors[idx[k]] = lerp(c0, c1, t);
+        }
+    };
+
+    // Palettes:
+    // Blood vessels: light red -> dark red
+    assignGradient(idxBV, QColor(255, 200, 200), QColor(170, 0, 0));
+    // Glial pop1: light green -> mid green
+    assignGradient(idxG1, QColor(200, 255, 200), QColor(0, 150, 0));
+    // Glial pop2: lighter to darker/different green to distinguish
+    assignGradient(idxG2, QColor(220, 255, 220), QColor(0, 110, 0));
+    // Axons: keep random or choose a neutral palette
+    if (!idxAxon.empty()) {
+        std::vector<QColor> tmp(idxAxon.size());
+        generateRandomColors(idxAxon.size(), tmp); // your existing helper
+        for (size_t k = 0; k < idxAxon.size(); ++k) colors[idxAxon[k]] = tmp[k];
+    }
+
+    // --- Compute averages and populate buffers ---
+    double sumX = 0.0, sumY = 0.0, sumZ = 0.0;
+    long long count = 0;
+
     for (size_t i = 0; i < x.size(); ++i) {
         for (size_t j = 0; j < x[i].size(); ++j) {
-
             sumX += x[i][j];
             sumY += y[i][j];
             sumZ += z[i][j];
-            count++;
+            ++count;
         }
     }
+    if (count == 0) return; // nothing to draw, avoid div/0
+
+    avgX = sumX / static_cast<double>(count);
+    avgY = sumY / static_cast<double>(count);
+    avgZ = sumZ / static_cast<double>(count);
+    QVector3D avg(avgX, avgY, avgZ);
 
     maxX = std::numeric_limits<double>::lowest();
     maxY = std::numeric_limits<double>::lowest();
     maxZ = std::numeric_limits<double>::lowest();
 
-    // Calculate average x and y
-    avgX = sumX / count;
-    avgY = sumY / count;
-    avgZ = sumZ / count;
-    QVector3D avg = QVector3D(avgX, avgY, avgZ);
     for (size_t i = 0; i < x.size(); ++i) {
         for (size_t j = 0; j < x[i].size(); ++j) {
-            spherePositions.push_back(QVector3D(x[i][j], y[i][j], z[i][j]) - avg);
+            QVector3D pos(x[i][j], y[i][j], z[i][j]);
+            spherePositions.push_back(pos - avg);
             sphereRadii.push_back(radius[i][j]);
-            axonColors.push_back(colors[i]);
+            axonColors.push_back(colors[i]);  // color per bundle
 
-            initialspherePositions.push_back(QVector3D(x[i][j], y[i][j], z[i][j]) - avg);
+            initialspherePositions.push_back(pos - avg);
             initialsphereRadii.push_back(radius[i][j]);
             initialaxonColors.push_back(colors[i]);
+
             maxX = std::max(maxX, x[i][j]);
             maxY = std::max(maxY, y[i][j]);
             maxZ = std::max(maxZ, z[i][j]);
-
         }
     }
 
-    avgX = 0;
-    avgY = 0;
-    avgZ = 0;
+    // Reset transforms/camera
     SphererotationX = 0.0f;
     SphererotationY = 0.0f;
+    cameraPosition = QVector3D(maxX, maxY, maxZ + 50.0f);
 
-    cameraPosition = QVector3D(maxX, maxY, maxZ+ 50.0f);
     update();
-
 }
 
 void OpenGLWindow::resetCamera(){
@@ -268,20 +329,19 @@ void OpenGLWindow::wheelEvent(QWheelEvent *event)
 }
 
 
-// Generate random colors
-void OpenGLWindow::generateRandomColors(int count, std::vector<QColor> &colors) {
-    // Seed the random number generator with current time
-    std::mt19937 rng(static_cast<unsigned int>(std::time(nullptr)));
+void OpenGLWindow::generateRandomColors(int count, std::vector<QColor>& colors) {
+    // Use a static RNG so successive calls don't reseed to the same sequence
+    static thread_local std::mt19937 rng(std::random_device{}());
 
-    // Distribution for RGB values (0 to 255)
-    std::uniform_int_distribution<int> dist(0, 255);
+    // Ensure we overwrite exactly 'count' entries
+    colors.clear();
+    colors.reserve(count);
 
-    // Generate random colors
+    // Avoid too-dark shades; force full alpha
+    std::uniform_int_distribution<int> dist(32, 255); // min 32 to dodge near-black
+
     for (int i = 0; i < count; ++i) {
-        int red = dist(rng);
-        int green = dist(rng);
-        int blue = dist(rng);
-        colors.push_back(QColor(red, green, blue));
+        colors.emplace_back(dist(rng), dist(rng), dist(rng), 255);
     }
 }
 

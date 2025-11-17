@@ -1,4 +1,4 @@
-#include "Axon.h"
+#include "Blood_Vessel.h"
 #include "constants.h"
 #include "Eigen/Dense"
 #include <iostream>
@@ -8,20 +8,18 @@ using namespace Eigen;
 using namespace std;
 
 
-Axon::Axon()
-{}
+Blood_Vessel::Blood_Vessel(){}
 
-Axon::~Axon()
+Blood_Vessel::~Blood_Vessel()
 {
-    inner_spheres.clear();
-    outer_spheres.clear();
+    spheres.clear();
     Box.clear();
 }
 
 
-void Axon::keep_one_sphere(){
-    Sphere s (this->outer_spheres[0]);
-    outer_spheres.clear();
+void Blood_Vessel::keep_one_sphere(){
+    Sphere s (this->spheres[0]);
+    spheres.clear();
     Box.clear();
     add_sphere(s);
     growth_attempts += 1;
@@ -29,17 +27,24 @@ void Axon::keep_one_sphere(){
 
 }
 
-void Axon::destroy(){
-    outer_spheres.clear();
+void Blood_Vessel::destroy(){
+    spheres.clear();
     Box.clear();
     growth_attempts = 0;
 
 }
 
-void Axon::updateBox(){
+void Blood_Vessel::add_first_sphere(const Sphere &s){
+
+    this->spheres.clear();
+    this->spheres.push_back(s);
+    updateBox();
+}
+
+void Blood_Vessel::updateBox(){
     Box.clear();
-    for (int i = 0; i < outer_spheres.size(); i++){
-        Sphere s = outer_spheres[i];
+    for (int i = 0; i < spheres.size(); i++){
+        Sphere s = spheres[i];
         double sph_highest_x_val = s.center[0]+ s.radius;
         double sph_lowest_x_val = s.center[0] -s.radius;
         double sph_highest_y_val = s.center[1] +s.radius;
@@ -73,8 +78,9 @@ void Axon::updateBox(){
             }
         }
     }
-} 
-void Axon::add_sphere(const Sphere &sphere_to_add){
+}
+
+void Blood_Vessel::add_sphere(const Sphere &sphere_to_add){
 
     // value of center of sphere at x that has the highest x center value
     double sph_highest_x_val;
@@ -90,11 +96,11 @@ void Axon::add_sphere(const Sphere &sphere_to_add){
     double sph_lowest_z_val;
 
     // add sphere to list of spheres
-    this->outer_spheres.push_back(sphere_to_add);
+    this->spheres.push_back(sphere_to_add);
 
 
     // if there is only one sphere in list
-    if (this->outer_spheres.size() == 1){
+    if (this->spheres.size() == 1){
         // create box around that one sphere
         sph_highest_x_val = sphere_to_add.center[0]+ sphere_to_add.radius;
         sph_lowest_x_val = sphere_to_add.center[0] -sphere_to_add.radius;
@@ -112,9 +118,6 @@ void Axon::add_sphere(const Sphere &sphere_to_add){
         Box.push_back({sph_lowest_z_val, sph_highest_z_val});
 
         this->begin = sphere_to_add.center;
-
-        double maxVal = begin.cwiseAbs().minCoeff(&this->growth_axis);
-
     }
     else{
 
@@ -157,11 +160,10 @@ void Axon::add_sphere(const Sphere &sphere_to_add){
     }
 }
 
- 
 
-bool Axon::isNearAxon(const Eigen::Vector3d &position, const double &distance_to_be_inside) const{
+bool Blood_Vessel::isNearBlood_Vessel(const Eigen::Vector3d &position, const double &distance_to_be_inside) const{
 
-    if (outer_spheres.size()==0){
+    if (spheres.size()==0){
         return false;
     }
     else{
@@ -172,19 +174,22 @@ bool Axon::isNearAxon(const Eigen::Vector3d &position, const double &distance_to
     return false;
 }
 
-std::vector<int> Axon::checkAxisForCollision(const Sphere &sph, const int &axis) const{
+
+
+
+std::vector<int> Blood_Vessel::checkAxisForCollision(const Sphere &sph, const int &axis) const{
 
 	std::vector<int> spheres_id_to_check;
-	for (auto i = 0; i < outer_spheres.size(); ++i) {
+	for (auto i = 0; i < spheres.size(); ++i) {
 
-            double min_i = outer_spheres[i].center[axis] - outer_spheres[i].radius - barrier_tickness;
+            double min_i = spheres[i].center[axis] - spheres[i].radius - barrier_tickness;
             double max_j = sph.center[axis] + sph.radius + barrier_tickness;
 
 			if (min_i> max_j) {
 				continue;
 			}
 			else {
-				double max_i = outer_spheres[i].center[axis] + outer_spheres[i].radius;
+				double max_i = spheres[i].center[axis] + spheres[i].radius;
                 double min_j = sph.center[axis] - sph.radius;
                 if (min_j> max_i) {
                     continue;
@@ -198,39 +203,13 @@ std::vector<int> Axon::checkAxisForCollision(const Sphere &sph, const int &axis)
     return spheres_id_to_check;
 }
 
-std::vector<int> Axon::checkAxisForInnerCollision(const Sphere &sph, const int &axis) const{
+bool Blood_Vessel::isSphereInsideBlood_Vessel(const Sphere &sph) const{
 
-    if (inner_spheres.size() == 0){
-        return {};
+    if (sph.object_type == 3 && sph.object_id == id){
+        return false;
     }
-
-	std::vector<int> spheres_id_to_check;
-	for (auto i = 0; i < inner_spheres.size(); ++i) {
-
-            double min_i = inner_spheres[i].center[axis] - inner_spheres[i].radius - barrier_tickness;
-            double max_j = sph.center[axis] + sph.radius + barrier_tickness;
-
-			if (min_i> max_j) {
-				continue;
-			}
-			else {
-				double max_i = inner_spheres[i].center[axis] + inner_spheres[i].radius;
-                double min_j = sph.center[axis] - sph.radius;
-                if (min_j> max_i) {
-                    continue;
-                }
-                else{
-                    spheres_id_to_check.push_back(i);
-                }
-			}
-	}
-
-    return spheres_id_to_check;
-}
-
-bool Axon::isSphereInsideAxon(const Sphere &sph) const{
-
-    if (isNearAxon(sph.center, 2*sph.radius + barrier_tickness)){ // if near axon
+    
+    if (isNearBlood_Vessel(sph.center, 2*sph.radius + barrier_tickness)){ // if near axon
         if(!(sph.object_type == 0 && sph.object_id == id)){ 
             std::vector<std::vector<int>> spheres_id_to_check;
             for (auto axis = 0; axis < 3; ++axis) {
@@ -242,7 +221,7 @@ bool Axon::isSphereInsideAxon(const Sphere &sph) const{
             // find common ids in all 3 axes
             auto spheres_to_check_all_axes = Obstacle::findCommonIntegers(spheres_id_to_check[0], spheres_id_to_check[1], spheres_id_to_check[2]);
             for (auto i = 0; i < spheres_to_check_all_axes.size(); ++i) {
-                Sphere sphere_to_check = outer_spheres[spheres_to_check_all_axes[i]];
+                Sphere sphere_to_check = spheres[spheres_to_check_all_axes[i]];
                 if (sph.minDistance(sphere_to_check.center) < sphere_to_check.radius){
                     return true;
                 }
@@ -257,40 +236,12 @@ bool Axon::isSphereInsideAxon(const Sphere &sph) const{
 
 
 
-bool Axon::isSphereInsideInnerAxon(const Sphere &sph) const{
-
-    if (isNearAxon(sph.center, 2*sph.radius + barrier_tickness)){ // if near axon
-        if(!(sph.object_type == 0 && sph.object_id == id)){ 
-            std::vector<std::vector<int>> spheres_id_to_check;
-            for (auto axis = 0; axis < 3; ++axis) {
-                spheres_id_to_check.push_back(checkAxisForInnerCollision(sph, axis)); // check for collision along 1 axis
-                if (spheres_id_to_check[axis].size() == 0){
-                    return false;
-                }
-            }
-            // find common ids in all 3 axes
-            auto spheres_to_check_all_axes = Obstacle::findCommonIntegers(spheres_id_to_check[0], spheres_id_to_check[1], spheres_id_to_check[2]);
-            for (auto i = 0; i < spheres_to_check_all_axes.size(); ++i) {
-                Sphere sphere_to_check = inner_spheres[spheres_to_check_all_axes[i]];
-                if (sph.minDistance(sphere_to_check.center) < sphere_to_check.radius){
-                    return true;
-                }
-            }
-            spheres_id_to_check.clear();
-            spheres_to_check_all_axes.clear();
-        }
-    }
-
-    return false;
-}
-
-
-void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits){
+void Blood_Vessel::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits){
     double new_volume = 0.0;
 
-    for (size_t i = 1; i < outer_spheres.size(); ++i) {
-        const Sphere &last_sphere = outer_spheres[i - 1];
-        const Sphere &current_sphere = outer_spheres[i];
+    for (size_t i = 1; i < spheres.size(); ++i) {
+        const Sphere &last_sphere = spheres[i - 1];
+        const Sphere &current_sphere = spheres[i];
 
         double distance = (current_sphere.center - last_sphere.center).norm();
 
@@ -313,53 +264,3 @@ void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, c
 
     volume = new_volume;
 }
-
-
-/*
-double sphereVolume(double radius) {
-    return (4.0 / 3.0) * M_PI * std::pow(radius, 3);
-}
-
-double overlapVolume(double r1, double r2, double d) {
-    if (d >= r1 + r2) return 0.0; // No overlap
-
-    double part1 = (r1 + r2 - d) * (r1 + r2 - d);
-    double part2 = d * d + 2 * d * (r1 + r2) - 3 * (r1 - r2) * (r1 - r2);
-    return (M_PI * part1 * part2) / (12.0 * d);
-}
-
-void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits) {
-    double new_volume = 0.0;
-
-    if (outer_spheres.empty())
-        return;
-
-    for (size_t i = 0; i < outer_spheres.size(); ++i) {
-        const Sphere &current_sphere = outer_spheres[i];
-
-        bool current_in_bounds = check_borders(min_limits, max_limits, current_sphere.center, barrier_tickness);
-
-        if (!current_in_bounds) {
-            continue; // Skip this sphere if it's out of bounds
-        }
-        
-        // Always add volume of current sphere
-        new_volume += sphereVolume(current_sphere.radius);
-
-        // If not the first, subtract overlapping volume with previous sphere (if both in bounds)
-        if (i > 0) {
-            const Sphere &prev_sphere = outer_spheres[i - 1];
-
-            bool prev_in_bounds = check_borders(min_limits, max_limits, prev_sphere.center, barrier_tickness);
-
-            if (current_in_bounds && prev_in_bounds) {
-                double d = (current_sphere.center - prev_sphere.center).norm();
-                double ov = overlapVolume(current_sphere.radius, prev_sphere.radius, d);
-                new_volume -= ov;
-            }
-        }
-    }
-
-    volume = new_volume;
-}
-*/

@@ -35,6 +35,7 @@ public:
 
     double axons_wo_myelin_icvf = 0.2;
     double axons_w_myelin_icvf = 0.1;
+    double blood_vessels_icvf = 0.0;
     bool tortuous = true;
     double alpha = 4.0;
     double beta = 0.25;
@@ -44,6 +45,7 @@ public:
     int ondulation_factor = 5;
     double beading_period = 10;           /*!< Frequency for the beading  */
     double beading_variation = 0.0;
+    double beading_variation_std = 0.0;
     bool can_shrink = true;
     double cosPhiSquared= 1.0;
     int nbr_threads = 1;

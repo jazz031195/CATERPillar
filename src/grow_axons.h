@@ -1,21 +1,21 @@
-#ifndef AXONGROWTH_H
-#define AXONGROWTH_H
+    #ifndef AXONGROWTH_H
+    #define AXONGROWTH_H
 
-#include <vector>
-#include <Eigen/Dense>
-#include "Axon.h"
-#include "Glial.h"
-#include "grow_cells.h"
-#include "sphere.h"
-#include "threads.h"
+    #include <vector>
+    #include <Eigen/Dense>
+    #include "Axon.h"
+    #include "Glial.h"
+    #include "grow_cells.h"
+    #include "sphere.h"
+    #include "threads.h"
 
-/**
- * @brief Handles the logic for axon growth including sphere placement and 
- *        optional myelination logic. Inherits from CellGrowth.
- */
-class AxonGrowth : public CellGrowth
-{
-public:
+    /**
+     * @brief Handles the logic for axon growth including sphere placement and 
+     *        optional myelination logic. Inherits from CellGrowth.
+     */
+    class AxonGrowth : public CellGrowth
+    {
+    public:
     Axon& axon_to_grow; 
 
     AxonGrowth() = delete;
@@ -24,6 +24,7 @@ public:
                const std::vector<Glial>* glial_pop1,
                const std::vector<Glial>* glial_pop2,
                const std::vector<Axon>* axons_,
+               const std::vector<Blood_Vessel>* blood_vessels_,
                const Eigen::Vector3d& extended_min_limits_,
                const Eigen::Vector3d& extended_max_limits_,
                const Eigen::Vector3d& min_limits_,

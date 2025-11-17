@@ -35,19 +35,18 @@ public:
     void ShowAllCells();
     bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
 
-
-    
 private slots:
     void onSaveButtonClicked();
     void onSelectDirectoryButtonClicked(); // Slot for selecting a directory
     void SelectSWCFileButton();
-    void PlotCells(const bool& axons_plot, const bool& glial_pop1_plot, const bool& glial_pop2_plot);
+    void PlotCells(const bool& axons_plot, const bool& glial_pop1_plot, const bool& glial_pop2_plot, const bool& blood_vessels_plot);
     void ReadGlialCellsFromSWC(const QString& filePath);
     void ReadAxonsFromSWC(const QString& filePath);
     void ReadAxonsFromCSV(const QString& fileName);
     void ReadAxonsFromFile(const QString& fileName);
     void ReadGlialCellsFromFile(const QString& fileName);
     void ReadGlialCellsFromCSV(const QString& fileName);
+    void ReadBloodVesselsFromFile(const QString& fileName);
 
 private:
     QGroupBox* createControls(const QString &title);
@@ -72,6 +71,7 @@ private:
     QLabel *glial_pop1_processes_icvf_qlabel;
     QLabel *glial_pop2_soma_icvf_qlabel;
     QLabel *glial_pop2_processes_icvf_qlabel;
+    QLabel *blood_vessels_icvf_qlabel;
     QLabel *voxel_size_qlabel;
     QLabel *minimum_radius_qlabel;
     QLabel *nbr_threads_qlabel;
@@ -108,6 +108,7 @@ private:
     QDoubleSpinBox *glial_pop1_processes_icvf_SpinBox;
     QDoubleSpinBox *glial_pop2_soma_icvf_SpinBox;
     QDoubleSpinBox *glial_pop2_processes_icvf_SpinBox;
+    QDoubleSpinBox *blood_vessels_icvf_SpinBox;
     QDoubleSpinBox *voxel_size_SpinBox;
     QDoubleSpinBox *minimum_radius_SpinBox;
     QDoubleSpinBox *nbr_threads_SpinBox;
@@ -160,6 +161,7 @@ private:
     int glial_pop1_processes_icvf;
     int glial_pop2_soma_icvf;
     int glial_pop2_processes_icvf;
+    int blood_vessels_icvf;
     int voxel_size;
     double minimum_radius;
     int nbr_threads;
@@ -215,6 +217,11 @@ private:
     std::vector<std::vector<double>> Z_glial_pop2;
     std::vector<std::vector<double>> R_glial_pop2;
     std::vector<std::vector<int>> Branch_glial_pop2;
+
+    std::vector<std::vector<double>> X_blood_vessels;
+    std::vector<std::vector<double>> Y_blood_vessels;
+    std::vector<std::vector<double>> Z_blood_vessels;
+    std::vector<std::vector<double>> R_blood_vessels;
 
 
     // Member for the 3D scatter plot and modifier

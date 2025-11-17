@@ -9,7 +9,10 @@
 #ifndef OBSTACLE_H
 #define OBSTACLE_H
 
+#include "Eigen/Dense"
+#include <vector>
 #include "Eigen/Core"
+
 class Obstacle
 {
 public:
@@ -23,7 +26,9 @@ public:
      *  \brief Default constructor. Does nothing.
      */
     Obstacle();
-
+    static std::vector<int> findCommonIntegers(const std::vector<int>& vec1, const std::vector<int>& vec2, const std::vector<int>& vec3);
+    static bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
+    static bool check_position_is_in_Box(Eigen::Vector3d position, std::vector<Eigen::Vector2d> Box, double buffer_distance);
 
 
 };

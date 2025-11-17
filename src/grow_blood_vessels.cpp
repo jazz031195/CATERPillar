@@ -1,5 +1,5 @@
 #include "axongammadistribution.h"
-#include "grow_axons.h"
+#include "grow_blood_vessels.h"
 #include <algorithm> // std::sort
 #include <random>
 #include <chrono>
@@ -13,9 +13,9 @@ using namespace Eigen;
 using namespace std::chrono;
 
 
-AxonGrowth::~AxonGrowth() {}
+BloodVesselGrowth::~BloodVesselGrowth() {}
 
-AxonGrowth::AxonGrowth(Axon &axon_to_grow_,
+BloodVesselGrowth::BloodVesselGrowth(Blood_Vessel &bv_to_grow_,
                        const std::vector<Glial>* glial_pop1_,
                        const std::vector<Glial>* glial_pop2_,
                        const std::vector<Axon>* axons_,
@@ -30,16 +30,16 @@ AxonGrowth::AxonGrowth(Axon &axon_to_grow_,
                  extended_min_limits_, extended_max_limits_,
                  min_limits_, max_limits_,
                  std_dev_, min_radius_),
-      axon_to_grow(axon_to_grow_)
+      bv_to_grow(bv_to_grow_)
 {}
 
-AxonGrowth::AxonGrowth(const AxonGrowth &other)
+BloodVesselGrowth::BloodVesselGrowth(const BloodVesselGrowth &other)
     : CellGrowth(other), // call base copy constructor
-      axon_to_grow(other.axon_to_grow) {}
+      bv_to_grow(other.bv_to_grow) {}
 
 
 
-Eigen::Vector3d AxonGrowth::find_next_center_straight(const double distance, const std::vector<Sphere> &spheres)
+Eigen::Vector3d BloodVesselGrowth::find_next_center_straight(const double distance, const std::vector<Sphere> &spheres)
 {
     if (spheres.size() < 2){
         assert(0);
@@ -53,28 +53,28 @@ Eigen::Vector3d AxonGrowth::find_next_center_straight(const double distance, con
 }
 
 
-bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_straight, const int &factor)
+
+bool BloodVesselGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_straight, const int &factor)
 {
 
     // Basic validation
-    if (axon_to_grow.outer_spheres.empty()) {
+    if (bv_to_grow.spheres.empty()) {
         std::cerr << "EMPTY AXON!" << std::endl;
         assert(false); // or return false;
     }
 
-    if (axon_to_grow.outer_spheres.size() > (max_limits-min_limits).norm()*factor/(axon_to_grow.radius)*100) {
+    if (bv_to_grow.spheres.size() > (max_limits-min_limits).norm()*factor/(bv_to_grow.radius)*100) {
         finished = true;
         return false; // Axon has grown too long
     }
 
-    assert(axon_to_grow.growth_axis >= 0 && axon_to_grow.growth_axis < 3);
+    assert(bv_to_grow.growth_axis >= 0 && bv_to_grow.growth_axis < 3);
     
-    bool is_allowed_to_stop_early = axon_to_grow.outside_voxel;
-    
+    bool is_allowed_to_stop_early = false;
 
     // If the last sphere's center is beyond extended_max_limits, the axon is considered fully grown
-    Sphere last_sphere = axon_to_grow.outer_spheres.back();
-    if (last_sphere.center[axon_to_grow.growth_axis] >= extended_max_limits[axon_to_grow.growth_axis] && !is_allowed_to_stop_early) {
+    Sphere last_sphere = bv_to_grow.spheres.back();
+    if (last_sphere.center[bv_to_grow.growth_axis] >= extended_max_limits[bv_to_grow.growth_axis] && !is_allowed_to_stop_early) {
         finished = true;
 
         return true; // Axon is done
@@ -87,20 +87,16 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
 
     // Prepare
     double max_radius_ = std::max(radius_, last_sphere.radius);
-    if (axon_to_grow.myelin_sheath && axon_to_grow.inner_radius < max_radius_) {
-        max_radius_ = axon_to_grow.inner_radius;
-    }
+
     double distance = max_radius_;
     int threshold_tries = (std_dev == 0.0) ? 1 : 100; // tries 100 times to place sphere
 
     // New sphere to attempt placing
-    Sphere s(axon_to_grow.outer_spheres.size() + factor,
-             axon_to_grow.id,
-             /*object_type=*/0,
-             axon_to_grow.begin,
+    Sphere s(bv_to_grow.spheres.size() + factor,
+             bv_to_grow.id,
+             /*object_type=*/3,
+             bv_to_grow.begin,
              radius_);
-
-
 
     bool can_grow_ = false;
     int tries = 0;
@@ -112,13 +108,13 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         if (std_dev != 0.0) {
             // If grow_straight is set, use the straight function, else the normal function
             if (grow_straight == 1) {
-                candidate.center= find_next_center_straight(distance, axon_to_grow.outer_spheres);
+                candidate.center= find_next_center_straight(distance, bv_to_grow.spheres);
             } else {
-                candidate.center= find_next_center(distance, axon_to_grow.outer_spheres, axon_to_grow.end);
+                candidate.center= find_next_center(distance, bv_to_grow.spheres, bv_to_grow.end);
             }
         } else {
             // If std_dev == 0, we skip the "straight vs. random" logic and always use find_next_center
-            candidate.center= find_next_center(distance, axon_to_grow.outer_spheres, axon_to_grow.end);
+            candidate.center= find_next_center(distance, bv_to_grow.spheres, bv_to_grow.end);
         }
 
         // 2) Check if inside
@@ -143,7 +139,7 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
             with_push = true;
         }
         */
-        //cout <<"axon : "<< axon_to_grow.id <<" with push : " << with_push << endl;
+        //cout <<"axon : "<< bv_to_grow.id <<" with push : " << with_push << endl;
         // Attempt the main placement
         bool success = attemptPlacement(s, tries);
         if (success) {
@@ -159,7 +155,7 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
                 break;
             }
         }
-        
+
         tries++;
     }
 
@@ -174,16 +170,16 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         s.parent_id = last_sphere.id;
         add_spheres(s, last_sphere, factor);
         // Update volume if within the stricter [min_limits, max_limits]
-        Sphere newly_added = axon_to_grow.outer_spheres.back(); // s with final coords
+        Sphere newly_added = bv_to_grow.spheres.back(); // s with final coords
         if (check_borders(min_limits, max_limits, newly_added.center, newly_added.radius)) {
-            axon_to_grow.update_Volume(factor, min_limits, max_limits);
+            bv_to_grow.update_Volume(factor, min_limits, max_limits);
         }
     }
 
     // If we reach the edge of voxel after adding the new sphere
-    Sphere current_last = axon_to_grow.outer_spheres.back();
+    Sphere current_last = bv_to_grow.spheres.back();
     
-    if (current_last.center[axon_to_grow.growth_axis] + current_last.radius > extended_max_limits[axon_to_grow.growth_axis]) {
+    if (current_last.center[bv_to_grow.growth_axis] + current_last.radius > extended_max_limits[bv_to_grow.growth_axis]) {
 
         finished = true;
     }
@@ -195,7 +191,7 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
 }
 
 
-void AxonGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const int &factor){
+void BloodVesselGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const int &factor){
     
     // nbr of spheres to add in between
     int nbr_spheres = factor - 1;
@@ -209,8 +205,8 @@ void AxonGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const int &
         int id_;
         for (int i = 0 ; i < nbr_spheres; i++){
             Eigen::Vector3d position = last_sphere.center + vector*distance_between_spheres*(i+1);
-            //double length_axon = axon_length(axon_to_grow);
-            //double rad = radius_variation(axon_to_grow, length_axon, factor, beading_period, min_radius);
+            //double length_axon = axon_length(bv_to_grow);
+            //double rad = radius_variation(bv_to_grow, length_axon, factor, beading_period, min_radius);
             double rad = last_sphere.radius + (sph.radius - last_sphere.radius)*(i+1)/(nbr_spheres+1);
             id_ = last_id+ 1;
             Sphere s(id_, sph.object_id, sph.object_type, position, rad, sph.branch_id, sph.parent_id);
@@ -218,26 +214,26 @@ void AxonGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const int &
             bool can_grow_ = canSpherebePlaced(s);
             if(can_grow_){
                 last_id = s.id;
-                axon_to_grow.add_sphere(s);
+                bv_to_grow.add_sphere(s);
                 //cout <<"sphere : " << s.id << " axon : "<< s.object_id << " can be placed as interpolated" << endl;
             }
         }
     }
     sph.id = last_id + 1;
-    axon_to_grow.add_sphere(sph);
+    bv_to_grow.add_sphere(sph);
     //cout <<"sphere : " << sph.id << " axon : "<< sph.object_id << " can be placed as last" << endl;
     
 }
 
 
-Eigen::Vector3d AxonGrowth::find_next_center(const double dist_, 
+Eigen::Vector3d BloodVesselGrowth::find_next_center(const double dist_, 
                                              const std::vector<Sphere> &spheres, 
                                              const Eigen::Vector3d &target)
 {
     Eigen::Vector3d last_center = spheres.back().center;
     Eigen::Vector3d target_direction = (target - last_center).normalized();
 
-    Eigen::Vector3d additional_vector = (axon_to_grow.end - axon_to_grow.begin).normalized() * 10.0;
+    Eigen::Vector3d additional_vector = (bv_to_grow.end - bv_to_grow.begin).normalized() * 10.0;
 
     if ((target - last_center).norm() < 10) {
         target_direction = (target + additional_vector - last_center).normalized();
@@ -280,22 +276,22 @@ Eigen::Vector3d AxonGrowth::find_next_center(const double dist_,
     return last_center + dist_ * biased_random_vector;
 }
 
-double AxonGrowth::RandomradiusVariation() 
+double BloodVesselGrowth::RandomradiusVariation() 
 { 
-    double prev_radius = axon_to_grow.outer_spheres[axon_to_grow.outer_spheres.size()-1].radius; 
+    double prev_radius = bv_to_grow.spheres[bv_to_grow.spheres.size()-1].radius; 
 
     double prev_radius_clamped = prev_radius;
 
-    if (prev_radius_clamped < axon_to_grow.radius-axon_to_grow.beading_amplitude*axon_to_grow.radius) 
+    if (prev_radius_clamped < bv_to_grow.radius-bv_to_grow.beading_amplitude*bv_to_grow.radius) 
     { 
-        prev_radius_clamped = axon_to_grow.radius-axon_to_grow.beading_amplitude*axon_to_grow.radius; 
+        prev_radius_clamped = bv_to_grow.radius-bv_to_grow.beading_amplitude*bv_to_grow.radius; 
     } 
-    else if (prev_radius_clamped > axon_to_grow.radius+axon_to_grow.beading_amplitude*axon_to_grow.radius) 
+    else if (prev_radius_clamped > bv_to_grow.radius+bv_to_grow.beading_amplitude*bv_to_grow.radius) 
     { 
-        prev_radius_clamped = axon_to_grow.radius+axon_to_grow.beading_amplitude*axon_to_grow.radius; 
+        prev_radius_clamped = bv_to_grow.radius+bv_to_grow.beading_amplitude*bv_to_grow.radius; 
     } 
 
-    double standard_deviation = axon_to_grow.radius * axon_to_grow.beading_std; 
+    double standard_deviation = bv_to_grow.radius * bv_to_grow.beading_std; 
 
     std::normal_distribution<double> dis(prev_radius_clamped, standard_deviation); 
 
@@ -312,7 +308,7 @@ double AxonGrowth::RandomradiusVariation()
     return random_radius; 
 }
 
-bool AxonGrowth::shrinkRadius(const double &radius_to_shrink, const bool& axon_can_shrink, const int &factor)
+bool BloodVesselGrowth::shrinkRadius(const double &radius_to_shrink, const bool& bv_can_shrink, const int &factor)
 {
 
     bool can_grow_;
@@ -323,7 +319,7 @@ bool AxonGrowth::shrinkRadius(const double &radius_to_shrink, const bool& axon_c
     bool can_grow_min_rad = AddOneSphere(min_radius, false, 0, factor);
     double intervals = (initial_rad) / 10;
 
-    if(!axon_can_shrink){
+    if(!bv_can_shrink){
         return false;
     }
     if (!can_grow_min_rad)
@@ -349,7 +345,7 @@ bool AxonGrowth::shrinkRadius(const double &radius_to_shrink, const bool& axon_c
     }
 }
 
-void AxonGrowth::update_straight(bool can_grow_, int &grow_straight, int &straight_growths)
+void BloodVesselGrowth::update_straight(bool can_grow_, int &grow_straight, int &straight_growths)
 {
 
     if (can_grow_)
@@ -357,7 +353,7 @@ void AxonGrowth::update_straight(bool can_grow_, int &grow_straight, int &straig
 
         if (grow_straight == 1)
         {
-            if (straight_growths >= axon_to_grow.undulation_factor) // if axon has been growing straight for a number of spheres in a row
+            if (straight_growths >= bv_to_grow.undulation_factor) // if axon has been growing straight for a number of spheres in a row
             {
                 grow_straight = 0; // set to false so that next step doesn't go straight
                 straight_growths = 0;
@@ -383,16 +379,16 @@ void AxonGrowth::update_straight(bool can_grow_, int &grow_straight, int &straig
     }
 }
 
-void AxonGrowth::growthThread(
+void BloodVesselGrowth::growthThread(
     double& stuck_radius,
     int& stuck_index,
     int factor,
-    bool axon_can_shrink
+    bool bv_can_shrink
 ) {
     auto set_stuck = [&](bool done) {
         finished = done ? true : false;                  // explicit member
-        stuck_radius   = done ? axon_to_grow.radius : -1.0;
-        stuck_index    = done ? axon_to_grow.id     : -1;
+        stuck_radius   = done ? bv_to_grow.radius : -1.0;
+        stuck_index    = done ? bv_to_grow.id     : -1;
     };
     int  grow_straight     = 0;
     int  straight_growths  = 0;
@@ -405,8 +401,8 @@ void AxonGrowth::growthThread(
         ++tries;
 
         // Radius beading
-        double varied_radius = axon_to_grow.radius;
-        if (axon_to_grow.beading_amplitude > 0) {
+        double varied_radius = bv_to_grow.radius;
+        if (bv_to_grow.beading_amplitude > 0) {
             varied_radius = RandomradiusVariation();
         }
 
@@ -428,8 +424,8 @@ void AxonGrowth::growthThread(
         }
 
         // Could not grow: try shrinking if allowed
-        if (axon_can_shrink) {
-            const bool shrank_and_grew = shrinkRadius(varied_radius, axon_can_shrink, factor);
+        if (bv_can_shrink) {
+            const bool shrank_and_grew = shrinkRadius(varied_radius, bv_can_shrink, factor);
             if (shrank_and_grew) {
                 set_stuck(false);
                 update_straight(true, grow_straight, straight_growths);
@@ -439,11 +435,11 @@ void AxonGrowth::growthThread(
         }
 
         // No shrink or shrink failed → retry a few times, then give up
-        if (axon_to_grow.growth_attempts < total_nbr_growth_attempts) {
-            axon_to_grow.keep_one_sphere();  // retry from same position
+        if (bv_to_grow.growth_attempts < total_nbr_growth_attempts) {
+            bv_to_grow.keep_one_sphere();  // retry from same position
             set_stuck(false);
         } else {
-            axon_to_grow.destroy();
+            bv_to_grow.destroy();
             set_stuck(true);
             break;
         }
@@ -453,14 +449,14 @@ void AxonGrowth::growthThread(
 
     if (tries >= max_tries && !finished) {
         // safety stop
-        axon_to_grow.destroy();
+        bv_to_grow.destroy();
         set_stuck(true);
     }
 
-    if (finished && !axon_to_grow.outer_spheres.empty()) {
-        if (axon_to_grow.outer_spheres.size() < 10) {
+    if (finished && !bv_to_grow.spheres.empty()) {
+        if (bv_to_grow.spheres.size() < 10) {
 
-            axon_to_grow.destroy();
+            bv_to_grow.destroy();
             set_stuck(true);
         }
     }

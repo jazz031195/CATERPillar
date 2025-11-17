@@ -6,6 +6,7 @@
 #include "Axon.h"
 #include "Glial.h"
 #include "sphere.h"
+#include "Blood_Vessel.h"
 #include "threads.h"
 #include <random>
 
@@ -21,7 +22,7 @@ public:
     CellGrowth(const CellGrowth& other);
     void update_environment(const std::vector<Axon>* axons_,
                                 const std::vector<Glial>* glial_pop1_,
-                                const std::vector<Glial>* glial_pop2_) noexcept;
+                                const std::vector<Glial>* glial_pop2_, const std::vector<Blood_Vessel>* blood_vessel_) noexcept;
     bool check_borders(const Eigen::Vector3d& min_l, const Eigen::Vector3d& max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
     double clamp(double value, double lower, double upper);
     Eigen::Vector3d generate_random_point_on_sphere(double std);
@@ -29,6 +30,7 @@ public:
     Eigen::Vector3d apply_bias_toward_target(const Eigen::Vector3d& point, const Eigen::Vector3d& target);
     bool canSpherebePlaced(Sphere& sph);
     bool checkAxonsOverlap(Sphere &sph);
+    bool checkBloodVesselOverlap(Sphere &sph);
     const std::vector<Axon>& AX() const;
     const std::vector<Axon>* AXptr() const;
 
@@ -39,6 +41,7 @@ protected:
     const std::vector<Glial>* glial_pop1;
     const std::vector<Glial>* glial_pop2;
     const std::vector<Axon>* axons;  
+    const std::vector<Blood_Vessel>* blood_vessels;
 
     Eigen::Vector3d min_limits;
     Eigen::Vector3d max_limits;
@@ -54,6 +57,7 @@ protected:
     CellGrowth(const std::vector<Axon>* axons_,
                const std::vector<Glial>* glial_pop1_,
                const std::vector<Glial>* glial_pop2_,
+               const std::vector<Blood_Vessel>* blood_vessels_,
                const Eigen::Vector3d& extended_min_limits_,
                const Eigen::Vector3d& extended_max_limits_,
                const Eigen::Vector3d& min_limits_,
@@ -70,7 +74,7 @@ protected:
           finished(false),
           axons(axons_),
           glial_pop1(glial_pop1_),
-          glial_pop2(glial_pop2_) {
+          glial_pop2(glial_pop2_), blood_vessels(blood_vessels_) {
         std::random_device rd;
         gen.seed(rd());
     }

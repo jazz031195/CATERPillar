@@ -95,92 +95,52 @@ void Window::SelectSWCFileButton() {
         qDebug() << "Selected CSV or SWC file:" << SWCFile;
         ReadAxonsFromFile(SWCFile);       // Load axons
         ReadGlialCellsFromFile(SWCFile);  // Load glial cells
-        PlotCells(true, true, true);              // Visualize
+        ReadBloodVesselsFromFile(SWCFile); // Load blood vessels
+        PlotCells(true, true, true, true);              // Visualize
     }
 }
-
-void Window::PlotCells(const bool& axons_plot, const bool& glial_pop1_plot, const bool& glial_pop2_plot) {
-    // Plotting cells
-    //QtDataVisualization::Q3DScatter *graph = new QtDataVisualization::Q3DScatter();
+void Window::PlotCells(const bool& axons_plot,
+                       const bool& glial_pop1_plot,
+                       const bool& glial_pop2_plot,
+                       const bool& blood_vessels_plot)
+{
     OpenGLWindow *openglWindow = new OpenGLWindow();
-
-    // Ensure that the window title and size are set before displaying
     openglWindow->setTitle("3D Spheres Visualization");
     openglWindow->resize(800, 600);
 
-    std::vector<std::vector<double>> X = {};
-    std::vector<std::vector<double>> Y = {};
-    std::vector<std::vector<double>> Z = {};
-    std::vector<std::vector<double>> R = {};
+    std::vector<std::vector<double>> X, Y, Z, R;
+    std::vector<int> groupIds;  // one entry per bundle (i in setSpheres)
 
-    // Pass the spheres data to the OpenGL window and trigger an update
-    if (axons_plot && !glial_pop1_plot && !glial_pop2_plot){
-        X = X_axons;
-        Y = Y_axons;
-        Z = Z_axons;
-        R = R_axons;
+    if (axons_plot){
+        X.insert(X.end(), X_axons.begin(), X_axons.end());
+        Y.insert(Y.end(), Y_axons.begin(), Y_axons.end());
+        Z.insert(Z.end(), Z_axons.begin(), Z_axons.end());
+        R.insert(R.end(), R_axons.begin(), R_axons.end());
+        groupIds.insert(groupIds.end(), X_axons.size(), static_cast<int>(OpenGLWindow::SphereGroup::Axon));
     }
-    if (!axons_plot && glial_pop1_plot && !glial_pop2_plot){
-        X = X_glial_pop1;
-        Y = Y_glial_pop1;
-        Z = Z_glial_pop1;
-        R = R_glial_pop1;
-    }
-    if (!axons_plot && !glial_pop1_plot && glial_pop2_plot){
-        X = X_glial_pop2;
-        Y = Y_glial_pop2;
-        Z = Z_glial_pop2;
-        R = R_glial_pop2;
-    }
-    if (axons_plot && glial_pop1_plot && !glial_pop2_plot){
-        X = X_axons;
-        Y = Y_axons;
-        Z = Z_axons;
-        R = R_axons;
+    if (glial_pop1_plot){
         X.insert(X.end(), X_glial_pop1.begin(), X_glial_pop1.end());
         Y.insert(Y.end(), Y_glial_pop1.begin(), Y_glial_pop1.end());
         Z.insert(Z.end(), Z_glial_pop1.begin(), Z_glial_pop1.end());
         R.insert(R.end(), R_glial_pop1.begin(), R_glial_pop1.end());
+        groupIds.insert(groupIds.end(), X_glial_pop1.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial1));
     }
-    if (axons_plot && !glial_pop1_plot && glial_pop2_plot){
-        X = X_axons;
-        Y = Y_axons;
-        Z = Z_axons;
-        R = R_axons;
+    if (glial_pop2_plot){
         X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
         Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
         Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
         R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
+        groupIds.insert(groupIds.end(), X_glial_pop2.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial2));
     }
-    if (!axons_plot && glial_pop1_plot && glial_pop2_plot){
-        X = X_glial_pop1;
-        Y = Y_glial_pop1;
-        Z = Z_glial_pop1;
-        R = R_glial_pop1;
-        X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
-        Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
-        Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
-        R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
-    }
-    if (axons_plot && glial_pop1_plot && glial_pop2_plot){
-        X = X_axons;
-        Y = Y_axons;
-        Z = Z_axons;
-        R = R_axons;
-
-        X.insert(X.end(), X_glial_pop1.begin(), X_glial_pop1.end());
-        Y.insert(Y.end(), Y_glial_pop1.begin(), Y_glial_pop1.end());
-        Z.insert(Z.end(), Z_glial_pop1.begin(), Z_glial_pop1.end());
-        R.insert(R.end(), R_glial_pop1.begin(), R_glial_pop1.end());
-
-        X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
-        Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
-        Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
-        R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
+    if (blood_vessels_plot){
+        X.insert(X.end(), X_blood_vessels.begin(), X_blood_vessels.end());
+        Y.insert(Y.end(), Y_blood_vessels.begin(), Y_blood_vessels.end());
+        Z.insert(Z.end(), Z_blood_vessels.begin(), Z_blood_vessels.end());
+        R.insert(R.end(), R_blood_vessels.begin(), R_blood_vessels.end());
+        groupIds.insert(groupIds.end(), X_blood_vessels.size(), static_cast<int>(OpenGLWindow::SphereGroup::Blood));
     }
 
-
-    openglWindow->setSpheres(X, Y, Z, R);
+    openglWindow->setSpheres(X, Y, Z, R, groupIds);
 
     // This will ensure the window is updated with new data
     //openglWindow->update();
@@ -245,21 +205,33 @@ void Window::resetCamera(){
 
 void Window::ShowAllCells(){
 
+    std::vector<int> groupIds;  // one entry per bundle (i in setSpheres)
+
     std::vector<std::vector<double>> X = X_glial_pop1;
     std::vector<std::vector<double>> Y = Y_glial_pop1;
     std::vector<std::vector<double>> Z = Z_glial_pop1;
     std::vector<std::vector<double>> R = R_glial_pop1;
+    groupIds.insert(groupIds.end(), X_glial_pop1.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial1));
+
     X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
     Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
     Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
     R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
+    groupIds.insert(groupIds.end(), X_glial_pop2.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial2));
 
     X.insert(X.end(), X_axons.begin(), X_axons.end());
     Y.insert(Y.end(), Y_axons.begin(), Y_axons.end());
     Z.insert(Z.end(), Z_axons.begin(), Z_axons.end());
     R.insert(R.end(), R_axons.begin(), R_axons.end());
+    groupIds.insert(groupIds.end(), X_axons.size(), static_cast<int>(OpenGLWindow::SphereGroup::Axon));
 
-    openglWindow->setSpheres(X, Y, Z, R);
+    X.insert(X.end(), X_blood_vessels.begin(), X_blood_vessels.end());
+    Y.insert(Y.end(), Y_blood_vessels.begin(), Y_blood_vessels.end());
+    Z.insert(Z.end(), Z_blood_vessels.begin(), Z_blood_vessels.end());
+    R.insert(R.end(), R_blood_vessels.begin(), R_blood_vessels.end());
+    groupIds.insert(groupIds.end(), X_blood_vessels.size(), static_cast<int>(OpenGLWindow::SphereGroup::Blood));
+
+    openglWindow->setSpheres(X, Y, Z, R, groupIds);
 
     openglWindow->update();
 }
@@ -267,16 +239,21 @@ void Window::ShowAllCells(){
 
 void Window::HideAxons(){
 
+    std::vector<int> groupIds = {};
+
     std::vector<std::vector<double>> X = X_glial_pop1;
     std::vector<std::vector<double>> Y = Y_glial_pop1;
     std::vector<std::vector<double>> Z = Z_glial_pop1;
     std::vector<std::vector<double>> R = R_glial_pop1;
+    groupIds.insert(groupIds.end(), X_glial_pop1.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial1));
+
     X.insert(X.end(), X_glial_pop2.begin(), X_glial_pop2.end());
     Y.insert(Y.end(), Y_glial_pop2.begin(), Y_glial_pop2.end());
     Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
     R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
+    groupIds.insert(groupIds.end(), X_glial_pop2.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial2));
 
-    openglWindow->setSpheres(X, Y, Z, R);
+    openglWindow->setSpheres(X, Y, Z, R, groupIds);
 
     openglWindow->update();
 }
@@ -287,8 +264,10 @@ void Window::HideGlialCells(){
     std::vector<std::vector<double>> Y = Y_axons;
     std::vector<std::vector<double>> Z = Z_axons;
     std::vector<std::vector<double>> R = R_axons;
+    std::vector<int> groupIds;
+    groupIds.insert(groupIds.end(), X_axons.size(), static_cast<int>(OpenGLWindow::SphereGroup::Axon));
 
-    openglWindow->setSpheres(X, Y, Z, R);
+    openglWindow->setSpheres(X, Y, Z, R, groupIds);
 
     openglWindow->update();
 }
@@ -314,6 +293,7 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop1_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
     glial_pop2_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
     glial_pop2_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
+    blood_vessels_icvf_qlabel = new QLabel(tr("Blood Vessels ICVF (%):"));
     voxel_size_qlabel = new QLabel(tr("Voxel Edge Length (μm):"));
     minimum_radius_qlabel = new QLabel(tr("Minimum Sphere Radius (μm):"));
     nbr_threads_qlabel = new QLabel(tr("Number of Threads:"));
@@ -411,6 +391,10 @@ QGroupBox* Window::createControls(const QString &title)
     axons_w_myelin_icvf_SpinBox->setRange(0, 100);
     axons_w_myelin_icvf_SpinBox->setSingleStep(1);
 
+    blood_vessels_icvf_SpinBox = new QDoubleSpinBox;
+    blood_vessels_icvf_SpinBox->setRange(0, 100);
+    blood_vessels_icvf_SpinBox->setSingleStep(1);
+
     glial_pop1_soma_icvf_SpinBox = new QDoubleSpinBox;
     glial_pop1_soma_icvf_SpinBox->setRange(0, 100);
     glial_pop1_soma_icvf_SpinBox->setSingleStep(1);
@@ -506,8 +490,8 @@ QGroupBox* Window::createControls(const QString &title)
 
     QGridLayout *controlsLayout = new QGridLayout;
 
-    std::vector<QLabel*> general_labels = {voxel_size_qlabel, overlapping_factor_qlabel, minimum_radius_qlabel};
-    std::vector <QDoubleSpinBox*> general_spinBoxes = { voxel_size_SpinBox, overlapping_factor_SpinBox, minimum_radius_SpinBox};
+    std::vector<QLabel*> general_labels = {voxel_size_qlabel, overlapping_factor_qlabel, minimum_radius_qlabel, blood_vessels_icvf_qlabel};
+    std::vector <QDoubleSpinBox*> general_spinBoxes = { voxel_size_SpinBox, overlapping_factor_SpinBox, minimum_radius_SpinBox, blood_vessels_icvf_SpinBox};
     
     std::vector<QLabel*> axons_labels = {axons_w_myelin_icvf_qlabel, k1_qlabel, k2_qlabel, k3_qlabel, axons_icvf_qlabel ,nbr_threads_qlabel, epsilon_qlabel, c2_qlabel, nbr_axons_populations_qlabel, beading_amplitude_qlabel, beading_std_qlabel, alpha_qlabel, beta_qlabel};
     std::vector <QDoubleSpinBox*> axons_spinBoxes = {axons_w_myelin_icvf_SpinBox, k1_SpinBox, k2_SpinBox, k3_SpinBox, axons_icvf_SpinBox, nbr_threads_SpinBox, epsilon_SpinBox, c2_SpinBox, nbr_axons_populations_SpinBox, beading_amplitude_SpinBox, beading_std_SpinBox, alpha_SpinBox, beta_SpinBox};
@@ -630,6 +614,7 @@ void Window::onSaveButtonClicked()
     // Retrieve values from spin boxes and checkboxes
     axons_icvf = axons_icvf_SpinBox->value();
     axons_w_myelin_icvf = axons_w_myelin_icvf_SpinBox->value();
+    blood_vessels_icvf = blood_vessels_icvf_SpinBox->value();
     k1 = k1_SpinBox->value();
     k2 = k2_SpinBox->value();
     k3 = k3_SpinBox->value();
@@ -891,7 +876,7 @@ void Window::ReadGlialCellsFromCSV(const QString& fileName){
             return;
         }
 
-        if (type != "axon") {
+        if (type == "glial_cell") {
 
             if (id_cell != id_previous_cell) {
                 if (id_previous_cell != -1) {
@@ -977,7 +962,7 @@ void Window::ReadGlialCellsFromSWC(const QString& fileName){
             return;
         }
 
-        if (type != "axon") {
+        if (type == "Process" || type == "CellSoma" || type == "glial_cell") {
 
             if (id_cell != id_previous_cell) {
                 if (id_previous_cell != -1) {
@@ -1015,6 +1000,85 @@ void Window::ReadGlialCellsFromSWC(const QString& fileName){
     swcFile.close();
 }
 
+
+void Window::ReadBloodVesselsFromFile(const QString& fileName){
+
+    X_blood_vessels.clear();
+    Y_blood_vessels.clear();
+    Z_blood_vessels.clear();
+    R_blood_vessels.clear();
+
+    if (fileName.isEmpty()) {
+        return; // User canceled the file dialog
+    }
+
+
+    std::ifstream swcFile(fileName.toStdString());
+    if (!swcFile.is_open()) {
+        QMessageBox::warning(this, tr("Error"), tr("Could not open the SWC file."));
+        return;
+    }
+
+    std::vector<double> x_ = {};
+    std::vector<double> y_ = {};
+    std::vector<double> z_ = {};
+    std::vector<double> r_ = {};
+
+    std::string line;
+    while (std::getline(swcFile, line)) {
+        std::istringstream iss(line);
+        int id_branch;
+        double id_cell, id_sphere;
+        std::string type;
+        double x, y, z, radius_in, parent, radius_out;
+
+        //skip first line
+        if (line[0] == 'i'|| line[0] == 'a') {
+            continue;
+        }
+
+        if (!(iss >> id_cell >> id_sphere >> id_branch >> type >> x >> y >> z >> radius_in >> radius_out >> parent)) {
+            QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format for Axons."));
+            return;
+        }
+        
+        if (type == "blood_vessel") {
+            
+            if (id_sphere == 0) {
+                if (x_.size() > 0) {
+                    X_blood_vessels.push_back(x_);
+                    Y_blood_vessels.push_back(y_);
+                    Z_blood_vessels.push_back(z_);
+                    R_blood_vessels.push_back(r_);
+                }
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
+                x_.push_back(x);
+                y_.push_back(y);
+                z_.push_back(z);
+                r_.push_back(radius_out);
+            }
+            else {
+                x_.push_back(x);
+                y_.push_back(y);
+                z_.push_back(z);
+                r_.push_back(radius_out);
+            }
+        }
+    }
+    // Add the last axon
+    if (x_.size() > 0) {
+        X_blood_vessels.push_back(x_);
+        Y_blood_vessels.push_back(y_);
+        Z_blood_vessels.push_back(z_);
+        R_blood_vessels.push_back(r_);
+    }
+
+    swcFile.close();
+}
+
 // Function to check if a point is inside a dilated box
 bool Window::check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border) {
 
@@ -1044,6 +1108,7 @@ void Window::StartSimulation(){
     double glial_pop2_icvf_processes = glial_pop2_processes_icvf/100.0;
     double axons_wo_myelin_icvf = axons_icvf/100.0;
     double axons_with_myelin_icvf = axons_w_myelin_icvf/100.0;
+    double blood_vessels_icvf_ = double(blood_vessels_icvf/100.0);
     int spheres_overlap_factor = overlapping_factor;
     std::string directory = selectedDirectory.toStdString();
     double cosPhiSquared = c2;
@@ -1076,7 +1141,8 @@ void Window::StartSimulation(){
 
             auto startTime = std::chrono::high_resolution_clock::now();
             // create distribution of axons
-            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, alpha, beta,
+
+            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, blood_vessels_icvf_, alpha, beta,
                                              min_l, max_l, min_radius, regrow_thr, beading_amplitude, beading_std, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
                                               glial_pop1_mean_process_length, glial_pop1_std_process_length, glial_pop2_mean_process_length, glial_pop2_std_process_length,
                                               glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, glial_pop1_nbr_primary_processes, glial_pop2_nbr_primary_processes, k1, k2, k3);
@@ -1095,7 +1161,7 @@ void Window::StartSimulation(){
                     double _r_ = AxonDistribution.axons[i].outer_spheres[j].radius;
                     Eigen::Vector3d pos = {_x_, _y_, _z_};
 
-                    if (check_borders(min_l, max_l, pos, _r_)) {
+                    if (check_borders(min_l, max_l, pos, 0.0)) {
                         x_.push_back(_x_);
                         y_.push_back(_y_);
                         z_.push_back(_z_);
@@ -1125,7 +1191,7 @@ void Window::StartSimulation(){
                 double _r_ = AxonDistribution.glial_pop1[i].soma.radius;
                 Eigen::Vector3d pos = {_x_, _y_, _z_};
 
-                if (check_borders(min_l, max_l, pos, _r_)) {
+                if (check_borders(min_l, max_l, pos, 0.0)) {
                     x_.push_back(_x_);
                     y_.push_back(_y_);
                     z_.push_back(_z_);
@@ -1143,7 +1209,7 @@ void Window::StartSimulation(){
                         double _z_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[2];
                         double _r_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].radius;
                         Eigen::Vector3d pos = {_x_, _y_, _z_};
-                        if (!check_borders(min_l, max_l, pos, _r_)) {
+                        if (!check_borders(min_l, max_l, pos, 0.0)) {
                             continue;
                         }
                         x_.push_back(_x_);
@@ -1178,7 +1244,7 @@ void Window::StartSimulation(){
                 double _z_ = AxonDistribution.glial_pop2[i].soma.center[2];
                 double _r_ = AxonDistribution.glial_pop2[i].soma.radius;
 
-                if (check_borders(min_l, max_l, {_x_, _y_, _z_}, _r_)) {
+                if (check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
                     x_.push_back(_x_);
                     y_.push_back(_y_);
                     z_.push_back(_z_);
@@ -1196,7 +1262,7 @@ void Window::StartSimulation(){
                         double _z_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[2];
                         double _r_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].radius;
 
-                        if (!check_borders(min_l, max_l, {_x_, _y_, _z_}, _r_)) {
+                        if (!check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
                             continue;
                         }
                         x_.push_back(_x_);
@@ -1217,6 +1283,36 @@ void Window::StartSimulation(){
                 z_.clear();
                 r_.clear();
                 b_.clear();
+            }
+
+            for (unsigned i=0; i< AxonDistribution.blood_vessels.size(); ++i){
+                std::vector<double> x_;
+                std::vector<double> y_;
+                std::vector<double> z_;
+                std::vector<double> r_;
+                for (unsigned j=0; j< AxonDistribution.blood_vessels[i].spheres.size(); ++j){
+
+                    double _x_ = AxonDistribution.blood_vessels[i].spheres[j].center[0];
+                    double _y_ = AxonDistribution.blood_vessels[i].spheres[j].center[1];
+                    double _z_ = AxonDistribution.blood_vessels[i].spheres[j].center[2];
+                    double _r_ = AxonDistribution.blood_vessels[i].spheres[j].radius;
+                    Eigen::Vector3d pos = {_x_, _y_, _z_};
+
+                    if (check_borders(min_l, max_l, pos, 0.0)) {
+                        x_.push_back(_x_);
+                        y_.push_back(_y_);
+                        z_.push_back(_z_);
+                        r_.push_back(_r_);
+                    }
+                }
+                X_blood_vessels.push_back(x_);
+                Y_blood_vessels.push_back(y_);
+                Z_blood_vessels.push_back(z_);
+                R_blood_vessels.push_back(r_);
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
             }
 
             std::string simulation_file_name;
@@ -1261,7 +1357,7 @@ void Window::StartSimulation(){
 
     if (visualise_voxel) {
         // After simulation completes, call PlotCells to display the data
-        PlotCells(true, true, true);
+        PlotCells(true, true, true, true);
     }
     else{
         // Display a message box to inform the user that the simulation is complete

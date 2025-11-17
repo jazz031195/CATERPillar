@@ -19,6 +19,7 @@ CellGrowth::CellGrowth(const CellGrowth &other)
   : axons(other.axons),
     glial_pop1(other.glial_pop1),
     glial_pop2(other.glial_pop2),
+    blood_vessels(other.blood_vessels),
     min_limits(other.min_limits),
     max_limits(other.max_limits),
     extended_min_limits(other.extended_min_limits),
@@ -36,10 +37,11 @@ const std::vector<Axon>* CellGrowth::AXptr() const { return axons; }
 
 void CellGrowth::update_environment(const std::vector<Axon>* axons_,
                                 const std::vector<Glial>* glial_pop1_,
-                                const std::vector<Glial>* glial_pop2_) noexcept {
+                                const std::vector<Glial>* glial_pop2_, const std::vector<Blood_Vessel>* blood_vessel_) noexcept {
     axons      = axons_;
     glial_pop1 = glial_pop1_;
     glial_pop2 = glial_pop2_;
+    blood_vessels = blood_vessel_;
 }
 
 // Function to check if a point is inside a dilated box
@@ -127,9 +129,25 @@ bool CellGrowth::checkAxonsOverlap(Sphere &sph){
     
 }
 
+bool CellGrowth::checkBloodVesselOverlap(Sphere &sph){
+
+    for (const auto& blood_vessel : *blood_vessels) {
+        if (blood_vessel.isSphereInsideBlood_Vessel(sph)) {
+            return false;  
+        }
+    }
+    return true; 
+    
+}
+
 
 bool CellGrowth::canSpherebePlaced(Sphere &sph){
 
+    bool bv_check = checkBloodVesselOverlap(sph);
+
+    if (!bv_check){
+        return false;
+    }
 
     bool axons_check = checkAxonsOverlap(sph);
 

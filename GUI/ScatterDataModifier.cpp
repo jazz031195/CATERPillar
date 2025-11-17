@@ -67,8 +67,11 @@ void ScatterDataModifier::updateData() {
     window_->setTitle("3D Spheres Visualization");
     window_->resize(800, 600);
 
+    std::vector<int> groupIds;  // one entry per bundle (i in setSpheres)
+    groupIds.insert(groupIds.end(), X_axons.size(), static_cast<int>(OpenGLWindow::SphereGroup::Axon));
+
     // Pass the spheres data to the OpenGL window and trigger an update
-    window_->setSpheres(X_axons, Y_axons, Z_axons, R_axons);
+    window_->setSpheres(X_axons, Y_axons, Z_axons, R_axons, groupIds);
 
     // This will ensure the window is updated with new data
     window_->update();
