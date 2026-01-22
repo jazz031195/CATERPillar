@@ -34,6 +34,9 @@ public:
     void HideAxons();
     void ShowAllCells();
     bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
+    void StartSimulation();
+    void loadConfigFromPath(const QString &fileName);
+    void updateMembersFromGui();
 
 private slots:
     void onSaveButtonClicked();
@@ -47,11 +50,13 @@ private slots:
     void ReadGlialCellsFromFile(const QString& fileName);
     void ReadGlialCellsFromCSV(const QString& fileName);
     void ReadBloodVesselsFromFile(const QString& fileName);
+    void loadConfigFromFile();
 
 private:
     QGroupBox* createControls(const QString &title);
     void resizeEvent(QResizeEvent *e);
-    void StartSimulation();
+    void saveConfigToPath(const QString &fileName);
+
     SlidersGroup *slidersGroup;
 
     QComboBox *configurationComboBox;
@@ -153,7 +158,8 @@ private:
     QPushButton *hideGlialCellsButton;
     QPushButton *hideAxonsButton;
     QPushButton *showAllCellsButton;
-    
+
+    QPushButton *loadConfigButton;    
 
 
     // Additional member variables to store values

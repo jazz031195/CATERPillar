@@ -17,6 +17,8 @@
 #include <QComboBox>
 #include <QFontComboBox>
 #include "qcustomplot-source/qcustomplot.h"
+#include <QJsonDocument>
+#include <QJsonObject>
 
 
 Window::Window(QWidget *parent)
@@ -59,9 +61,11 @@ Window::Window(QWidget *parent)
     // OK and Select Directory buttons
     okButton = new QPushButton("OK", this);
     selectDirectoryButton = new QPushButton("Select Directory", this);
+    loadConfigButton = new QPushButton("Load Config", this);
     QHBoxLayout *mainButtonLayout = new QHBoxLayout;
-    mainButtonLayout->addWidget(okButton);
+    mainButtonLayout->addWidget(loadConfigButton);
     mainButtonLayout->addWidget(selectDirectoryButton);
+    mainButtonLayout->addWidget(okButton);
     mainLayout->addLayout(mainButtonLayout);
 
     // 4. Stacked layout to switch views
@@ -80,6 +84,8 @@ Window::Window(QWidget *parent)
 
     connect(okButton, &QPushButton::clicked, this, &Window::onSaveButtonClicked);
     connect(selectDirectoryButton, &QPushButton::clicked, this, &Window::onSelectDirectoryButtonClicked);
+    connect(loadConfigButton, &QPushButton::clicked,
+            this, &Window::loadConfigFromFile);
 
 }
 
@@ -282,7 +288,7 @@ QGroupBox* Window::createControls(const QString &title)
     QGroupBox *glialGroup1 = new QGroupBox("Glial Cell Population 1 Parameters");
     QGroupBox *glialGroup2 = new QGroupBox("Glial Cell Population 2 Parameters");
 
-    // add ticked box
+    // add ticked box    
     nbr_repetitions_qlabel = new QLabel(tr("Number of Repetitions:"));
     visualise_voxel_qlabel = new QLabel(tr("Visualise Voxel:"));
     axons_icvf_qlabel = new QLabel(tr("Axons ICVF (%):"));
@@ -618,6 +624,18 @@ void Window::resizeEvent(QResizeEvent *)
 void Window::onSaveButtonClicked()
 {
     // Retrieve values from spin boxes and checkboxes
+    updateMembersFromGui();  
+    
+    // Close the parameter input dialog
+    this->close();
+
+    StartSimulation();
+
+}
+
+void Window::updateMembersFromGui()
+{
+    // Retrieve values from spin boxes and checkboxes
     nbr_repetitions = nbr_repetitions_SpinBox->value();
     axons_icvf = axons_icvf_SpinBox->value();
     axons_w_myelin_icvf = axons_w_myelin_icvf_SpinBox->value();
@@ -656,12 +674,8 @@ void Window::onSaveButtonClicked()
     glial_pop1_branching = glial_pop1_branching_checkbox->isChecked();
     glial_pop2_branching = glial_pop2_branching_checkbox->isChecked();
 
-    // Close the parameter input dialog
-    this->close();
-
-    StartSimulation();
-
 }
+
 
 void Window::ReadAxonsFromFile(const QString& fileName){
 
@@ -1330,14 +1344,14 @@ void Window::StartSimulation(){
             std::string filename;
             std::ifstream file(filename);
 
-            if (rep ==0){
-                simulation_file_name = (directory + "/growth_info.txt");
-                swc_file_name = (directory + "/Voxel.csv");
+         if (rep ==0){
+            simulation_file_name = (directory + "/growth_info.txt");
+            swc_file_name = (directory + "/Voxel.csv");
             }
-            else{
-                simulation_file_name = (directory + "/growth_info_" + std::to_string(rep) + ".txt");
-                swc_file_name = (directory + "/Voxel_" + std::to_string(rep) + ".csv");
-            }
+        else{
+            simulation_file_name = (directory + "/growth_info_" + std::to_string(rep) + ".txt");
+            swc_file_name = (directory + "/Voxel_" + std::to_string(rep) + ".csv");
+        }
             std::ofstream swc_file(swc_file_name);
             std::ofstream simulation_file(simulation_file_name);
 
@@ -1378,6 +1392,15 @@ void Window::StartSimulation(){
         // Display a message box to inform the user that the simulation is complete
         QMessageBox::information(this, "Simulation Complete", "Simulation complete! Please check the output directory for the results.");
     }
+
+    // Save config file with used parameters for generatign voxel
+    QString baseDir = selectedDirectory.isEmpty()
+                  ? QDir::currentPath()
+                  : selectedDirectory;
+
+    QString cfgPath = QDir(baseDir).filePath("Voxel_config.json");
+    saveConfigToPath(cfgPath);
+
 
 }
 
@@ -1693,4 +1716,144 @@ void Window::ShollAnalysis() {
     dialog->setWindowTitle("Mean Sholl Analysis for glial_pop1");
     dialog->exec();
 }
+
+void Window::loadConfigFromPath(const QString &fileName)
+{
+    QFile f(fileName);
+    if (!f.open(QIODevice::ReadOnly)) {
+        qWarning() << "Cannot open config file" << fileName;
+        return;
+    }
+
+    QJsonParseError err;
+    QJsonDocument doc = QJsonDocument::fromJson(f.readAll(), &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+        qWarning() << "JSON parse error in" << fileName << ":" << err.errorString();
+        return;
+    }
+
+    QJsonObject o = doc.object();
+
+    // ---- Put JSON values to the spinboxes / checkboxes ----
+    voxel_size_SpinBox->setValue(o.value("voxel_edge_length").toDouble(voxel_size_SpinBox->value()));
+    overlapping_factor_SpinBox->setValue(o.value("overlapping_factor").toDouble(overlapping_factor_SpinBox->value()));
+    minimum_radius_SpinBox->setValue(o.value("minimum_sphere_radius").toDouble(minimum_radius_SpinBox->value()));
+    blood_vessels_icvf_SpinBox->setValue(o.value("blood_vessels_icvf").toDouble(blood_vessels_icvf_SpinBox->value()));
+
+    axons_w_myelin_icvf_SpinBox->setValue(o.value("axons_w_myelin_icvf").toDouble(axons_w_myelin_icvf_SpinBox->value()));
+    k1_SpinBox->setValue(o.value("k1").toDouble(k1_SpinBox->value()));
+    k2_SpinBox->setValue(o.value("k2").toDouble(k2_SpinBox->value()));
+    k3_SpinBox->setValue(o.value("k3").toDouble(k3_SpinBox->value()));
+    axons_icvf_SpinBox->setValue(o.value("axons_icvf").toDouble(axons_icvf_SpinBox->value()));
+    nbr_threads_SpinBox->setValue(o.value("nbr_threads").toDouble(nbr_threads_SpinBox->value()));
+    epsilon_SpinBox->setValue(o.value("epsilon").toDouble(epsilon_SpinBox->value()));
+    c2_SpinBox->setValue(o.value("c2").toDouble(c2_SpinBox->value()));
+    nbr_axons_populations_SpinBox->setValue(o.value("nbr_axons_populations").toDouble(nbr_axons_populations_SpinBox->value()));
+    beading_amplitude_SpinBox->setValue(o.value("beading_amplitude").toDouble(beading_amplitude_SpinBox->value()));
+    beading_std_SpinBox->setValue(o.value("beading_std").toDouble(beading_std_SpinBox->value()));
+    alpha_SpinBox->setValue(o.value("radius_dist_alpha").toDouble(alpha_SpinBox->value()));
+    beta_SpinBox->setValue(o.value("radius_dist_beta").toDouble(beta_SpinBox->value()));
+
+    glial_pop1_soma_icvf_SpinBox->setValue(o.value("glial_pop1_soma_icvf").toDouble(glial_pop1_soma_icvf_SpinBox->value()));
+    glial_pop1_processes_icvf_SpinBox->setValue(o.value("glial_pop1_processes_icvf").toDouble(glial_pop1_processes_icvf_SpinBox->value()));
+    glial_pop1_radius_mean_SpinBox->setValue(o.value("glial_pop1_soma_radius_mean").toDouble(glial_pop1_radius_mean_SpinBox->value()));
+    glial_pop1_radius_std_SpinBox->setValue(o.value("glial_pop1_soma_radius_std").toDouble(glial_pop1_radius_std_SpinBox->value()));
+    glial_pop1_mean_process_length_SpinBox->setValue(o.value("glial_pop1_process_length_mean").toDouble(glial_pop1_mean_process_length_SpinBox->value()));
+    glial_pop1_std_process_length_SpinBox->setValue(o.value("glial_pop1_process_length_std").toDouble(glial_pop1_std_process_length_SpinBox->value()));
+    glial_pop1_nbr_primary_processes_SpinBox->setValue(o.value("glial_pop1_nbr_primary_processes").toDouble(glial_pop1_nbr_primary_processes_SpinBox->value()));
+    glial_pop1_branching_checkbox->setChecked(o.value("glial_pop1_branching").toBool(glial_pop1_branching_checkbox->isChecked()));
+
+    
+    glial_pop2_soma_icvf_SpinBox->setValue(o.value("glial_pop2_soma_icvf").toDouble(glial_pop2_soma_icvf_SpinBox->value()));
+    glial_pop2_processes_icvf_SpinBox->setValue(o.value("glial_pop2_processes_icvf").toDouble(glial_pop2_processes_icvf_SpinBox->value()));
+    glial_pop2_radius_mean_SpinBox->setValue(o.value("glial_pop2_soma_radius_mean").toDouble(glial_pop2_radius_mean_SpinBox->value()));
+    glial_pop2_radius_std_SpinBox->setValue(o.value("glial_pop2_soma_radius_std").toDouble(glial_pop2_radius_std_SpinBox->value()));
+    glial_pop2_mean_process_length_SpinBox->setValue(o.value("glial_pop2_process_length_mean").toDouble(glial_pop2_mean_process_length_SpinBox->value()));
+    glial_pop2_std_process_length_SpinBox->setValue(o.value("glial_pop2_process_length_std").toDouble(glial_pop2_std_process_length_SpinBox->value()));
+    glial_pop2_nbr_primary_processes_SpinBox->setValue(o.value("glial_pop2_nbr_primary_processes").toDouble(glial_pop2_nbr_primary_processes_SpinBox->value()));
+    glial_pop2_branching_checkbox->setChecked(o.value("glial_pop2_branching").toBool(glial_pop2_branching_checkbox->isChecked()));
+
+    nbr_repetitions_SpinBox->setValue(o.value("nbr_repetitions").toDouble(nbr_repetitions_SpinBox->value()));
+
+    selectedDirectory = o.value("directory").toString();
+    qInfo() << "Loaded configuration from" << fileName;
+}
+
+
+void Window::loadConfigFromFile()
+{
+
+    QString fileName = QFileDialog::getOpenFileName(
+        this,
+        tr("Open configuration file"),
+        QString(),
+        tr("Config files (*.json);;All files (*.*)")
+    );
+    if (fileName.isEmpty())
+        return;
+
+    loadConfigFromPath(fileName);
+}
+
+void Window::saveConfigToPath(const QString &fileName)
+{
+   
+    QJsonObject o;
+
+    // ---- Map widgets into JSON ----
+    o["voxel_edge_length"]            = voxel_size_SpinBox->value();
+    o["overlapping_factor"]           = overlapping_factor_SpinBox->value();
+    o["minimum_sphere_radius"]        = minimum_radius_SpinBox->value();
+    o["blood_vessels_icvf"]           = blood_vessels_icvf_SpinBox->value();
+
+    o["axons_w_myelin_icvf"]          = axons_w_myelin_icvf_SpinBox->value();
+    o["k1"]                           = k1_SpinBox->value();
+    o["k2"]                           = k2_SpinBox->value();
+    o["k3"]                           = k3_SpinBox->value();
+    o["axons_icvf"]                   = axons_icvf_SpinBox->value();
+    o["nbr_threads"]                  = nbr_threads_SpinBox->value();
+    o["epsilon"]                      = epsilon_SpinBox->value();
+    o["c2"]                           = c2_SpinBox->value();
+    o["nbr_axons_populations"]        = nbr_axons_populations_SpinBox->value();
+    o["beading_amplitude"]            = beading_amplitude_SpinBox->value();
+    o["beading_std"]                  = beading_std_SpinBox->value();
+    o["radius_dist_alpha"]            = alpha_SpinBox->value();
+    o["radius_dist_beta"]             = beta_SpinBox->value();
+
+    o["glial_pop1_soma_icvf"]             = glial_pop1_soma_icvf_SpinBox->value();
+    o["glial_pop1_processes_icvf"]        = glial_pop1_processes_icvf_SpinBox->value();
+    o["glial_pop1_soma_radius_mean"]      = glial_pop1_radius_mean_SpinBox->value();
+    o["glial_pop1_soma_radius_std"]       = glial_pop1_radius_std_SpinBox->value();
+    o["glial_pop1_process_length_mean"]   = glial_pop1_mean_process_length_SpinBox->value();
+    o["glial_pop1_process_length_std"]    = glial_pop1_std_process_length_SpinBox->value();
+    o["glial_pop1_nbr_primary_processes"] = glial_pop1_nbr_primary_processes_SpinBox->value();
+    o["glial_pop1_branching"]             = glial_pop1_branching_checkbox->isChecked();
+
+    o["glial_pop2_soma_icvf"]             = glial_pop2_soma_icvf_SpinBox->value();
+    o["glial_pop2_processes_icvf"]        = glial_pop2_processes_icvf_SpinBox->value();
+    o["glial_pop2_soma_radius_mean"]      = glial_pop2_radius_mean_SpinBox->value();
+    o["glial_pop2_soma_radius_std"]       = glial_pop2_radius_std_SpinBox->value();
+    o["glial_pop2_process_length_mean"]   = glial_pop2_mean_process_length_SpinBox->value();
+    o["glial_pop2_process_length_std"]    = glial_pop2_std_process_length_SpinBox->value();
+    o["glial_pop2_nbr_primary_processes"] = glial_pop2_nbr_primary_processes_SpinBox->value();
+    o["glial_pop2_branching"]             = glial_pop2_branching_checkbox->isChecked();
+
+    o["nbr_repetitions"]                  = nbr_repetitions_SpinBox->value();
+
+    o["directory"] = selectedDirectory;
+
+    QJsonDocument doc(o);
+    QFile f(fileName);
+
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        qWarning() << "Cannot write config file:" << fileName;
+        return;
+    }
+
+    f.write(doc.toJson(QJsonDocument::Indented));
+    f.close();
+
+    qInfo() << "Auto-saved voxel configuration to:" << fileName;
+}
+
 
