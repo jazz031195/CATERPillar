@@ -16,7 +16,7 @@ CC            = gcc
 CXX           = g++
 DEFINES       = -DQT_NO_DEBUG -DQT_DATAVISUALIZATION_LIB -DQT_PRINTSUPPORT_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -O2 -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -O2 -std=gnu++11 -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
+CXXFLAGS      = -pipe -O2 -std=gnu++1z -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
 INCPATH       = -I. -I../src -I/usr/include/GL -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtDataVisualization -I/usr/include/x86_64-linux-gnu/qt5/QtPrintSupport -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++
 QMAKE         = /usr/lib/qt5/bin/qmake
 DEL_FILE      = rm -f
@@ -192,7 +192,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		../src/threads.h \
 		../src/constants.h \
 		../src/grow_blood_vessels.h \
-		../src/Blood_Vessels.h \
+		../src/Blood_Vessel.h \
 		qcustomplot-source/qcustomplot.h main.cpp \
 		mainwindow.cpp \
 		slidergroup.cpp \
@@ -398,7 +398,7 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents mainwindow.h slidergroup.h openglwindow.h ScatterDataModifier.h ../src/Axon.h ../src/axongammadistribution.h ../src/Glial.h ../src/grow_axons.h ../src/grow_cells.h ../src/grow_glial_cells.h ../src/obstacle.h ../src/parameters.h ../src/sphere.h ../src/threads.h ../src/constants.h ../src/grow_blood_vessels.h ../src/Blood_Vessels.h qcustomplot-source/qcustomplot.h $(DISTDIR)/
+	$(COPY_FILE) --parents mainwindow.h slidergroup.h openglwindow.h ScatterDataModifier.h ../src/Axon.h ../src/axongammadistribution.h ../src/Glial.h ../src/grow_axons.h ../src/grow_cells.h ../src/grow_glial_cells.h ../src/obstacle.h ../src/parameters.h ../src/sphere.h ../src/threads.h ../src/constants.h ../src/grow_blood_vessels.h ../src/Blood_Vessel.h qcustomplot-source/qcustomplot.h $(DISTDIR)/
 	$(COPY_FILE) --parents main.cpp mainwindow.cpp slidergroup.cpp openglwindow.cpp ScatterDataModifier.cpp ../src/Axon.cpp ../src/axongammadistribution.cpp ../src/Glial.cpp ../src/grow_axons.cpp ../src/grow_cells.cpp ../src/grow_glial_cells.cpp ../src/obstacle.cpp ../src/parameters.cpp ../src/sphere.cpp ../src/threads.cpp ../src/grow_blood_vessels.cpp ../src/Blood_Vessel.cpp qcustomplot-source/qcustomplot.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents mainwindow.ui $(DISTDIR)/
 
@@ -430,7 +430,7 @@ compiler_moc_predefs_make_all: moc_predefs.h
 compiler_moc_predefs_clean:
 	-$(DEL_FILE) moc_predefs.h
 moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
-	g++ -pipe -O2 -std=gnu++11 -Wall -Wextra -dM -E -o moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
+	g++ -pipe -O2 -std=gnu++1z -Wall -Wextra -dM -E -o moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 
 compiler_moc_header_make_all: moc_mainwindow.cpp moc_slidergroup.cpp moc_openglwindow.cpp moc_ScatterDataModifier.cpp moc_qcustomplot.cpp
 compiler_moc_header_clean:

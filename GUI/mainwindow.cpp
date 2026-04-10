@@ -1693,4 +1693,3 @@ void Window::ShollAnalysis() {
     dialog->setWindowTitle("Mean Sholl Analysis for glial_pop1");
     dialog->exec();
 }
-

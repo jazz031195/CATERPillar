@@ -5,6 +5,12 @@
 #include <QWheelEvent>
 #include <QMouseEvent>
 #include <random>
+#include <future>
+#include <thread>
+#include <algorithm>
+#include <mutex>
+#include <vector>
+
 
 OpenGLWindow::OpenGLWindow(QWindow *parent)
     : QOpenGLWindow(NoPartialUpdate, parent),
@@ -33,27 +39,20 @@ namespace {
         );
     }
 }
-
-
-
 void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
                               const std::vector<std::vector<double>>& y,
                               const std::vector<std::vector<double>>& z,
                               const std::vector<std::vector<double>>& radius,
                               const std::vector<int>& groupIds)
 {
+    // --- 1. Reset and Pre-calculate Colors (Fast) ---
     spherePositions.clear();
     sphereRadii.clear();
     axonColors.clear();
-    initialspherePositions.clear();
-    initialsphereRadii.clear();
-    initialaxonColors.clear();
 
-    // --- Build color per-bundle using groupIds ---
-    Q_ASSERT(static_cast<int>(x.size()) == static_cast<int>(groupIds.size()));
+    if (x.empty()) return;
+
     std::vector<QColor> colors(x.size());
-
-    // Collect bundle indices per group to make smooth gradients within each group
     std::vector<size_t> idxAxon, idxG1, idxG2, idxBV;
     for (size_t i = 0; i < groupIds.size(); ++i) {
         switch (static_cast<SphereGroup>(groupIds[i])) {
@@ -64,78 +63,88 @@ void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
         }
     }
 
-    auto assignGradient = [&](const std::vector<size_t>& idx,
-                              const QColor& c0, const QColor& c1)
-    {
+    auto assignGradient = [&](const std::vector<size_t>& idx, const QColor& c0, const QColor& c1) {
         if (idx.empty()) return;
-        if (idx.size() == 1) {
-            colors[idx[0]] = c1;
-            return;
-        }
         for (size_t k = 0; k < idx.size(); ++k) {
-            double t = static_cast<double>(k) / static_cast<double>(idx.size() - 1);
+            double t = (idx.size() > 1) ? static_cast<double>(k) / (idx.size() - 1) : 1.0;
             colors[idx[k]] = lerp(c0, c1, t);
         }
     };
 
-    // Palettes:
-    // Blood vessels: light red -> dark red
     assignGradient(idxBV, QColor(255, 200, 200), QColor(170, 0, 0));
-    // Glial pop1: light green -> mid green
     assignGradient(idxG1, QColor(200, 255, 200), QColor(0, 150, 0));
-    // Glial pop2: lighter to darker/different green to distinguish
     assignGradient(idxG2, QColor(220, 255, 220), QColor(0, 110, 0));
-    // Axons: keep random or choose a neutral palette
     if (!idxAxon.empty()) {
         std::vector<QColor> tmp(idxAxon.size());
-        generateRandomColors(idxAxon.size(), tmp); // your existing helper
+        generateRandomColors(idxAxon.size(), tmp);
         for (size_t k = 0; k < idxAxon.size(); ++k) colors[idxAxon[k]] = tmp[k];
     }
 
-    // --- Compute averages and populate buffers ---
-    double sumX = 0.0, sumY = 0.0, sumZ = 0.0;
-    long long count = 0;
-
+    // --- 2. Pass 1: Sum and Count (Fast single-thread) ---
+    double totalSumX = 0, totalSumY = 0, totalSumZ = 0;
+    long long totalCount = 0;
     for (size_t i = 0; i < x.size(); ++i) {
-        for (size_t j = 0; j < x[i].size(); ++j) {
-            sumX += x[i][j];
-            sumY += y[i][j];
-            sumZ += z[i][j];
-            ++count;
-        }
+        totalCount += x[i].size();
+        for (const auto& val : x[i]) totalSumX += val;
+        for (const auto& val : y[i]) totalSumY += val;
+        for (const auto& val : z[i]) totalSumZ += val;
     }
-    if (count == 0) return; // nothing to draw, avoid div/0
 
-    avgX = sumX / static_cast<double>(count);
-    avgY = sumY / static_cast<double>(count);
-    avgZ = sumZ / static_cast<double>(count);
+    if (totalCount == 0) return;
+
+    avgX = totalSumX / totalCount;
+    avgY = totalSumY / totalCount;
+    avgZ = totalSumZ / totalCount;
     QVector3D avg(avgX, avgY, avgZ);
 
-    maxX = std::numeric_limits<double>::lowest();
-    maxY = std::numeric_limits<double>::lowest();
-    maxZ = std::numeric_limits<double>::lowest();
+    // --- 3. Pass 2: Multithreaded Processing ---
+    // Reserve memory so vectors don't reallocate
+    spherePositions.resize(totalCount);
+    sphereRadii.resize(totalCount);
+    axonColors.resize(totalCount);
 
-    for (size_t i = 0; i < x.size(); ++i) {
-        for (size_t j = 0; j < x[i].size(); ++j) {
-            QVector3D pos(x[i][j], y[i][j], z[i][j]);
-            spherePositions.push_back(pos - avg);
-            sphereRadii.push_back(radius[i][j]);
-            axonColors.push_back(colors[i]);  // color per bundle
+    unsigned int numThreads = std::thread::hardware_concurrency();
+    if (numThreads == 0) numThreads = 2; 
 
-            initialspherePositions.push_back(pos - avg);
-            initialsphereRadii.push_back(radius[i][j]);
-            initialaxonColors.push_back(colors[i]);
+    std::vector<std::future<void>> futures;
+    size_t bundlesPerThread = (x.size() + numThreads - 1) / numThreads;
 
-            maxX = std::max(maxX, x[i][j]);
-            maxY = std::max(maxY, y[i][j]);
-            maxZ = std::max(maxZ, z[i][j]);
-        }
+    // We need to track where each thread starts writing in the flat vectors
+    std::vector<size_t> threadOffsets(numThreads, 0);
+    size_t currentOffset = 0;
+    for (unsigned int t = 0; t < numThreads; ++t) {
+        threadOffsets[t] = currentOffset;
+        size_t start = t * bundlesPerThread;
+        size_t end = std::min(start + bundlesPerThread, x.size());
+        for (size_t i = start; i < end; ++i) currentOffset += x[i].size();
     }
 
-    // Reset transforms/camera
-    SphererotationX = 0.0f;
-    SphererotationY = 0.0f;
-    cameraPosition = QVector3D(maxX, maxY, maxZ + 50.0f);
+    for (unsigned int t = 0; t < numThreads; ++t) {
+        size_t startBundle = t * bundlesPerThread;
+        size_t endBundle = std::min(startBundle + bundlesPerThread, x.size());
+        size_t writePos = threadOffsets[t];
+
+        if (startBundle >= endBundle) break;
+
+        futures.push_back(std::async(std::launch::async, [=, &x, &y, &z, &radius, &colors, &avg]() {
+            size_t localWrite = writePos;
+            for (size_t i = startBundle; i < endBundle; ++i) {
+                for (size_t j = 0; j < x[i].size(); ++j) {
+                    this->spherePositions[localWrite] = QVector3D(x[i][j], y[i][j], z[i][j]) - avg;
+                    this->sphereRadii[localWrite] = static_cast<float>(radius[i][j]);
+                    this->axonColors[localWrite] = colors[i];
+                    localWrite++;
+                }
+            }
+        }));
+    }
+
+    for (auto& f : futures) f.get();
+
+    // Finalize
+    initialspherePositions = spherePositions;
+    initialsphereRadii = sphereRadii;
+    initialaxonColors = axonColors;
 
     update();
 }
@@ -196,45 +205,68 @@ QVector3D rotateAround(const QVector3D& position, float deltaTheta, float deltaP
     return QVector3D(newX, newY, newZ);
 }
 
+
+
 void OpenGLWindow::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
 
-    // Convert spherical coordinates to Cartesian (for camera movement)
-    float radius = cameraDistance;  // Distance from center
+    // 1. Camera Math (Same as your original)
+    float radius = cameraDistance * zoomFactor;
     float radTheta = qDegreesToRadians(orbitTheta);
     float radPhi = qDegreesToRadians(orbitPhi);
+    cameraPosition = QVector3D(
+        radius * cos(radPhi) * sin(radTheta),
+        radius * sin(radPhi),
+        radius * cos(radPhi) * cos(radTheta)
+    );
 
-    float x = radius * cos(radPhi) * sin(radTheta);
-    float y = radius * sin(radPhi);
-    float z = radius * cos(radPhi) * cos(radTheta);
-
-    cameraPosition = QVector3D(x, y, z)*zoomFactor;  // Update camera position
-
-    // Set up view matrix
     QMatrix4x4 modelViewMatrix;
     modelViewMatrix.setToIdentity();
     modelViewMatrix.lookAt(cameraPosition, QVector3D(0, 0, 0), QVector3D(0, 1, 0));
 
-    QMatrix4x4 mvpMatrix = projectionMatrix * modelViewMatrix;
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixf(projectionMatrix.constData());
     glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf(mvpMatrix.constData());
+    glLoadMatrixf(modelViewMatrix.constData());
 
-    // Sort and draw spheres
-    std::vector<std::pair<double, size_t>> distances;
-    for (size_t i = 0; i < spherePositions.size(); ++i) {
-        QVector3D diff = spherePositions[i] - cameraPosition;
-        distances.push_back(std::make_pair(diff.lengthSquared(), i));
+    size_t numSpheres = spherePositions.size();
+    if (numSpheres == 0) return;
+
+    // 2. Parallelize the Distance Calculations
+    static std::vector<std::pair<float, size_t>> distances;
+    if (distances.size() != numSpheres) distances.resize(numSpheres);
+
+    unsigned int nThreads = std::thread::hardware_concurrency();
+    std::vector<std::future<void>> futures;
+    size_t chunkSize = (numSpheres + nThreads - 1) / nThreads;
+
+    for (unsigned int t = 0; t < nThreads; ++t) {
+        size_t start = t * chunkSize;
+        size_t end = std::min(start + chunkSize, numSpheres);
+        futures.push_back(std::async(std::launch::async, [this, start, end]() {
+            for (size_t i = start; i < end; ++i) {
+                // Use squared length to avoid slow sqrt() calls
+                float d2 = (this->spherePositions[i] - this->cameraPosition).lengthSquared();
+                distances[i] = {d2, i};
+            }
+        }));
     }
+    for (auto& f : futures) f.wait();
 
-    std::sort(distances.begin(), distances.end(), std::greater<std::pair<double, size_t>>());
+    // 3. Standard Sort (No <execution> header needed)
+    std::sort(distances.begin(), distances.end(), 
+            [](const auto& a, const auto& b) { return a.first > b.first; });
 
-    for (size_t i = 0; i < spherePositions.size(); ++i) {
-        size_t index = distances[i].second;
-        drawSphere(spherePositions[index], sphereRadii[index], axonColors[index]);
+    // 4. The Drawing Loop
+    // We cannot multi-thread the GL calls, but since the CPU math is now 
+    // finished instantly, the GPU can receive commands at full speed.
+    for (size_t i = 0; i < numSpheres; ++i) {
+        size_t idx = distances[i].second;
+        drawSphere(spherePositions[idx], sphereRadii[idx], axonColors[idx]);
     }
 }
-
 
 void OpenGLWindow::drawSphere(const QVector3D& position, float radius, const QColor& color)
 {
