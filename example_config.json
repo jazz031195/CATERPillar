@@ -1,0 +1,50 @@
+{
+    "GeneralParameters": {
+        "OutputDirectory": "/home/localadmin/Documents/CATERPillar/output/",
+        "Filename": "run_001",
+        "VoxelEdgeLength": 50.0,
+        "Repetitions": 1,
+        "OverlappingFactor": 4
+    },
+    "AxonParameters": {
+        "AxonsICVF": 20.0,
+        "AxonsWithMyelinICVF": 0.0,
+        "BloodVesselsICVF": 0.0,
+        "NumberOfPopulations": 1,
+        "CrossingFibersType": 0,
+        "NumberOfThreads": 4,
+        "Alpha": 4.0,
+        "Beta": 0.25,
+        "MinRadius": 0.15,
+        "Tortuosity_Epsilon": 0.01,
+        "FODF_c2": 1.0,
+        "BeadingAmplitude": 0.3,
+        "BeadingStd": 0.02,
+        "K1": 0.35,
+        "K2": 0.006,
+        "K3": 0.024,
+        "Tortuous": true,
+        "CanShrink": true,
+        "RegrowThreshold": 10,
+        "OndulationFactor": 5
+    },
+    "GlialParameters": {
+        "Pop1SomaICVF": 0.0,
+        "Pop1ProcessesICVF": 0.0,
+        "Pop1SomaRadiusMean": 6.0,
+        "Pop1SomaRadiusStd": 0.5,
+        "Pop1MeanProcessLength": 15.0,
+        "Pop1StdProcessLength": 2.0,
+        "Pop1NbrPrimaryProcesses": 4,
+        "Pop1Branching": true,
+
+        "Pop2SomaICVF": 0.0,
+        "Pop2ProcessesICVF": 0.0,
+        "Pop2SomaRadiusMean": 4.0,
+        "Pop2SomaRadiusStd": 0.3,
+        "Pop2MeanProcessLength": 10.0,
+        "Pop2StdProcessLength": 1.5,
+        "Pop2NbrPrimaryProcesses": 3,
+        "Pop2Branching": false
+    }
+}

@@ -12,6 +12,7 @@
 #include <QtDataVisualization/Q3DScatter>
 #include "slidergroup.h"
 #include "ScatterDataModifier.h" // Include ScatterDataModifier
+#include "../src/parameters.h"
 #include <QComboBox>  
 
 QT_BEGIN_NAMESPACE
@@ -158,50 +159,8 @@ private:
 
     // Additional member variables to store values
     int nbr_repetitions;
-    int axons_icvf;
-    int axons_w_myelin_icvf;
-    int glial_pop1_soma_icvf;
-    int glial_pop1_processes_icvf;
-    int glial_pop2_soma_icvf;
-    int glial_pop2_processes_icvf;
-    int blood_vessels_icvf;
-    int voxel_size;
-    double minimum_radius;
-    int nbr_threads;
-    int overlapping_factor;
-    double c2;
-    int nbr_axons_populations;
-    int crossing_fibers_type;
-    double mean_process_length;
-    double std_process_length;
-    double beading_amplitude;
-    double beading_std;
-    double epsilon;
-    double alpha;
-    double beta;
     bool visualise_voxel;
-    double glial_pop1_radius_mean;
-    double glial_pop1_radius_std;
-    double glial_pop2_radius_mean;
-    double glial_pop2_radius_std;
-    int glial_pop1_nbr_primary_processes;
-    int glial_pop2_nbr_primary_processes;
-    bool glial_pop1_branching;
-    bool glial_pop2_branching;
-    double glial_pop1_mean_process_length;
-    double glial_pop1_std_process_length;
-    double glial_pop1_mean_primary_process_length;
-    double glial_pop1_std_primary_process_length;
-    double glial_pop2_mean_process_length;
-    double glial_pop2_std_process_length;
-    double glial_pop2_mean_primary_process_length;
-    double glial_pop2_std_primary_process_length;
-    int max_nbr_process_pop1;
-    int max_nbr_process_pop2;
-    double k1;
-    double k2;
-    double k3;
-
+    Parameters parameters;
 
     // spheres to plot
     std::vector<std::vector<double>> X_axons;

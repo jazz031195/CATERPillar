@@ -42,28 +42,28 @@ std::vector<std::string> _split_line(const std::string &s, char delim)
     return elems;
 }
 
-AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_, const double &axons_w_myelin_icvf_, const double &glial_pop1_icvf_soma_, const double &glial_pop1_icvf_branches_, const double &glial_pop2_icvf_soma_, const double &glial_pop2_icvf_branches_, const double &blood_vessels_icvf_, const double &a, const double &b,
-                                             Eigen::Vector3d &min_l, Eigen::Vector3d &max_l, const double &min_radius_,
-                                              const int &regrow_thr_, const double &beading_variation_, const double &beading_variation_std, const double &std_dev_, const int &undulation_factor_, const int &factor_, const bool &can_shrink_, const double &cosPhiSquared_, const double &nbr_threads_, const int &nbr_axons_populations_, const int &crossing_fibers_type_, 
-                                              const double &mean_glial_pop1_process_length_, const double &std_glial_pop1_process_length_, const double &mean_glial_pop2_process_length_, const double &std_glial_pop2_process_length_,
-                                              const double &glial_pop1_radius_mean_, const double &glial_pop1_radius_std_, const double &glial_pop2_radius_mean_, const double &glial_pop2_radius_std_, const bool &glial_pop1_branching_, const bool &glial_pop2_branching_, const int &nbr_primary_processes_pop1_, const int &nbr_primary_processes_pop2_,
-                                              const double &c1_, const double &c2_, const double &c3_)
+AxonGammaDistribution::AxonGammaDistribution(const Parameters &params, const Eigen::Vector3d &min_l, const Eigen::Vector3d &max_l)
 {
-    
     std::random_device rd;
     gen.seed(rd());
-    target_axons_wo_myelin_icvf = axons_wo_myelin_icvf_;
-    target_axons_w_myelin_icvf = axons_w_myelin_icvf_;
-    target_axons_icvf = axons_wo_myelin_icvf_ + axons_w_myelin_icvf_;
-    target_glial_pop1_soma_icvf = glial_pop1_icvf_soma_;
-    target_glial_pop1_branches_icvf = glial_pop1_icvf_branches_;
-    target_glial_pop2_soma_icvf = glial_pop2_icvf_soma_;
-    target_glial_pop2_branches_icvf = glial_pop2_icvf_branches_;
-    target_blood_vessels_icvf = blood_vessels_icvf_;
+
+    // Axon ICVFs
+    target_axons_wo_myelin_icvf = params.axons_wo_myelin_icvf;
+    target_axons_w_myelin_icvf = params.axons_w_myelin_icvf;
+    target_axons_icvf = params.axons_wo_myelin_icvf + params.axons_w_myelin_icvf;
     
-    nbr_axons_populations = nbr_axons_populations_;
+    // Glial ICVFs
+    target_glial_pop1_soma_icvf = params.glial_pop1_icvf_soma;
+    target_glial_pop1_branches_icvf = params.glial_pop1_icvf_processes; 
+    target_glial_pop2_soma_icvf = params.glial_pop2_icvf_soma;
+    target_glial_pop2_branches_icvf = params.glial_pop2_icvf_processes;
+    
+    target_blood_vessels_icvf = params.blood_vessels_icvf;
+    
+    nbr_axons_populations = params.nbr_axons_populations;
     expanded_for_glial_space = 0;
 
+    // Initialize trackers to 0
     glial_pop1_soma_icvf = 0.0;
     glial_pop1_branches_icvf = 0.0;
     glial_pop2_soma_icvf = 0.0;
@@ -73,50 +73,55 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
     extracellular_icvf = 0.0;
     blood_vessels_icvf = 0.0;
 
-    crossing_fibers_type = crossing_fibers_type_;
-    nbr_primary_processes_pop1 = nbr_primary_processes_pop1_;
-    nbr_primary_processes_pop2 = nbr_primary_processes_pop2_;
+    crossing_fibers_type = params.crossing_fibers_type;
+    
+    // Glial morphology
+    nbr_primary_processes_pop1 = params.glial_pop1_nbr_primary_processes; // Assuming you add these to Parameters.h
+    nbr_primary_processes_pop2 = params.glial_pop2_nbr_primary_processes;
+    mean_glial_pop1_process_length = params.mean_glial_pop1_process_length;
+    std_glial_pop1_process_length = params.std_glial_pop1_process_length;
+    mean_glial_pop2_process_length = params.mean_glial_pop2_process_length;
+    std_glial_pop2_process_length = params.std_glial_pop2_process_length;
+    // Note: You may need to add pop2 mean/std lengths to your Parameters.h!
+    
+    glial_pop1_radius_mean = params.glial_pop1_radius_mean;
+    glial_pop1_radius_std = params.glial_pop1_radius_std;
+    glial_pop2_radius_mean = params.glial_pop2_radius_mean;
+    glial_pop2_radius_std = params.glial_pop2_radius_std;
+    glial_pop1_branching = params.glial_pop1_branching;
+    glial_pop2_branching = params.glial_pop2_branching;
 
-    alpha = a;
-    beta = b;
+    // Axon morphology
+    alpha = params.alpha;
+    beta = params.beta;
+    cosPhiSquared = params.cosPhiSquared;
+    min_radius = params.min_rad;
+    regrow_thr = params.regrow_thr;
+    beading_variation = params.beading_amplitude;
+    beading_std = params.beading_std;
+    std_dev = params.std_dev;
+    undulation_factor = params.ondulation_factor;
+    factor = params.spheres_overlap_factor;
+    axon_can_shrink = params.can_shrink;
+
+    // Myelin parameters
+    c1 = params.c1;
+    c2 = params.c2;
+    c3 = params.c3;
+
+    // Spatial boundaries
     min_limits = min_l;
     max_limits = max_l;
+    total_volume = (max_l[0] - min_l[0]) * (max_l[1] - min_l[1]) * (max_l[2] - min_l[2]);
+    
+    nbr_threads = params.nbr_threads;
 
-    cosPhiSquared = cosPhiSquared_;
-
-    min_radius = min_radius_;
-    regrow_thr = regrow_thr_;
-    beading_variation = beading_variation_;
-    beading_std = beading_variation_std;
-    std_dev = std_dev_;
-    undulation_factor = undulation_factor_;
-
-    glial_pop1_radius_mean = glial_pop1_radius_mean_;
-    glial_pop1_radius_std = glial_pop1_radius_std_;
-    glial_pop2_radius_mean = glial_pop2_radius_mean_;
-    glial_pop2_radius_std = glial_pop2_radius_std_;
-    glial_pop1_branching = glial_pop1_branching_;
-    glial_pop2_branching = glial_pop2_branching_;
-
-    factor = factor_;
-    axon_can_shrink = can_shrink_;
-
+    // Clear vectors
     axons.clear();
     glial_pop1.clear();
     glial_pop2.clear();
     blood_vessels.clear();
 
-    total_volume = (max_l[0] - min_l[0]) * (max_l[1] - min_l[1]) * (max_l[2] - min_l[2]);
-    nbr_threads = nbr_threads_;
-
-    mean_glial_pop1_process_length = mean_glial_pop1_process_length_;
-    std_glial_pop1_process_length = std_glial_pop1_process_length_;
-    mean_glial_pop2_process_length = mean_glial_pop2_process_length_;
-    std_glial_pop2_process_length = std_glial_pop2_process_length_;
-
-    c1 = c1_;
-    c2 = c2_;
-    c3 = c3_;
     /*
     cdf = {
         {4, 8, 16, 32, 64, 128}, // Kappas
@@ -131,8 +136,10 @@ AxonGammaDistribution::AxonGammaDistribution(const double &axons_wo_myelin_icvf_
         }
     }; // https://www.sciencedirect.com/science/article/pii/S1053811911001376?via%3Dihub
     */
-
 }
+    
+
+
 void display_progress(double nbr_axons, double number_obstacles)
 {
     int cTotalLength = 50;

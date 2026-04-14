@@ -23,7 +23,7 @@ class Parameters
 public:
     std::string data_directory = "";
     std::string filename = "";
-    std::vector<double> vox_sizes = {50};
+    double voxel_size = 50;
     int repetitions = 1;
     int spheres_overlap_factor = 2;
     double glial_pop1_icvf_soma = 0.0;
@@ -43,20 +43,31 @@ public:
     double min_rad = 0.15;
     double std_dev = 0.01;
     int ondulation_factor = 5;
-    double beading_period = 10;           /*!< Frequency for the beading  */
-    double beading_variation = 0.0;
-    double beading_variation_std = 0.0;
+    double beading_amplitude = 0.3;    
+    double beading_std = 0.05;     
+
     bool can_shrink = true;
     double cosPhiSquared= 1.0;
     int nbr_threads = 1;
-    double std_glial_process_length;
-    double mean_glial_process_length;
-    static int str_dist(std::string s, std::string t);
-    void readConfFile(std::string conf_file_path);
 
     double c1 = 0.35;
     double c2 = 0.006;
     double c3 = 0.024;
+
+    int glial_pop1_nbr_primary_processes = 5;
+    int glial_pop2_nbr_primary_processes = 5;
+
+    double std_glial_pop1_process_length;
+    double mean_glial_pop1_process_length;
+    double std_glial_pop2_process_length;
+    double mean_glial_pop2_process_length;
+
+    bool glial_pop1_branching = true;
+    bool glial_pop2_branching = true;
+    double glial_pop1_radius_mean = 0.5;
+    double glial_pop1_radius_std = 0.1;
+    double glial_pop2_radius_mean = 0.5;
+    double glial_pop2_radius_std = 0.1;
 
 };
 

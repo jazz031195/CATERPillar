@@ -3,7 +3,6 @@
 #include "ui_mainwindow.h"
 #include "slidergroup.h"
 #include "../src/axongammadistribution.h"
-#include "../src/parameters.h"
 #include "ScatterDataModifier.h"
 #include <fstream>
 #include <QFile>
@@ -617,44 +616,60 @@ void Window::resizeEvent(QResizeEvent *)
 
 void Window::onSaveButtonClicked()
 {
+
     // Retrieve values from spin boxes and checkboxes
     nbr_repetitions = nbr_repetitions_SpinBox->value();
-    axons_icvf = axons_icvf_SpinBox->value();
-    axons_w_myelin_icvf = axons_w_myelin_icvf_SpinBox->value();
-    blood_vessels_icvf = blood_vessels_icvf_SpinBox->value();
-    k1 = k1_SpinBox->value();
-    k2 = k2_SpinBox->value();
-    k3 = k3_SpinBox->value();
-    glial_pop1_soma_icvf = glial_pop1_soma_icvf_SpinBox->value();
-    glial_pop1_processes_icvf = glial_pop1_processes_icvf_SpinBox->value();
-    glial_pop2_soma_icvf = glial_pop2_soma_icvf_SpinBox->value();
-    glial_pop2_processes_icvf = glial_pop2_processes_icvf_SpinBox->value();
-    nbr_threads = nbr_threads_SpinBox->value();
-    overlapping_factor = overlapping_factor_SpinBox->value();
-    voxel_size = voxel_size_SpinBox->value();
-    minimum_radius = minimum_radius_SpinBox->value();
-    c2 = c2_SpinBox->value();
-    nbr_axons_populations = nbr_axons_populations_SpinBox->value();
-    beading_amplitude = beading_amplitude_SpinBox->value();
-    beading_std = beading_std_SpinBox->value();
-    glial_pop1_mean_process_length = glial_pop1_mean_process_length_SpinBox->value();
-    glial_pop1_std_process_length = glial_pop1_std_process_length_SpinBox->value();
-    glial_pop2_mean_process_length = glial_pop2_mean_process_length_SpinBox->value();
-    glial_pop2_std_process_length = glial_pop2_std_process_length_SpinBox->value();
-
-    epsilon = epsilon_SpinBox->value();
-    minimum_radius = minimum_radius_SpinBox->value();
-    alpha = alpha_SpinBox->value();
-    beta = beta_SpinBox->value();
     visualise_voxel = visualise_voxel_checkbox->isChecked();
-    glial_pop1_radius_mean = glial_pop1_radius_mean_SpinBox->value();
-    glial_pop1_radius_std = glial_pop1_radius_std_SpinBox->value();
-    glial_pop2_radius_mean = glial_pop2_radius_mean_SpinBox->value();
-    glial_pop2_radius_std = glial_pop2_radius_std_SpinBox->value();
-    glial_pop1_nbr_primary_processes = glial_pop1_nbr_primary_processes_SpinBox->value();
-    glial_pop2_nbr_primary_processes = glial_pop2_nbr_primary_processes_SpinBox->value();
-    glial_pop1_branching = glial_pop1_branching_checkbox->isChecked();
-    glial_pop2_branching = glial_pop2_branching_checkbox->isChecked();
+
+    parameters.axons_wo_myelin_icvf = axons_icvf_SpinBox->value()/100.0;
+    parameters.axons_w_myelin_icvf = axons_w_myelin_icvf_SpinBox->value()/100.0;
+    parameters.blood_vessels_icvf = blood_vessels_icvf_SpinBox->value()/100.0;
+    parameters.glial_pop1_icvf_soma = glial_pop1_soma_icvf_SpinBox->value()/100.0;
+    parameters.glial_pop1_icvf_processes = glial_pop1_processes_icvf_SpinBox->value()/100.0;
+    parameters.glial_pop2_icvf_soma = glial_pop2_soma_icvf_SpinBox->value()/100.0;
+    parameters.glial_pop2_icvf_processes = glial_pop2_processes_icvf_SpinBox->value()/100.0;
+
+    parameters.c1 = k1_SpinBox->value();
+    parameters.c2 = k2_SpinBox->value();
+    parameters.c3 = k3_SpinBox->value();
+
+    parameters.nbr_threads = nbr_threads_SpinBox->value();
+    parameters.spheres_overlap_factor = overlapping_factor_SpinBox->value();
+    parameters.voxel_size = voxel_size_SpinBox->value();
+    parameters.min_rad = minimum_radius_SpinBox->value();
+    parameters.cosPhiSquared = c2_SpinBox->value();
+    parameters.nbr_axons_populations = nbr_axons_populations_SpinBox->value();
+    parameters.beading_amplitude = beading_amplitude_SpinBox->value();
+    parameters.beading_std = beading_std_SpinBox->value();
+
+    parameters.mean_glial_pop1_process_length = glial_pop1_mean_process_length_SpinBox->value();
+    parameters.std_glial_pop1_process_length = glial_pop1_std_process_length_SpinBox->value();
+    parameters.mean_glial_pop2_process_length = glial_pop2_mean_process_length_SpinBox->value();
+    parameters.std_glial_pop2_process_length = glial_pop2_std_process_length_SpinBox->value();
+
+    parameters.std_dev = epsilon_SpinBox->value();
+    parameters.alpha = alpha_SpinBox->value();
+    parameters.beta = beta_SpinBox->value();
+
+    parameters.glial_pop1_radius_mean = glial_pop1_radius_mean_SpinBox->value();
+    parameters.glial_pop1_radius_std = glial_pop1_radius_std_SpinBox->value();
+    parameters.glial_pop2_radius_mean = glial_pop2_radius_mean_SpinBox->value();
+    parameters.glial_pop2_radius_std = glial_pop2_radius_std_SpinBox->value();
+    parameters.glial_pop1_nbr_primary_processes = glial_pop1_nbr_primary_processes_SpinBox->value();
+    parameters.glial_pop2_nbr_primary_processes = glial_pop2_nbr_primary_processes_SpinBox->value();
+    parameters.glial_pop1_branching = glial_pop1_branching_checkbox->isChecked();
+    parameters.glial_pop2_branching = glial_pop2_branching_checkbox->isChecked();
+
+    parameters.crossing_fibers_type = 0;
+
+    if (parameters.nbr_axons_populations == 2) {
+        QString PopConfiguration = configurationComboBox->currentText();
+        if (PopConfiguration == "Sheet Configuration") {
+            parameters.crossing_fibers_type = 0;
+        } else if (PopConfiguration == "Interwoven Configuration") {
+            parameters.crossing_fibers_type = 1;
+        }
+    }
 
     // Close the parameter input dialog
     this->close();
@@ -1105,98 +1120,30 @@ bool Window::check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&
 
 void Window::StartSimulation(){
 
-    Parameters parameters;
+    for (int rep = 0; rep < nbr_repetitions; rep++){
 
-    int repetitions = nbr_repetitions;
-    std::vector<double> vox_sizes = {voxel_size/1.0};
-    double glial_pop1_icvf_soma = glial_pop1_soma_icvf/100.0;
-    double glial_pop1_icvf_processes = glial_pop1_processes_icvf/100.0;
-    double glial_pop2_icvf_soma = glial_pop2_soma_icvf/100.0;
-    double glial_pop2_icvf_processes = glial_pop2_processes_icvf/100.0;
-    double axons_wo_myelin_icvf = axons_icvf/100.0;
-    double axons_with_myelin_icvf = axons_w_myelin_icvf/100.0;
-    double blood_vessels_icvf_ = double(blood_vessels_icvf/100.0);
-    int spheres_overlap_factor = overlapping_factor;
-    std::string directory = selectedDirectory.toStdString();
-    double cosPhiSquared = c2;
-    double std_dev = epsilon;
-    double min_radius = minimum_radius;
-    
+        // min and max limits of voxel
+        Eigen::Vector3d min_l = {0, 0, 0};
+        Eigen::Vector3d max_l = {parameters.voxel_size, parameters.voxel_size, parameters.voxel_size}; // um
 
-    int regrow_thr = parameters.regrow_thr;
-    int ondulation_factor = parameters.ondulation_factor;
-    bool can_shrink = parameters.can_shrink;
-    int crossing_fibers_type = 0;
+        auto startTime = std::chrono::high_resolution_clock::now();
+        // create distribution of axons
 
-    if (nbr_axons_populations == 2) {
-        QString PopConfiguration = configurationComboBox->currentText();
-        if (PopConfiguration == "Sheet Configuration") {
-            crossing_fibers_type = 0;
-        } else if (PopConfiguration == "Interwoven Configuration") {
-            crossing_fibers_type = 1;
-        }
-    }
+        AxonGammaDistribution AxonDistribution(parameters, min_l, max_l);
+        AxonDistribution.createSubstrate();
+        // saving spheres
+        if (rep == 0){
+            for (unsigned i=0; i< AxonDistribution.axons.size(); ++i){
+                std::vector<double> x_;
+                std::vector<double> y_;
+                std::vector<double> z_;
+                std::vector<double> r_;
+                for (unsigned j=0; j< AxonDistribution.axons[i].outer_spheres.size(); ++j){
 
-    for (int rep = 0; rep < repetitions; rep++){
-        for (unsigned long i = 0; i < vox_sizes.size(); i++){
-
-            double vox_size= vox_sizes[i];
-
-            // min and max limits of voxel
-            Eigen::Vector3d min_l = {0, 0, 0};
-            Eigen::Vector3d max_l = {vox_size, vox_size, vox_size}; // um
-
-            auto startTime = std::chrono::high_resolution_clock::now();
-            // create distribution of axons
-
-            AxonGammaDistribution AxonDistribution = AxonGammaDistribution(axons_wo_myelin_icvf, axons_with_myelin_icvf, glial_pop1_icvf_soma, glial_pop1_icvf_processes, glial_pop2_icvf_soma, glial_pop2_icvf_processes, blood_vessels_icvf_, alpha, beta,
-                                             min_l, max_l, min_radius, regrow_thr, beading_amplitude, beading_std, std_dev, ondulation_factor, spheres_overlap_factor, can_shrink, cosPhiSquared, nbr_threads, nbr_axons_populations, crossing_fibers_type, 
-                                              glial_pop1_mean_process_length, glial_pop1_std_process_length, glial_pop2_mean_process_length, glial_pop2_std_process_length,
-                                              glial_pop1_radius_mean, glial_pop1_radius_std, glial_pop2_radius_mean, glial_pop2_radius_std, glial_pop1_branching, glial_pop2_branching, glial_pop1_nbr_primary_processes, glial_pop2_nbr_primary_processes, k1, k2, k3);
-            AxonDistribution.createSubstrate();
-            // saving spheres
-            if (rep == 0){
-                for (unsigned i=0; i< AxonDistribution.axons.size(); ++i){
-                    std::vector<double> x_;
-                    std::vector<double> y_;
-                    std::vector<double> z_;
-                    std::vector<double> r_;
-                    for (unsigned j=0; j< AxonDistribution.axons[i].outer_spheres.size(); ++j){
-
-                        double _x_ = AxonDistribution.axons[i].outer_spheres[j].center[0];
-                        double _y_ = AxonDistribution.axons[i].outer_spheres[j].center[1];
-                        double _z_ = AxonDistribution.axons[i].outer_spheres[j].center[2];
-                        double _r_ = AxonDistribution.axons[i].outer_spheres[j].radius;
-                        Eigen::Vector3d pos = {_x_, _y_, _z_};
-
-                        if (check_borders(min_l, max_l, pos, 0.0)) {
-                            x_.push_back(_x_);
-                            y_.push_back(_y_);
-                            z_.push_back(_z_);
-                            r_.push_back(_r_);
-                        }
-                    }
-                    X_axons.push_back(x_);
-                    Y_axons.push_back(y_);
-                    Z_axons.push_back(z_);
-                    R_axons.push_back(r_);
-                    x_.clear();
-                    y_.clear();
-                    z_.clear();
-                    r_.clear();
-                }
-
-                for (unsigned i=0; i< AxonDistribution.glial_pop1.size(); ++i){
-                    std::vector<double> x_;
-                    std::vector<double> y_;
-                    std::vector<double> z_;
-                    std::vector<double> r_;
-                    std::vector<int> b_;
-
-                    double _x_ = AxonDistribution.glial_pop1[i].soma.center[0];
-                    double _y_ = AxonDistribution.glial_pop1[i].soma.center[1];
-                    double _z_ = AxonDistribution.glial_pop1[i].soma.center[2];
-                    double _r_ = AxonDistribution.glial_pop1[i].soma.radius;
+                    double _x_ = AxonDistribution.axons[i].outer_spheres[j].center[0];
+                    double _y_ = AxonDistribution.axons[i].outer_spheres[j].center[1];
+                    double _z_ = AxonDistribution.axons[i].outer_spheres[j].center[2];
+                    double _r_ = AxonDistribution.axons[i].outer_spheres[j].radius;
                     Eigen::Vector3d pos = {_x_, _y_, _z_};
 
                     if (check_borders(min_l, max_l, pos, 0.0)) {
@@ -1204,170 +1151,199 @@ void Window::StartSimulation(){
                         y_.push_back(_y_);
                         z_.push_back(_z_);
                         r_.push_back(_r_);
-                        b_.push_back(0);
                     }
+                }
+                X_axons.push_back(x_);
+                Y_axons.push_back(y_);
+                Z_axons.push_back(z_);
+                R_axons.push_back(r_);
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
+            }
 
+            for (unsigned i=0; i< AxonDistribution.glial_pop1.size(); ++i){
+                std::vector<double> x_;
+                std::vector<double> y_;
+                std::vector<double> z_;
+                std::vector<double> r_;
+                std::vector<int> b_;
 
-                    for (unsigned j=0; j< AxonDistribution.glial_pop1[i].ramification_spheres.size(); ++j){
+                double _x_ = AxonDistribution.glial_pop1[i].soma.center[0];
+                double _y_ = AxonDistribution.glial_pop1[i].soma.center[1];
+                double _z_ = AxonDistribution.glial_pop1[i].soma.center[2];
+                double _r_ = AxonDistribution.glial_pop1[i].soma.radius;
+                Eigen::Vector3d pos = {_x_, _y_, _z_};
 
-                        for (unsigned k=0; k< AxonDistribution.glial_pop1[i].ramification_spheres[j].size(); ++k){
-
-                            double _x_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[0];
-                            double _y_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[1];
-                            double _z_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[2];
-                            double _r_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].radius;
-                            Eigen::Vector3d pos = {_x_, _y_, _z_};
-                            if (!check_borders(min_l, max_l, pos, 0.0)) {
-                                continue;
-                            }
-                            x_.push_back(_x_);
-                            y_.push_back(_y_);
-                            z_.push_back(_z_);
-                            r_.push_back(_r_);
-                            b_.push_back(j);
-                        }
-                    }
-
-                    X_glial_pop1.push_back(x_);
-                    Y_glial_pop1.push_back(y_);
-                    Z_glial_pop1.push_back(z_);
-                    R_glial_pop1.push_back(r_);
-                    Branch_glial_pop1.push_back(b_);
-                    x_.clear();
-                    y_.clear();
-                    z_.clear();
-                    r_.clear();
-                    b_.clear();
+                if (check_borders(min_l, max_l, pos, 0.0)) {
+                    x_.push_back(_x_);
+                    y_.push_back(_y_);
+                    z_.push_back(_z_);
+                    r_.push_back(_r_);
+                    b_.push_back(0);
                 }
 
-                for (unsigned i=0; i< AxonDistribution.glial_pop2.size(); ++i){
-                    std::vector<double> x_;
-                    std::vector<double> y_;
-                    std::vector<double> z_;
-                    std::vector<double> r_;
-                    std::vector<int> b_;
 
-                    double _x_ = AxonDistribution.glial_pop2[i].soma.center[0];
-                    double _y_ = AxonDistribution.glial_pop2[i].soma.center[1];
-                    double _z_ = AxonDistribution.glial_pop2[i].soma.center[2];
-                    double _r_ = AxonDistribution.glial_pop2[i].soma.radius;
+                for (unsigned j=0; j< AxonDistribution.glial_pop1[i].ramification_spheres.size(); ++j){
 
-                    if (check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
+                    for (unsigned k=0; k< AxonDistribution.glial_pop1[i].ramification_spheres[j].size(); ++k){
+
+                        double _x_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[0];
+                        double _y_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[1];
+                        double _z_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].center[2];
+                        double _r_ = AxonDistribution.glial_pop1[i].ramification_spheres[j][k].radius;
+                        Eigen::Vector3d pos = {_x_, _y_, _z_};
+                        if (!check_borders(min_l, max_l, pos, 0.0)) {
+                            continue;
+                        }
                         x_.push_back(_x_);
                         y_.push_back(_y_);
                         z_.push_back(_z_);
                         r_.push_back(_r_);
-                        b_.push_back(0);
+                        b_.push_back(j);
                     }
-
-
-                    for (unsigned j=0; j< AxonDistribution.glial_pop2[i].ramification_spheres.size(); ++j){
-
-                        for (unsigned k=0; k< AxonDistribution.glial_pop2[i].ramification_spheres[j].size(); ++k){
-
-                            double _x_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[0];
-                            double _y_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[1];
-                            double _z_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[2];
-                            double _r_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].radius;
-
-                            if (!check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
-                                continue;
-                            }
-                            x_.push_back(_x_);
-                            y_.push_back(_y_);
-                            z_.push_back(_z_);
-                            r_.push_back(_r_);
-                            b_.push_back(j);
-                        }
-                    }
-
-                    X_glial_pop2.push_back(x_);
-                    Y_glial_pop2.push_back(y_);
-                    Z_glial_pop2.push_back(z_);
-                    R_glial_pop2.push_back(r_);
-                    Branch_glial_pop2.push_back(b_);
-                    x_.clear();
-                    y_.clear();
-                    z_.clear();
-                    r_.clear();
-                    b_.clear();
                 }
 
-                for (unsigned i=0; i< AxonDistribution.blood_vessels.size(); ++i){
-                    std::vector<double> x_;
-                    std::vector<double> y_;
-                    std::vector<double> z_;
-                    std::vector<double> r_;
-                    for (unsigned j=0; j< AxonDistribution.blood_vessels[i].spheres.size(); ++j){
+                X_glial_pop1.push_back(x_);
+                Y_glial_pop1.push_back(y_);
+                Z_glial_pop1.push_back(z_);
+                R_glial_pop1.push_back(r_);
+                Branch_glial_pop1.push_back(b_);
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
+                b_.clear();
+            }
 
-                        double _x_ = AxonDistribution.blood_vessels[i].spheres[j].center[0];
-                        double _y_ = AxonDistribution.blood_vessels[i].spheres[j].center[1];
-                        double _z_ = AxonDistribution.blood_vessels[i].spheres[j].center[2];
-                        double _r_ = AxonDistribution.blood_vessels[i].spheres[j].radius;
-                        Eigen::Vector3d pos = {_x_, _y_, _z_};
+            for (unsigned i=0; i< AxonDistribution.glial_pop2.size(); ++i){
+                std::vector<double> x_;
+                std::vector<double> y_;
+                std::vector<double> z_;
+                std::vector<double> r_;
+                std::vector<int> b_;
 
-                        if (check_borders(min_l, max_l, pos, 0.0)) {
-                            x_.push_back(_x_);
-                            y_.push_back(_y_);
-                            z_.push_back(_z_);
-                            r_.push_back(_r_);
-                        }
-                    }
-                    X_blood_vessels.push_back(x_);
-                    Y_blood_vessels.push_back(y_);
-                    Z_blood_vessels.push_back(z_);
-                    R_blood_vessels.push_back(r_);
-                    x_.clear();
-                    y_.clear();
-                    z_.clear();
-                    r_.clear();
+                double _x_ = AxonDistribution.glial_pop2[i].soma.center[0];
+                double _y_ = AxonDistribution.glial_pop2[i].soma.center[1];
+                double _z_ = AxonDistribution.glial_pop2[i].soma.center[2];
+                double _r_ = AxonDistribution.glial_pop2[i].soma.radius;
+
+                if (check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
+                    x_.push_back(_x_);
+                    y_.push_back(_y_);
+                    z_.push_back(_z_);
+                    r_.push_back(_r_);
+                    b_.push_back(0);
                 }
+
+
+                for (unsigned j=0; j< AxonDistribution.glial_pop2[i].ramification_spheres.size(); ++j){
+
+                    for (unsigned k=0; k< AxonDistribution.glial_pop2[i].ramification_spheres[j].size(); ++k){
+
+                        double _x_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[0];
+                        double _y_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[1];
+                        double _z_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].center[2];
+                        double _r_ = AxonDistribution.glial_pop2[i].ramification_spheres[j][k].radius;
+
+                        if (!check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
+                            continue;
+                        }
+                        x_.push_back(_x_);
+                        y_.push_back(_y_);
+                        z_.push_back(_z_);
+                        r_.push_back(_r_);
+                        b_.push_back(j);
+                    }
+                }
+
+                X_glial_pop2.push_back(x_);
+                Y_glial_pop2.push_back(y_);
+                Z_glial_pop2.push_back(z_);
+                R_glial_pop2.push_back(r_);
+                Branch_glial_pop2.push_back(b_);
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
+                b_.clear();
             }
 
-            std::string simulation_file_name;
-            std::string swc_file_name;
+            for (unsigned i=0; i< AxonDistribution.blood_vessels.size(); ++i){
+                std::vector<double> x_;
+                std::vector<double> y_;
+                std::vector<double> z_;
+                std::vector<double> r_;
+                for (unsigned j=0; j< AxonDistribution.blood_vessels[i].spheres.size(); ++j){
 
-            std::string filename;
-            std::ifstream file(filename);
+                    double _x_ = AxonDistribution.blood_vessels[i].spheres[j].center[0];
+                    double _y_ = AxonDistribution.blood_vessels[i].spheres[j].center[1];
+                    double _z_ = AxonDistribution.blood_vessels[i].spheres[j].center[2];
+                    double _r_ = AxonDistribution.blood_vessels[i].spheres[j].radius;
+                    Eigen::Vector3d pos = {_x_, _y_, _z_};
 
-            if (rep ==0){
-                simulation_file_name = (directory + "/growth_info.txt");
-                swc_file_name = (directory + "/Voxel.csv");
+                    if (check_borders(min_l, max_l, pos, 0.0)) {
+                        x_.push_back(_x_);
+                        y_.push_back(_y_);
+                        z_.push_back(_z_);
+                        r_.push_back(_r_);
+                    }
+                }
+                X_blood_vessels.push_back(x_);
+                Y_blood_vessels.push_back(y_);
+                Z_blood_vessels.push_back(z_);
+                R_blood_vessels.push_back(r_);
+                x_.clear();
+                y_.clear();
+                z_.clear();
+                r_.clear();
             }
-            else{
-                simulation_file_name = (directory + "/growth_info_" + std::to_string(rep) + ".txt");
-                swc_file_name = (directory + "/Voxel_" + std::to_string(rep) + ".csv");
-            }
-            std::ofstream swc_file(swc_file_name);
-            std::ofstream simulation_file(simulation_file_name);
-
-            // Check if files opened successfully
-            if (!swc_file)
-            {
-                std::cerr << "Error opening output file : "<< swc_file_name << std::endl;
-
-            }
-            cout << "Creating file: " << swc_file_name << endl;
-            // write to file
-            AxonDistribution.create_SWC_file(swc_file);
-            swc_file.close();
-
-            // Check if files opened successfully
-
-            if (!simulation_file)
-            {
-                std::cerr << "Error opening output file : " << simulation_file_name <<std::endl;
-            }
-
-            auto endTime = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime);
-            AxonDistribution.simulation_file(simulation_file, duration);
-            simulation_file.close();
-
-            cout << "End of simulation!" << endl;
-
-            
         }
+
+        std::string simulation_file_name;
+        std::string swc_file_name;
+
+        std::string filename;
+        std::ifstream file(filename);
+
+        if (rep ==0){
+            simulation_file_name = (parameters.data_directory + "/growth_info.txt");
+            swc_file_name = (parameters.data_directory + "/Voxel.csv");
+        }
+        else{
+            simulation_file_name = (parameters.data_directory + "/growth_info_" + std::to_string(rep) + ".txt");
+            swc_file_name = (parameters.data_directory + "/Voxel_" + std::to_string(rep) + ".csv");
+        }
+        std::ofstream swc_file(swc_file_name);
+        std::ofstream simulation_file(simulation_file_name);
+
+        // Check if files opened successfully
+        if (!swc_file)
+        {
+            std::cerr << "Error opening output file : "<< swc_file_name << std::endl;
+
+        }
+        cout << "Creating file: " << swc_file_name << endl;
+        // write to file
+        AxonDistribution.create_SWC_file(swc_file);
+        swc_file.close();
+
+        // Check if files opened successfully
+
+        if (!simulation_file)
+        {
+            std::cerr << "Error opening output file : " << simulation_file_name <<std::endl;
+        }
+
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime);
+        AxonDistribution.simulation_file(simulation_file, duration);
+        simulation_file.close();
+
+        cout << "End of simulation!" << endl;
+
+        
     }
 
     if (visualise_voxel) {
