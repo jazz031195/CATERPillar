@@ -1,6 +1,5 @@
 # CATERPillar
 
-
 ## **Introduction**
 
 CATERPillar (**Computational Axonal Threading Engine for Realistic Proliferation**) is an advanced computational framework designed to simulate natural axonal growth using overlapping spheres as fundamental building blocks. By employing a biologically inspired approach, CATERPillar enables parallel axon development while effectively preventing collisions, allowing users to control key structural parameters such as **density, tortuosity, and beading**.
@@ -43,13 +42,23 @@ make
 
 ### **3. Run CATERPillar**
 
-Once successfully compiled, launch the graphical user interface by running:
+CATERPillar can be run in two distinct modes: an interactive graphical interface (ideal for exploring parameters) or a headless command-line mode (ideal for High-Performance Computing clusters and automated batch processing).
+
+**Mode A: Graphical User Interface (GUI)**
+Launch the GUI by running:
 
 ```bash
 ./CATERPillar
 ```
-
 The GUI allows you to configure biophysical parameters and generate realistic numerical substrates. To generate a new substrate, click **"Grow Substrate"**. To visualize a previously generated substrate, click **"Visualise Substrate"**.
+
+**Mode B: Headless / HPC Mode (JSON Configuration)**
+To bypass the GUI entirely and run simulations in the terminal, pass the `--config` argument followed by the path to your JSON settings file:
+
+```bash
+./CATERPillar --config example_config.json
+```
+This mode allows you to execute heavy math and generate `.csv` files on remote servers without display capabilities (X11 forwarding is not required). An example configuration file (`example_config.json`) is included in the repository to help you correctly format your parameters.
 
 -----
 
