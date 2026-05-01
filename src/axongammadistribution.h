@@ -51,9 +51,9 @@ public:
     double target_axons_w_myelin_icvf;        /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double target_axons_wo_myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons without myelin */
     double target_glial_pop1_soma_icvf;        /*!< Astrocyte Intracellular Compartment Volume Fraction */
-    double target_glial_pop1_branches_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
+    double target_glial_pop1_processes_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
     double target_glial_pop2_soma_icvf;        /*!< glial_pop2 Intracellular Compartment Volume Fraction */
-    double target_glial_pop2_branches_icvf;    /*!< glial_pop2 Intracellular Compartment Volume Fraction */
+    double target_glial_pop2_processes_icvf;    /*!< glial_pop2 Intracellular Compartment Volume Fraction */
     double target_blood_vessels_icvf;    /*!< Blood Vessel Compartment Volume Fraction */
     double total_volume; /*!< Total volume of the voxel */
     double target_axons_icvf;        
@@ -61,15 +61,20 @@ public:
     double axons_w_myelin_icvf;        /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double axons_wo_myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons without myelin */
     double glial_pop1_soma_icvf;        /*!< Astrocyte Intracellular Compartment Volume Fraction */
-    double glial_pop1_branches_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
+    double glial_pop1_processes_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
     double glial_pop2_soma_icvf;        /*!< glial_pop2 Intracellular Compartment Volume Fraction */
-    double glial_pop2_branches_icvf;    /*!< glial_pop2 Intracellular Compartment Volume Fraction */
+    double glial_pop2_processes_icvf;    /*!< glial_pop2 Intracellular Compartment Volume Fraction */
     double axons_icvf;        /*!< Intracellular Compartment Volume Fraction of axons without myelin */
     double myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double extracellular_icvf;        /*!< Extracellular Compartment Volume Fraction */
     double blood_vessels_icvf;    /*!< Blood Vessel Compartment Volume Fraction */
+    double epsilon_blood_vessels;
+    double mean_vessel_rad;
+    double std_vessel_rad;
 
-    int factor;                         /*!< Factor to divide the radii by */
+    double swelling_factor;
+
+    int spheres_overlap_factor;                         /*!< Factor to divide the radii by */
     bool axon_can_shrink;               /*!< If true, the axons can shrink to allow passage between them */
     double cosPhiSquared;              /*!< Cosine of the angle between the axon and the plane squared */
 
@@ -85,16 +90,16 @@ public:
     double min_radius;                  /*!< Minimum radius value of all axons */
     double max_radius;                  /*!< Maximum radius value of all axons */
 
-    double beading_variation;              /*!< For beading: percentage of variation between the maximum radius and minimum radius in each axon. If set to 1, there is no "beading" */
+    double beading_amplitude;              /*!< For beading: percentage of variation between the maximum radius and minimum radius in each axon. If set to 1, there is no "beading" */
     double beading_std;                    /*!< Standard deviation of the variation in beading */
-    double std_dev;                     /*< Standard deviation for gaussian distribution in generation of directions to grow in */ 
+    double epsilon;                     /*< Standard deviation for gaussian distribution in generation of directions to grow in */ 
     int undulation_factor;              /*!< axon ondulation factor : the number of spheres during whoch the axon grows straight before picking a direction from gaussian distribution  */
     double mean_glial_pop1_process_length;   /*!< Mean length of glial processes */
     double std_glial_pop1_process_length;    /*!< Standard deviation of glial processes */
-    int nbr_primary_processes_pop1;          /*!< Number of primary processes for glial cells */
+    int glial_pop1_nbr_primary_processes;          /*!< Number of primary processes for glial cells */
     double mean_glial_pop2_process_length;   /*!< Mean length of glial processes */
     double std_glial_pop2_process_length;    /*!< Standard deviation of glial processes */
-    int nbr_primary_processes_pop2;          /*!< Number of primary processes for glial cells */
+    int glial_pop2_nbr_primary_processes;          /*!< Number of primary processes for glial cells */
 
     double c1;                              /*!< First coefficient of the Myelin thickness */
     double c2;                              /*!< Second coefficient of the Myelin thickness */
@@ -358,6 +363,8 @@ public:
     double originalFunction(const double &x, const double &outerRadius);
     double derivative(const double &x);
     double myelin_thickness(const double &inner_radius);
+
+    bool PushSurroundingSpheres(const Sphere &swollen_sph, int max_iterations);
 
 };
 

@@ -24,7 +24,7 @@ CellGrowth::CellGrowth(const CellGrowth &other)
     max_limits(other.max_limits),
     extended_min_limits(other.extended_min_limits),
     extended_max_limits(other.extended_max_limits),
-    std_dev(other.std_dev),
+    epsilon(other.epsilon),
     min_radius(other.min_radius),
     grow_straight(other.grow_straight),
     finished(other.finished)

@@ -24,12 +24,12 @@ BloodVesselGrowth::BloodVesselGrowth(Blood_Vessel &bv_to_grow_,
                        const Eigen::Vector3d &extended_max_limits_,
                        const Eigen::Vector3d &min_limits_,
                        const Eigen::Vector3d &max_limits_,
-                       const double &std_dev_,
+                       const double &epsilon_,
                        const double &min_radius_)
     : CellGrowth(axons_, glial_pop1_, glial_pop2_, blood_vessels_,
                  extended_min_limits_, extended_max_limits_,
                  min_limits_, max_limits_,
-                 std_dev_, min_radius_),
+                 epsilon_, min_radius_),
       bv_to_grow(bv_to_grow_)
 {}
 
@@ -89,7 +89,7 @@ bool BloodVesselGrowth::AddOneSphere(double radius_, bool create_sphere, int gro
     double max_radius_ = std::max(radius_, last_sphere.radius);
 
     double distance = max_radius_;
-    int threshold_tries = (std_dev == 0.0) ? 1 : 100; // tries 100 times to place sphere
+    int threshold_tries = (epsilon == 0.0) ? 1 : 100; // tries 100 times to place sphere
 
     // New sphere to attempt placing
     Sphere s(bv_to_grow.spheres.size() + factor,
@@ -105,7 +105,7 @@ bool BloodVesselGrowth::AddOneSphere(double radius_, bool create_sphere, int gro
     // Returns true if placed successfully, false otherwise.
     auto attemptPlacement = [&](Sphere &candidate, int triesCount) -> bool {
         // 1) Find next center
-        if (std_dev != 0.0) {
+        if (epsilon != 0.0) {
             // If grow_straight is set, use the straight function, else the normal function
             if (grow_straight == 1) {
                 candidate.center= find_next_center_straight(distance, bv_to_grow.spheres);
@@ -113,7 +113,7 @@ bool BloodVesselGrowth::AddOneSphere(double radius_, bool create_sphere, int gro
                 candidate.center= find_next_center(distance, bv_to_grow.spheres, bv_to_grow.end);
             }
         } else {
-            // If std_dev == 0, we skip the "straight vs. random" logic and always use find_next_center
+            // If epsilon == 0, we skip the "straight vs. random" logic and always use find_next_center
             candidate.center= find_next_center(distance, bv_to_grow.spheres, bv_to_grow.end);
         }
 
@@ -148,7 +148,7 @@ bool BloodVesselGrowth::AddOneSphere(double radius_, bool create_sphere, int gro
         }
         
         // If still not placed, and we used "grow_straight == 1", then attempt a fallback (non-straight) approach
-        if (!can_grow_ && (std_dev != 0.0) && (grow_straight == 1)) {
+        if (!can_grow_ && (epsilon != 0.0) && (grow_straight == 1)) {
             grow_straight == 0; // Fallback to normal growth
             if (attemptPlacement(s, tries)) {
                 can_grow_ = true;
@@ -240,7 +240,7 @@ Eigen::Vector3d BloodVesselGrowth::find_next_center(const double dist_,
     }
 
     Eigen::Vector3d biased_random_vector = apply_bias_toward_target(
-        generate_random_point_on_sphere(std_dev), target_direction
+        generate_random_point_on_sphere(epsilon), target_direction
     );
 
     
@@ -255,7 +255,7 @@ Eigen::Vector3d BloodVesselGrowth::find_next_center(const double dist_,
         
         while(angle > angle_limit && nbr_tries < 10) {
             biased_random_vector = apply_bias_toward_target(
-                generate_random_point_on_sphere(std_dev), target_direction
+                generate_random_point_on_sphere(epsilon), target_direction
             );
 
             cos_angle = previous_vector.dot(biased_random_vector.normalized());

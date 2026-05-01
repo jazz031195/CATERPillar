@@ -10,17 +10,20 @@
 #include <algorithm>
 #include <mutex>
 #include <vector>
+#include <QPainter>
 
 
 OpenGLWindow::OpenGLWindow(QWindow *parent)
     : QOpenGLWindow(NoPartialUpdate, parent),
-      orbitTheta(0.0f), orbitPhi(0.0f), cameraDistance(50.0f)
+      orbitTheta(0.0f), 
+      orbitPhi(0.0f), 
+      cameraDistance(100.0f), // Try bumping this to 100.0f if the axons are huge
+      zoomFactor(1.0f),      // <--- CRITICAL: Must be 1.0, not 0
+      totalBatchedVertices(0)
 {
     connect(&timer, &QTimer::timeout, this, static_cast<void(QWindow::*)()>(&OpenGLWindow::update));
     timer.start(16); // Refresh every ~16 ms (60 FPS)
 }
-
-
 OpenGLWindow::~OpenGLWindow() {}
 
 template <typename T>
@@ -39,6 +42,51 @@ namespace {
         );
     }
 }
+
+void OpenGLWindow::buildBatchedGeometry()
+{
+
+
+    qDebug() << "buildBatchedGeometry called";
+    qDebug() << "spherePositions.size():" << spherePositions.size();
+    qDebug() << "sphereRadii.size():" << sphereRadii.size();
+    qDebug() << "axonColors.size():" << axonColors.size();
+    qDebug() << "sphereVertices.size():" << sphereVertices.size();
+    geometryReady = false;
+
+
+    batchedVertices.clear();
+    batchedColors.clear();
+
+    size_t numSpheres = spherePositions.size();
+    if (numSpheres == 0 || sphereVertices.empty()) return;
+    
+    size_t floatsPerSphere = sphereVertices.size(); 
+    batchedVertices.reserve(numSpheres * floatsPerSphere);
+    batchedColors.reserve(numSpheres * floatsPerSphere);
+
+    for (size_t i = 0; i < numSpheres; ++i) {
+        const QVector3D& pos = spherePositions[i];
+        float r = sphereRadii[i];
+        const QColor& col = axonColors[i];
+
+        size_t vertCount = (sphereVertices.size() / 3) * 3; // truncate to safe multiple of 3
+        for (size_t v = 0; v + 2 < vertCount; v += 3) {
+            batchedVertices.push_back((sphereVertices[v] * r) + pos.x());
+            batchedVertices.push_back((sphereVertices[v+1] * r) + pos.y());
+            batchedVertices.push_back((sphereVertices[v+2] * r) + pos.z());
+
+            batchedColors.push_back(col.redF());
+            batchedColors.push_back(col.greenF());
+            batchedColors.push_back(col.blueF());
+        }
+    }
+    totalBatchedVertices = batchedVertices.size() / 3;
+    qDebug() << "SUCCESS: Generated" << totalBatchedVertices << "vertices.";
+    geometryReady = true;
+
+}
+
 void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
                               const std::vector<std::vector<double>>& y,
                               const std::vector<std::vector<double>>& z,
@@ -80,6 +128,19 @@ void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
         for (size_t k = 0; k < idxAxon.size(); ++k) colors[idxAxon[k]] = tmp[k];
     }
 
+    if (x.size() != y.size() || x.size() != z.size() || x.size() != radius.size() || x.size() != groupIds.size()) {
+        qDebug() << "Input size mismatch";
+        return;
+    }
+
+    for (size_t i = 0; i < x.size(); ++i) {
+        if (x[i].size() != y[i].size() || x[i].size() != z[i].size() || x[i].size() != radius[i].size()) {
+            qDebug() << "Bundle size mismatch at" << i;
+            return;
+        }
+    }
+
+
     // --- 2. Pass 1: Sum and Count (Fast single-thread) ---
     double totalSumX = 0, totalSumY = 0, totalSumZ = 0;
     long long totalCount = 0;
@@ -97,11 +158,18 @@ void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
     avgZ = totalSumZ / totalCount;
     QVector3D avg(avgX, avgY, avgZ);
 
+
     // --- 3. Pass 2: Multithreaded Processing ---
     // Reserve memory so vectors don't reallocate
     spherePositions.resize(totalCount);
     sphereRadii.resize(totalCount);
     axonColors.resize(totalCount);
+
+    // Verify total count matches reserved size
+    size_t verifyTotal = 0;
+    for (size_t i = 0; i < x.size(); ++i) verifyTotal += x[i].size();
+    Q_ASSERT(verifyTotal == (size_t)totalCount);
+    Q_ASSERT(spherePositions.size() == (size_t)totalCount);
 
     unsigned int numThreads = std::thread::hardware_concurrency();
     if (numThreads == 0) numThreads = 2; 
@@ -146,16 +214,24 @@ void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
     initialsphereRadii = sphereRadii;
     initialaxonColors = axonColors;
 
+    // Ensure sphere template exists even if GL init timing was off
+    if (sphereVertices.empty()) {
+
+        generateSphereVBO(30, 30, 1.0f);
+    }
+    buildBatchedGeometry();
+
     update();
 }
 
-void OpenGLWindow::resetCamera(){
-
-    orbitTheta= 0.0f;
+void OpenGLWindow::resetCamera()
+{
+    orbitTheta = 0.0f;
     orbitPhi = 0.0f;
-    cameraDistance = maxZ+ 50.0f;
+    cameraDistance = 100.0f; // Pull the camera back to a safe distance
+    zoomFactor = 1.0f;       // Reset the scroll wheel multiplier
     update();
-} 
+}
 
 
 void OpenGLWindow::initializeGL()
@@ -166,6 +242,7 @@ void OpenGLWindow::initializeGL()
 
     // Generate the VBO for the sphere geometry
     generateSphereVBO(30, 30, 1.0f);  // Example: 30 slices, 30 stacks, radius 1.0
+
 }
 
 void OpenGLWindow::resizeGL(int w, int h)
@@ -205,18 +282,25 @@ QVector3D rotateAround(const QVector3D& position, float deltaTheta, float deltaP
     return QVector3D(newX, newY, newZ);
 }
 
-
-
 void OpenGLWindow::paintGL()
 {
+
+    if (!geometryReady || totalBatchedVertices == 0) return;
+    this->setTitle(QString("Vertices: %1 | Cam: %2")
+                   .arg(totalBatchedVertices)
+                   .arg(cameraDistance * zoomFactor));
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
-    // 1. Camera Math (Same as your original)
+    if (totalBatchedVertices == 0) return;
+
+    QVector3D targetCenter(0.0f, 0.0f, 0.0f);
     float radius = cameraDistance * zoomFactor;
     float radTheta = qDegreesToRadians(orbitTheta);
     float radPhi = qDegreesToRadians(orbitPhi);
-    cameraPosition = QVector3D(
+
+    cameraPosition = targetCenter + QVector3D(
         radius * cos(radPhi) * sin(radTheta),
         radius * sin(radPhi),
         radius * cos(radPhi) * cos(radTheta)
@@ -224,49 +308,29 @@ void OpenGLWindow::paintGL()
 
     QMatrix4x4 modelViewMatrix;
     modelViewMatrix.setToIdentity();
-    modelViewMatrix.lookAt(cameraPosition, QVector3D(0, 0, 0), QVector3D(0, 1, 0));
+    modelViewMatrix.lookAt(cameraPosition, targetCenter, QVector3D(0, 1, 0));
 
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf(projectionMatrix.constData());
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf(modelViewMatrix.constData());
 
-    size_t numSpheres = spherePositions.size();
-    if (numSpheres == 0) return;
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
 
-    // 2. Parallelize the Distance Calculations
-    static std::vector<std::pair<float, size_t>> distances;
-    if (distances.size() != numSpheres) distances.resize(numSpheres);
+    glVertexPointer(3, GL_FLOAT, 0, batchedVertices.data());
+    glColorPointer(3, GL_FLOAT, 0, batchedColors.data());
 
-    unsigned int nThreads = std::thread::hardware_concurrency();
-    std::vector<std::future<void>> futures;
-    size_t chunkSize = (numSpheres + nThreads - 1) / nThreads;
+    // Debug mode
+    glPointSize(2.0f);
+    glDrawArrays(GL_POINTS, 0, totalBatchedVertices);
 
-    for (unsigned int t = 0; t < nThreads; ++t) {
-        size_t start = t * chunkSize;
-        size_t end = std::min(start + chunkSize, numSpheres);
-        futures.push_back(std::async(std::launch::async, [this, start, end]() {
-            for (size_t i = start; i < end; ++i) {
-                // Use squared length to avoid slow sqrt() calls
-                float d2 = (this->spherePositions[i] - this->cameraPosition).lengthSquared();
-                distances[i] = {d2, i};
-            }
-        }));
-    }
-    for (auto& f : futures) f.wait();
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
 
-    // 3. Standard Sort (No <execution> header needed)
-    std::sort(distances.begin(), distances.end(), 
-            [](const auto& a, const auto& b) { return a.first > b.first; });
 
-    // 4. The Drawing Loop
-    // We cannot multi-thread the GL calls, but since the CPU math is now 
-    // finished instantly, the GPU can receive commands at full speed.
-    for (size_t i = 0; i < numSpheres; ++i) {
-        size_t idx = distances[i].second;
-        drawSphere(spherePositions[idx], sphereRadii[idx], axonColors[idx]);
-    }
 }
+
 
 void OpenGLWindow::drawSphere(const QVector3D& position, float radius, const QColor& color)
 {
@@ -348,18 +412,18 @@ void OpenGLWindow::mouseReleaseEvent(QMouseEvent *event)
     }
 }
 
-// Zoom in or out depending on the scroll direction
 void OpenGLWindow::wheelEvent(QWheelEvent *event)
 {
+    // If scrolling forward, zoom in (decrease radius)
     if (event->angleDelta().y() > 0) {
-        zoomFactor *= 1.1f;  // Zoom in
+        zoomFactor *= 0.9f; 
     } else {
-        zoomFactor /= 1.1f;  // Zoom out
+        zoomFactor *= 1.1f; 
     }
-
-    update();  // Repaint with new zoom
+    
+    // THIS LINE IS REQUIRED TO ACTUALLY DRAW THE ZOOM
+    update(); 
 }
-
 
 void OpenGLWindow::generateRandomColors(int count, std::vector<QColor>& colors) {
     // Use a static RNG so successive calls don't reseed to the same sequence
@@ -377,49 +441,47 @@ void OpenGLWindow::generateRandomColors(int count, std::vector<QColor>& colors) 
     }
 }
 
-
-
 void OpenGLWindow::generateSphereVBO(int slices, int stacks, float radius)
 {
     sphereVertices.clear();
     sphereNormals.clear();
 
     for (int i = 0; i <= stacks; ++i) {
-        double lat0 = M_PI * (-0.5 + double(i - 1) / stacks);
-        double z0 = qSin(lat0) * radius;
-        double zr0 = qCos(lat0) * radius;
+        // FIX: use (i) not (i-1) for lat0 to avoid the off-by-one
+        double lat0 = M_PI * (-0.5 + double(i) / stacks);
+        double z0   = qSin(lat0) * radius;
+        double zr0  = qCos(lat0) * radius;
 
-        double lat1 = M_PI * (-0.5 + double(i) / stacks);
-        double z1 = qSin(lat1) * radius;
-        double zr1 = qCos(lat1) * radius;
+        double lat1 = M_PI * (-0.5 + double(i + 1) / stacks);
+        double z1   = qSin(lat1) * radius;
+        double zr1  = qCos(lat1) * radius;
 
         for (int j = 0; j <= slices; ++j) {
-            double lng = 2 * M_PI * double(j - 1) / slices;
+            double lng = 2 * M_PI * double(j) / slices; // FIX: j not (j-1)
             double x = qCos(lng);
             double y = qSin(lng);
 
-            // Vertex and normal for the first point
             sphereVertices.push_back(x * zr0);
             sphereVertices.push_back(y * zr0);
             sphereVertices.push_back(z0);
 
-            sphereNormals.push_back(x * zr0);
-            sphereNormals.push_back(y * zr0);
-            sphereNormals.push_back(z0);
-
-            // Vertex and normal for the second point
             sphereVertices.push_back(x * zr1);
             sphereVertices.push_back(y * zr1);
             sphereVertices.push_back(z1);
-
-            sphereNormals.push_back(x * zr1);
-            sphereNormals.push_back(y * zr1);
-            sphereNormals.push_back(z1);
         }
     }
 
-    // Generate and bind VBO
-    glGenBuffers(1, &sphereVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
-    glBufferData(GL_ARRAY_BUFFER, sphereVertices.size() * sizeof(float), &sphereVertices[0], GL_STATIC_DRAW);
+    // GPU upload (only valid inside GL context)
+    if (QOpenGLContext::currentContext() != nullptr) {
+        if (sphereVBO) glDeleteBuffers(1, &sphereVBO);
+        glGenBuffers(1, &sphereVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
+        glBufferData(GL_ARRAY_BUFFER,
+                     sphereVertices.size() * sizeof(float),
+                     sphereVertices.data(),
+                     GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+    qDebug() << "Sphere template built:" << sphereVertices.size() << "floats";
 }

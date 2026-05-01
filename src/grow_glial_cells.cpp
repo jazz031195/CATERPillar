@@ -24,7 +24,7 @@ GlialCellGrowth::GlialCellGrowth(Glial &glial_cell_to_grow_,
             const Eigen::Vector3d &extended_max_limits_,
             const Eigen::Vector3d &min_limits_,
             const Eigen::Vector3d &max_limits_,
-            const double &min_radius_, const double &std_dev_) : CellGrowth(axons_, glial_pop1_, glial_pop2_, blood_vessels_, extended_min_limits_, extended_max_limits_, min_limits_, max_limits_, std_dev_, min_radius_), glial_cell_to_grow(glial_cell_to_grow_){}
+            const double &min_radius_, const double &epsilon_) : CellGrowth(axons_, glial_pop1_, glial_pop2_, blood_vessels_, extended_min_limits_, extended_max_limits_, min_limits_, max_limits_, epsilon_, min_radius_), glial_cell_to_grow(glial_cell_to_grow_){}
 
 GlialCellGrowth::GlialCellGrowth(const GlialCellGrowth &other)
   : CellGrowth(other),             // Call the base-class copy constructor
@@ -182,7 +182,7 @@ void GlialCellGrowth::find_next_center(Sphere &s,  double dist_, const std::vect
     Eigen::Vector3d target_ = target;
     Eigen::Vector3d vector_to_target = target_ - spheres[spheres.size() - 1].center;
     vector_to_target = vector_to_target.normalized();
-    double std_ = std_dev;
+    double std_ = epsilon;
     Eigen::Vector3d vector = generate_random_point_on_sphere(std_);
     vector = apply_bias_toward_target(vector, vector_to_target);
     Eigen::Vector3d position = spheres[spheres.size() - 1].center + dist_ * vector.normalized();

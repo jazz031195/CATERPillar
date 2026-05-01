@@ -26,6 +26,9 @@ public:
     void resetCamera();
     enum class SphereGroup : int { Axon = 0, Glial1 = 1, Glial2 = 2, Blood = 3 };
 
+    void buildBatchedGeometry();
+    std::atomic<bool> geometryReady{false};
+
 protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
@@ -39,6 +42,10 @@ protected:
     void generateSphereVBO(int slices, int stacks, float radius);
 
 private:
+
+    std::vector<GLfloat> batchedVertices;
+    std::vector<GLfloat> batchedColors;
+    size_t totalBatchedVertices = 0;
     std::vector<QVector3D> spherePositions;
     std::vector<double> sphereRadii;
     std::vector<QColor> axonColors;  // Store colors for each axon
@@ -47,9 +54,9 @@ private:
     std::vector<double> initialsphereRadii;
     std::vector<QColor> initialaxonColors;  // Store colors for each axon
 
-    double avgX;
-    double avgY;
-    double avgZ;
+    double avgX = 0.0;
+    double avgY = 0.0;
+    double avgZ = 0.0;
     double maxX;
     double maxY;
     double maxZ;
@@ -57,7 +64,6 @@ private:
     float orbitTheta;
     float orbitPhi;
     float cameraDistance;
-    
 
 
     QMatrix4x4 projectionMatrix;

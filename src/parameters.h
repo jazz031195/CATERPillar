@@ -26,10 +26,10 @@ public:
     double voxel_size = 50;
     int repetitions = 1;
     int spheres_overlap_factor = 2;
-    double glial_pop1_icvf_soma = 0.0;
-    double glial_pop1_icvf_processes = 0.0;
-    double glial_pop2_icvf_soma = 0.0;
-    double glial_pop2_icvf_processes = 0.0;
+    double glial_pop1_soma_icvf = 0.0;
+    double glial_pop1_processes_icvf = 0.0;
+    double glial_pop2_soma_icvf = 0.0;
+    double glial_pop2_processes_icvf = 0.0;
     int nbr_axons_populations = 1;
     int crossing_fibers_type = 0;
 
@@ -41,12 +41,18 @@ public:
     double beta = 0.25;
     int regrow_thr = 10;
     double min_rad = 0.15;
-    double std_dev = 0.01;
-    int ondulation_factor = 5;
+    double epsilon = 0.01;
+    int undulation_factor = 5;
     double beading_amplitude = 0.3;    
-    double beading_std = 0.05;     
+    double beading_std = 0.05;
 
-    bool can_shrink = true;
+    double epsilon_blood_vessels = 0.0;
+    double mean_vessel_rad = 6;
+    double std_vessel_rad = 1;
+
+    double swelling_factor = 1.0;     
+
+    bool axon_can_shrink = true;
     double cosPhiSquared= 1.0;
     int nbr_threads = 1;
 

@@ -37,7 +37,7 @@ class GlialCellGrowth : public CellGrowth
             const Eigen::Vector3d &extended_max_limits_,
             const Eigen::Vector3d &min_limits_,
             const Eigen::Vector3d &max_limits_,
-            const double &min_radius_, const double &std_dev_= 0.4);
+            const double &min_radius_, const double &epsilon_= 0.4);
 
         void add_spheres(Sphere &sph, const Sphere &last_sphere, const bool &check_collision_with_branches, const int &factor, const int &index_ram_spheres);
         bool AddOneSphere(const double &radius_, const bool &create_sphere, int &grow_straight, const int &i, const bool &check_collision_with_branches, const int &parent, const int &factor);

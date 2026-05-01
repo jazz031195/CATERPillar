@@ -54,6 +54,8 @@ private:
     void resizeEvent(QResizeEvent *e);
     void StartSimulation();
     SlidersGroup *slidersGroup;
+    OpenGLWindow *openglWindow = nullptr;
+    QWidget *visualizationWidget = nullptr;
 
     QComboBox *configurationComboBox;
     QGroupBox *controlsGroup;
@@ -189,7 +191,7 @@ private:
     // Member for the 3D scatter plot and modifier
     QtDataVisualization::Q3DScatter *graph;
     ScatterDataModifier *modifier;
-    OpenGLWindow *openglWindow;
+
     
 };
 

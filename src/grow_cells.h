@@ -48,7 +48,7 @@ protected:
     Eigen::Vector3d extended_min_limits;
     Eigen::Vector3d extended_max_limits;
 
-    double std_dev;
+    double epsilon;
     double min_radius;
     int grow_straight;
 
@@ -62,15 +62,15 @@ protected:
                const Eigen::Vector3d& extended_max_limits_,
                const Eigen::Vector3d& min_limits_,
                const Eigen::Vector3d& max_limits_,
-               const double& std_dev_,
+               const double& epsilon_,
                const double& min_radius_)
         : min_limits(min_limits_),
           max_limits(max_limits_),
           extended_min_limits(extended_min_limits_),
           extended_max_limits(extended_max_limits_),
-          std_dev(std_dev_),
+          epsilon(epsilon_),
           min_radius(min_radius_),
-          grow_straight(std_dev_ == 0.0 ? 0 : 1),
+          grow_straight(epsilon_ == 0.0 ? 0 : 1),
           finished(false),
           axons(axons_),
           glial_pop1(glial_pop1_),

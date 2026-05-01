@@ -9,7 +9,7 @@
 #include <QString>
 
 
-void CoreLogic::runSimulation(const Parameters& params) {
+CoreLogic::SimResult CoreLogic::runSimulation(const Parameters& params) {
     std::cout << "\n========================================" << std::endl;
     std::cout << " Starting CATERPillar Simulation Engine " << std::endl;
     std::cout << " Output Directory: " << params.data_directory << std::endl;
@@ -51,7 +51,7 @@ void CoreLogic::runSimulation(const Parameters& params) {
             swc_file_name = (params.data_directory + "/" + params.filename + ".csv");
         }
         else{
-            simulation_file_name = (params.data_directory + "/" + params.filename + "/growth_info_" + std::to_string(rep) + ".txt");
+            simulation_file_name = (params.data_directory + "/" + params.filename + "_growth_info_" + std::to_string(rep) + ".txt");
             swc_file_name = (params.data_directory + "/" + params.filename + "_" + std::to_string(rep) + ".csv");
         }
         std::ofstream swc_file(swc_file_name);
@@ -80,12 +80,20 @@ void CoreLogic::runSimulation(const Parameters& params) {
         AxonDistribution.simulation_file(simulation_file, duration);
         simulation_file.close();
 
+        if (rep == params.repetitions -1){
+            std::cout << "\n========================================" << std::endl;
+            std::cout << " All simulations completed successfully! " << std::endl;
+            std::cout << "========================================" << std::endl;
+
+            return std::make_tuple(AxonDistribution.axons, 
+                                AxonDistribution.blood_vessels, 
+                                AxonDistribution.glial_pop1, 
+                                AxonDistribution.glial_pop2);
+                } 
+
     }
 
 
-    std::cout << "\n========================================" << std::endl;
-    std::cout << " All simulations completed successfully! " << std::endl;
-    std::cout << "========================================" << std::endl;
 }
 
 void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
@@ -141,7 +149,7 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     params.alpha = data["AxonParameters"]["Alpha"];
     params.beta = data["AxonParameters"]["Beta"];
     params.min_rad = data["AxonParameters"]["MinRadius"];
-    params.std_dev = data["AxonParameters"]["Tortuosity_Epsilon"];
+    params.epsilon = data["AxonParameters"]["Tortuosity_Epsilon"];
     params.cosPhiSquared = data["AxonParameters"]["FODF_c2"];
     
     // Updated beading variables
@@ -155,17 +163,17 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
 
     // Simulation engine flags
     params.tortuous = data["AxonParameters"].value("Tortuous", true);
-    params.can_shrink = data["AxonParameters"].value("CanShrink", true);
+    params.axon_can_shrink = data["AxonParameters"].value("CanShrink", true);
     params.regrow_thr = data["AxonParameters"].value("RegrowThreshold", 10);
-    params.ondulation_factor = data["AxonParameters"].value("OndulationFactor", 5);
+    params.undulation_factor = data["AxonParameters"].value("UndulationFactor", 5);
 
     // ==========================================
     // 3. Glial Parameters
     // ==========================================
     
     // Population 1
-    params.glial_pop1_icvf_soma = double(data["GlialParameters"]["Pop1SomaICVF"]) / 100.0;
-    params.glial_pop1_icvf_processes = double(data["GlialParameters"]["Pop1ProcessesICVF"]) / 100.0;
+    params.glial_pop1_soma_icvf = double(data["GlialParameters"]["Pop1SomaICVF"]) / 100.0;
+    params.glial_pop1_processes_icvf = double(data["GlialParameters"]["Pop1ProcessesICVF"]) / 100.0;
     params.glial_pop1_radius_mean = data["GlialParameters"]["Pop1SomaRadiusMean"];
     params.glial_pop1_radius_std = data["GlialParameters"]["Pop1SomaRadiusStd"];
     params.mean_glial_pop1_process_length = data["GlialParameters"]["Pop1MeanProcessLength"];
@@ -174,8 +182,8 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     params.glial_pop1_branching = data["GlialParameters"]["Pop1Branching"];
 
     // Population 2
-    params.glial_pop2_icvf_soma = double(data["GlialParameters"]["Pop2SomaICVF"]) / 100.0;
-    params.glial_pop2_icvf_processes = double(data["GlialParameters"]["Pop2ProcessesICVF"]) / 100.0;
+    params.glial_pop2_soma_icvf = double(data["GlialParameters"]["Pop2SomaICVF"]) / 100.0;
+    params.glial_pop2_processes_icvf = double(data["GlialParameters"]["Pop2ProcessesICVF"]) / 100.0;
     params.glial_pop2_radius_mean = data["GlialParameters"]["Pop2SomaRadiusMean"];
     params.glial_pop2_radius_std = data["GlialParameters"]["Pop2SomaRadiusStd"];
     params.mean_glial_pop2_process_length = data["GlialParameters"]["Pop2MeanProcessLength"];

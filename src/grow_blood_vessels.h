@@ -29,7 +29,7 @@ public:
                        const Eigen::Vector3d &extended_max_limits_,
                        const Eigen::Vector3d &min_limits_,
                        const Eigen::Vector3d &max_limits_,
-                       const double &std_dev_,
+                       const double &epsilon_,
                        const double &min_radius_);
 
     
