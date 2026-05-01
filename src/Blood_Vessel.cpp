@@ -210,26 +210,26 @@ bool Blood_Vessel::isSphereInsideBlood_Vessel(const Sphere &sph) const{
     }
     
     if (isNearBlood_Vessel(sph.center, 2*sph.radius + barrier_tickness)){ // if near axon
-        if(!(sph.object_type == 0 && sph.object_id == id)){ 
-            std::vector<std::vector<int>> spheres_id_to_check;
-            for (auto axis = 0; axis < 3; ++axis) {
-                spheres_id_to_check.push_back(checkAxisForCollision(sph, axis)); // check for collision along 1 axis
-                if (spheres_id_to_check[axis].size() == 0){
-                    return false;
-                }
+
+        std::vector<std::vector<int>> spheres_id_to_check;
+        for (auto axis = 0; axis < 3; ++axis) {
+            spheres_id_to_check.push_back(checkAxisForCollision(sph, axis)); // check for collision along 1 axis
+            if (spheres_id_to_check[axis].size() == 0){
+                return false;
             }
-            // find common ids in all 3 axes
-            auto spheres_to_check_all_axes = Obstacle::findCommonIntegers(spheres_id_to_check[0], spheres_id_to_check[1], spheres_id_to_check[2]);
-            for (auto i = 0; i < spheres_to_check_all_axes.size(); ++i) {
-                Sphere sphere_to_check = spheres[spheres_to_check_all_axes[i]];
-                if (sph.minDistance(sphere_to_check.center) < sphere_to_check.radius){
-                    return true;
-                }
-            }
-            spheres_id_to_check.clear();
-            spheres_to_check_all_axes.clear();
         }
+        // find common ids in all 3 axes
+        auto spheres_to_check_all_axes = Obstacle::findCommonIntegers(spheres_id_to_check[0], spheres_id_to_check[1], spheres_id_to_check[2]);
+        for (auto i = 0; i < spheres_to_check_all_axes.size(); ++i) {
+            Sphere sphere_to_check = spheres[spheres_to_check_all_axes[i]];
+            if (sph.minDistance(sphere_to_check.center) < sphere_to_check.radius){
+                return true;
+            }
+        }
+        spheres_id_to_check.clear();
+        spheres_to_check_all_axes.clear();
     }
+    
 
     return false;
 }
