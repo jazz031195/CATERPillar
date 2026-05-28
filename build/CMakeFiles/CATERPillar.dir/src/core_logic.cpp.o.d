@@ -318,81 +318,95 @@ CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o: \
  /home/localadmin/Documents/CATERPillar/src/Eigen/src/Core/StlIterators.h \
  /home/localadmin/Documents/CATERPillar/src/Eigen/src/Core/GlobalFunctions.h \
  /home/localadmin/Documents/CATERPillar/src/Eigen/src/Core/util/ReenableStupidWarnings.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Axon.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/sphere.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/Core \
+ /home/localadmin/Documents/CATERPillar/src/../src/obstacle.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/Dense \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/Core \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/LU \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Core/util/DisableStupidWarnings.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/misc/Kernel.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/misc/Image.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/LU/FullPivLU.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/LU/PartialPivLU.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/LU/Determinant.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/LU/InverseImpl.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/LU/arch/Inverse_SSE.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/Cholesky \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/Jacobi \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Jacobi/Jacobi.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Cholesky/LLT.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Cholesky/LDLT.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/QR \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/Householder \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Householder/Householder.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Householder/HouseholderSequence.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Householder/BlockHouseholder.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/QR/HouseholderQR.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/QR/FullPivHouseholderQR.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/QR/ColPivHouseholderQR.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/SVD \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/misc/RealSvd2x2.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/SVD/UpperBidiagonalization.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/SVD/SVDBase.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/SVD/JacobiSVD.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/SVD/BDCSVD.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/Geometry \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/OrthoMethods.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/EulerAngles.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/Homogeneous.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/RotationBase.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/Rotation2D.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/Quaternion.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/AngleAxis.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/Transform.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/Translation.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/Scaling.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/Hyperplane.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/ParametrizedLine.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/AlignedBox.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/Umeyama.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Geometry/arch/Geometry_SSE.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/Eigenvalues \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/Tridiagonalization.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/RealSchur.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/./HessenbergDecomposition.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/EigenSolver.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/./RealSchur.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/./Tridiagonalization.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/ComplexSchur.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/./ComplexSchur.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/RealQZ.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/./RealQZ.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Blood_Vessel.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/Glial.h \
  /home/localadmin/Documents/CATERPillar/src/axongammadistribution.h \
  /home/localadmin/Documents/CATERPillar/src/constants.h \
  /home/localadmin/Documents/CATERPillar/src/parameters.h \
  /usr/include/c++/11/iostream \
  /home/localadmin/Documents/CATERPillar/src/Axon.h \
- /home/localadmin/Documents/CATERPillar/src/sphere.h \
- /home/localadmin/Documents/CATERPillar/src/obstacle.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/Dense \
- /home/localadmin/Documents/CATERPillar/src/Eigen/Core \
- /home/localadmin/Documents/CATERPillar/src/Eigen/LU \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/misc/Kernel.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/misc/Image.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/LU/FullPivLU.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/LU/PartialPivLU.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/LU/Determinant.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/LU/InverseImpl.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/LU/arch/Inverse_SSE.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/Cholesky \
- /home/localadmin/Documents/CATERPillar/src/Eigen/Jacobi \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Jacobi/Jacobi.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Cholesky/LLT.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Cholesky/LDLT.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/QR \
- /home/localadmin/Documents/CATERPillar/src/Eigen/Householder \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Householder/Householder.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Householder/HouseholderSequence.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Householder/BlockHouseholder.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/QR/HouseholderQR.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/QR/FullPivHouseholderQR.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/QR/ColPivHouseholderQR.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/SVD \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/misc/RealSvd2x2.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/SVD/UpperBidiagonalization.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/SVD/SVDBase.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/SVD/JacobiSVD.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/SVD/BDCSVD.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/Geometry \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/OrthoMethods.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/EulerAngles.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/Homogeneous.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/RotationBase.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/Rotation2D.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/Quaternion.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/AngleAxis.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/Transform.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/Translation.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/Scaling.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/Hyperplane.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/ParametrizedLine.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/AlignedBox.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/Umeyama.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Geometry/arch/Geometry_SSE.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/Eigenvalues \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/Tridiagonalization.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/RealSchur.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/./HessenbergDecomposition.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/EigenSolver.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/./RealSchur.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/./Tridiagonalization.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/ComplexSchur.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/./ComplexSchur.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/RealQZ.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/./RealQZ.h \
- /home/localadmin/Documents/CATERPillar/src/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
  /home/localadmin/Documents/CATERPillar/src/Glial.h \
  /home/localadmin/Documents/CATERPillar/src/Blood_Vessel.h \
  /home/localadmin/Documents/CATERPillar/src/grow_axons.h \
  /home/localadmin/Documents/CATERPillar/src/Eigen/Dense \
+ /home/localadmin/Documents/CATERPillar/src/Eigen/Core \
+ /home/localadmin/Documents/CATERPillar/src/Eigen/LU \
+ /home/localadmin/Documents/CATERPillar/src/Eigen/Cholesky \
+ /home/localadmin/Documents/CATERPillar/src/Eigen/QR \
+ /home/localadmin/Documents/CATERPillar/src/Eigen/SVD \
+ /home/localadmin/Documents/CATERPillar/src/Eigen/Geometry \
+ /home/localadmin/Documents/CATERPillar/src/Eigen/Eigenvalues \
  /home/localadmin/Documents/CATERPillar/src/grow_cells.h \
+ /home/localadmin/Documents/CATERPillar/src/sphere.h \
  /home/localadmin/Documents/CATERPillar/src/threads.h \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/unique_ptr.h \
