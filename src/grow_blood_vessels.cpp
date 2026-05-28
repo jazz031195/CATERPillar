@@ -106,11 +106,13 @@ bool BloodVesselGrowth::AddOneSphere(double radius_, bool create_sphere, int gro
     auto attemptPlacement = [&](Sphere &candidate, int triesCount) -> bool {
         // 1) Find next center
         if (epsilon != 0.0) {
+
             // If grow_straight is set, use the straight function, else the normal function
             if (grow_straight == 1) {
                 candidate.center= find_next_center_straight(distance, bv_to_grow.spheres);
             } else {
                 candidate.center= find_next_center(distance, bv_to_grow.spheres, bv_to_grow.end);
+   
             }
         } else {
             // If epsilon == 0, we skip the "straight vs. random" logic and always use find_next_center
@@ -269,9 +271,7 @@ Eigen::Vector3d BloodVesselGrowth::find_next_center(const double dist_,
             biased_random_vector = previous_vector;
         }
         
-        
     }
-    
 
     return last_center + dist_ * biased_random_vector;
 }

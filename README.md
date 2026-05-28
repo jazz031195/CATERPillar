@@ -6,6 +6,8 @@ CATERPillar (**Computational Axonal Threading Engine for Realistic Proliferation
 
 What sets CATERPillar apart is its ability to generate not only realistic **axonal architectures** but also **glial cell structures**, significantly enhancing the biological fidelity of tissue microstructure simulations. This makes it a valuable tool for studying brain tissue models and validating diffusion-based imaging techniques.
 
+The code for the Monte Carlo Simulator adapted for overlapping spheres is available using this link: https://github.com/jazz031195/Permeable_MCDS.
+
 -----
 
 ## **How to Build and Run the Program**
@@ -132,4 +134,4 @@ The **`voxel.csv`** file is structured with the following columns for external a
 
 If you use CATERPillar in your research, please cite the following work:
 
-> Nguyen-Duc JK, Brammerloh M, Cherchali M, De Riedmatten I, Perot JB, Rafael-Patino J, Jelescu IO. **CATERPillar: A Flexible Framework for Generating White Matter Numerical Substrates with incorporated Glial Cells.** *bioRxiv*, 2025.
+> Nguyen-Duc, J., Brammerloh, M., Cherchali, M., De Riedmatten, I., Pérot, J.-B., Rafael-Patiño, J., & Jelescu, I. O. (2026). CATERPillar : A flexible framework for generating white matter numerical substrates with incorporated glial cells. Medical Image Analysis, 110, 103946. https://doi.org/10.1016/j.media.2026.103946

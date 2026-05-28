@@ -43,7 +43,6 @@ public:
         begin = begin_;
         end = end_;
         radius = radius_;
-        undulation_factor = 0;
         growth_attempts = 0;
         beading_amplitude = beading_amplitude_;
         beading_std = beading_std_;
@@ -64,7 +63,6 @@ public:
             Box = bv.Box;
             beading_amplitude = bv.beading_amplitude;
             beading_std = bv.beading_std;
-            undulation_factor = bv.undulation_factor;
             growth_axis= bv.growth_axis;
         }
         return *this;

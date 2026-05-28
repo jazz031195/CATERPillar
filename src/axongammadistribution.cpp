@@ -1176,7 +1176,7 @@ void AxonGammaDistribution::PlaceBloodVessels(){
             int id = blood_vessels.size();
             Eigen::Vector3d begin = s.center;
             Eigen::Vector3d end = s.center + Eigen::Vector3d(0,0,(max_limits[2]-min_limits[2]));
-            Blood_Vessel bv (id, begin, end, s.radius, /*beading_amplitude=*/0.0, /*beading_std=*/0.0, /*undulation_fector=*/5);
+            Blood_Vessel bv (id, begin, end, s.radius, /*beading_amplitude=*/0.0, /*beading_std=*/0.0, /*undulation_factor=*/1);
             bv.add_first_sphere(s);
             blood_vessels.push_back(bv);
         }

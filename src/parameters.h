@@ -46,7 +46,7 @@ public:
     double beading_amplitude = 0.3;    
     double beading_std = 0.05;
 
-    double epsilon_blood_vessels = 0.0;
+    double epsilon_blood_vessels = 0.8;
     double mean_vessel_rad = 6;
     double std_vessel_rad = 1;
 
