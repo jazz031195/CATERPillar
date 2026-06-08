@@ -40,9 +40,12 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
     void generateSphereVBO(int slices, int stacks, float radius);
+    bool isSphereInFrustum(const QVector3D& pos, float radius);
 
 private:
 
+    class QOpenGLShaderProgram *shaderProgram = nullptr; // Brings the shader back
+    std::vector<GLfloat> batchedRadii;                   // Stores the unique sizes
     std::vector<GLfloat> batchedVertices;
     std::vector<GLfloat> batchedColors;
     size_t totalBatchedVertices = 0;

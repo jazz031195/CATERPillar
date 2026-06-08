@@ -45,46 +45,38 @@ namespace {
 
 void OpenGLWindow::buildBatchedGeometry()
 {
-
-
-    qDebug() << "buildBatchedGeometry called";
-    qDebug() << "spherePositions.size():" << spherePositions.size();
-    qDebug() << "sphereRadii.size():" << sphereRadii.size();
-    qDebug() << "axonColors.size():" << axonColors.size();
-    qDebug() << "sphereVertices.size():" << sphereVertices.size();
     geometryReady = false;
-
-
     batchedVertices.clear();
     batchedColors.clear();
+    batchedRadii.clear(); // Clear the new array
 
     size_t numSpheres = spherePositions.size();
-    if (numSpheres == 0 || sphereVertices.empty()) return;
+    if (numSpheres == 0) return;
     
-    size_t floatsPerSphere = sphereVertices.size(); 
-    batchedVertices.reserve(numSpheres * floatsPerSphere);
-    batchedColors.reserve(numSpheres * floatsPerSphere);
+    batchedVertices.reserve(numSpheres * 3);
+    batchedColors.reserve(numSpheres * 3);
+    batchedRadii.reserve(numSpheres); // Reserve space
 
     for (size_t i = 0; i < numSpheres; ++i) {
-        const QVector3D& pos = spherePositions[i];
-        float r = sphereRadii[i];
-        const QColor& col = axonColors[i];
 
-        size_t vertCount = (sphereVertices.size() / 3) * 3; // truncate to safe multiple of 3
-        for (size_t v = 0; v + 2 < vertCount; v += 3) {
-            batchedVertices.push_back((sphereVertices[v] * r) + pos.x());
-            batchedVertices.push_back((sphereVertices[v+1] * r) + pos.y());
-            batchedVertices.push_back((sphereVertices[v+2] * r) + pos.z());
+        if (isSphereInFrustum(spherePositions[i], sphereRadii[i])) {
+            const QVector3D& pos = spherePositions[i];
+            const QColor& col = axonColors[i];
+
+            batchedVertices.push_back(pos.x());
+            batchedVertices.push_back(pos.y());
+            batchedVertices.push_back(pos.z());
 
             batchedColors.push_back(col.redF());
             batchedColors.push_back(col.greenF());
             batchedColors.push_back(col.blueF());
+            
+            batchedRadii.push_back(sphereRadii[i]); // Save the specific radius
         }
     }
+    
     totalBatchedVertices = batchedVertices.size() / 3;
-    qDebug() << "SUCCESS: Generated" << totalBatchedVertices << "vertices.";
     geometryReady = true;
-
 }
 
 void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
@@ -233,25 +225,56 @@ void OpenGLWindow::resetCamera()
     update();
 }
 
-
 void OpenGLWindow::initializeGL()
 {
     initializeOpenGLFunctions();
-    glEnable(GL_DEPTH_TEST);  // Enable depth test
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);  // Set a background color
+    glEnable(GL_DEPTH_TEST);
+    
+    // THIS ALLOWS THE SHADER TO CONTROL POINT SIZES
+    glEnable(GL_PROGRAM_POINT_SIZE); 
 
-    // Generate the VBO for the sphere geometry
-    generateSphereVBO(30, 30, 1.0f);  // Example: 30 slices, 30 stacks, radius 1.0
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
+    shaderProgram = new QOpenGLShaderProgram(this);
+
+    const char *vertexShaderSource =
+        "#version 330 core\n"
+        "layout(location = 0) in vec3 position;\n"
+        "layout(location = 1) in vec3 color;\n"
+        "layout(location = 2) in float radius;\n"
+        "out vec3 fragColor;\n"
+        "uniform mat4 mvp;\n"   // Model-View-Projection matrix
+        "uniform float zoom;\n" // Camera zoom factor
+        "void main() {\n"
+        "    gl_Position = mvp * vec4(position, 1.0);\n"
+        "    fragColor = color;\n"
+        //   Adjust the 10.0 multiplier depending on how large you want the cells
+        "    gl_PointSize = (radius * 20.0) / (gl_Position.w * zoom);\n" 
+        "}\n";
+
+    const char *fragmentShaderSource =
+        "#version 330 core\n"
+        "in vec3 fragColor;\n"
+        "out vec4 finalColor;\n"
+        "void main() {\n"
+        //   This bit of math turns the flat square point into a perfect circle
+        "    vec2 coord = gl_PointCoord - vec2(0.5);\n"
+        "    if(length(coord) > 0.5) discard;\n"
+        "    finalColor = vec4(fragColor, 1.0);\n"
+        "}\n";
+
+    shaderProgram->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
+    shaderProgram->addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource);
+    shaderProgram->link();
 }
 
 void OpenGLWindow::resizeGL(int w, int h)
 {
-    glViewport(0, 0, w, h);  // Update viewport to match new window size
+    glViewport(0, 0, w, h);  
     projectionMatrix.setToIdentity();
-    projectionMatrix.perspective(45.0f, float(w) / float(h), 0.1f, 100000.0f);  // Perspective projection
+    // CHANGED: 1.0f and 10000.0f to restore Z-buffer precision
+    projectionMatrix.perspective(45.0f, float(w) / float(h), 10.0f, 10000.0f);  
 }
-
 QVector3D rotateAround(const QVector3D& position, float deltaTheta, float deltaPhi) {
     float x = position.x();
     float y = position.y();
@@ -281,57 +304,93 @@ QVector3D rotateAround(const QVector3D& position, float deltaTheta, float deltaP
     // Return the new position vector
     return QVector3D(newX, newY, newZ);
 }
-
 void OpenGLWindow::paintGL()
 {
-
+    // 1. Safety checks and window title update
     if (!geometryReady || totalBatchedVertices == 0) return;
-    this->setTitle(QString("Vertices: %1 | Cam: %2")
+    
+    this->setTitle(QString("Cells: %1 | Cam Zoom: %2")
                    .arg(totalBatchedVertices)
                    .arg(cameraDistance * zoomFactor));
 
+    // 2. Clear the screen and enable depth testing
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
+    
+    // Crucial: allow the vertex shader to dictate point sizes
+    glEnable(GL_PROGRAM_POINT_SIZE); 
 
-    if (totalBatchedVertices == 0) return;
-
+    // 3. Calculate Camera Position (Orbit Math)
     QVector3D targetCenter(0.0f, 0.0f, 0.0f);
-    float radius = cameraDistance * zoomFactor;
+    float currentRadius = cameraDistance * zoomFactor;
     float radTheta = qDegreesToRadians(orbitTheta);
     float radPhi = qDegreesToRadians(orbitPhi);
 
     cameraPosition = targetCenter + QVector3D(
-        radius * cos(radPhi) * sin(radTheta),
-        radius * sin(radPhi),
-        radius * cos(radPhi) * cos(radTheta)
+        currentRadius * cos(radPhi) * sin(radTheta),
+        currentRadius * sin(radPhi),
+        currentRadius * cos(radPhi) * cos(radTheta)
     );
 
-    QMatrix4x4 modelViewMatrix;
-    modelViewMatrix.setToIdentity();
-    modelViewMatrix.lookAt(cameraPosition, targetCenter, QVector3D(0, 1, 0));
+    // 4. Calculate Matrices
+    QMatrix4x4 viewMatrix;
+    viewMatrix.lookAt(cameraPosition, targetCenter, QVector3D(0, 1, 0));
+    
+    // Combine Projection and View into a single Model-View-Projection matrix
+    QMatrix4x4 mvpMatrix = projectionMatrix * viewMatrix;
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadMatrixf(projectionMatrix.constData());
-    glMatrixMode(GL_MODELVIEW);
-    glLoadMatrixf(modelViewMatrix.constData());
+    // 5. Render using the Shader
+    if (!shaderProgram || !shaderProgram->isLinked()) {
+        qWarning() << "Shader program is not ready!";
+        return;
+    }
 
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
+    shaderProgram->bind();
 
-    glVertexPointer(3, GL_FLOAT, 0, batchedVertices.data());
-    glColorPointer(3, GL_FLOAT, 0, batchedColors.data());
+    // -- Set Uniforms (Global variables for this draw call) --
+    shaderProgram->setUniformValue("mvp", mvpMatrix);
+    
+    // Pass a scaled zoom factor so the shader knows how much to shrink/grow the points
+    float scaleFactor = std::max(0.001f, zoomFactor * 0.05f); 
+    shaderProgram->setUniformValue("zoom", scaleFactor);
 
-    // Debug mode
-    glPointSize(2.0f);
+    // -- Set Attributes (Per-point data variables) --
+    // Location 0: Positions (X, Y, Z)
+    shaderProgram->enableAttributeArray(0);
+    shaderProgram->setAttributeArray(0, GL_FLOAT, batchedVertices.data(), 3);
+
+    // Location 1: Colors (R, G, B)
+    shaderProgram->enableAttributeArray(1);
+    shaderProgram->setAttributeArray(1, GL_FLOAT, batchedColors.data(), 3);
+
+    // Location 2: Radii (Float)
+    shaderProgram->enableAttributeArray(2);
+    shaderProgram->setAttributeArray(2, GL_FLOAT, batchedRadii.data(), 1);
+
+    // 6. Execute the Draw Call! (1 Vertex = 1 Sphere)
     glDrawArrays(GL_POINTS, 0, totalBatchedVertices);
 
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_COLOR_ARRAY);
-
-
+    // 7. Cleanup state for the next frame
+    shaderProgram->disableAttributeArray(0);
+    shaderProgram->disableAttributeArray(1);
+    shaderProgram->disableAttributeArray(2);
+    shaderProgram->release();
 }
 
-
+bool OpenGLWindow::isSphereInFrustum(const QVector3D& pos, float radius) {
+    // 1. Get the direction vector from the camera to the sphere
+    QVector3D toSphere = pos - cameraPosition;
+    
+    // 2. Simple distance check: if the sphere is too far behind the camera, 
+    // or too far away from the center, skip it.
+    // (This is a simplified distance-based culling)
+    float dist = toSphere.length();
+    
+    // If it's outside our render distance, don't draw
+    if (dist > (cameraDistance * zoomFactor * 10.0f)) return false;
+    
+    return true;
+}
 void OpenGLWindow::drawSphere(const QVector3D& position, float radius, const QColor& color)
 {
     // Translate the model to the sphere's position

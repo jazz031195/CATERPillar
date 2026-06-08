@@ -145,6 +145,11 @@ void Window::PlotCells(const bool& axons_plot,
    // 2. WINDOW CREATION (Only if it doesn't exist)
     if (this->openglWindow == nullptr) {
         this->openglWindow = new OpenGLWindow();
+
+        QSurfaceFormat format;
+        format.setDepthBufferSize(24);
+        this->openglWindow->setFormat(format);
+        
         this->openglWindow->setTitle("3D Spheres Visualization");
         this->openglWindow->resize(800, 600);
 
