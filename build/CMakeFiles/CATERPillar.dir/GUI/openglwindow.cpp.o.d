@@ -311,6 +311,7 @@ CMakeFiles/CATERPillar.dir/GUI/openglwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qbasictimer.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/QColor \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qcolor.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/QSurfaceFormat \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/QOpenGLShaderProgram \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qopenglshaderprogram.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qvector2d.h \

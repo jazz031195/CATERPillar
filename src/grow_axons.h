@@ -21,10 +21,7 @@
     AxonGrowth() = delete;
 
     AxonGrowth(Axon& axon_to_grow_,
-               const std::vector<Glial>* glial_pop1,
-               const std::vector<Glial>* glial_pop2,
-               const std::vector<Axon>* axons_,
-               const std::vector<Blood_Vessel>* blood_vessels_,
+               const SphereGrid* sphere_grid_,
                const Eigen::Vector3d& extended_min_limits_,
                const Eigen::Vector3d& extended_max_limits_,
                const Eigen::Vector3d& min_limits_,

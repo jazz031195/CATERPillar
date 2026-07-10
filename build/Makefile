@@ -347,6 +347,30 @@ src/Blood_Vessel.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/Blood_Vessel.cpp.s
 .PHONY : src/Blood_Vessel.cpp.s
 
+src/CaterpillarGrowth.o: src/CaterpillarGrowth.cpp.o
+.PHONY : src/CaterpillarGrowth.o
+
+# target to build an object file
+src/CaterpillarGrowth.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.o
+.PHONY : src/CaterpillarGrowth.cpp.o
+
+src/CaterpillarGrowth.i: src/CaterpillarGrowth.cpp.i
+.PHONY : src/CaterpillarGrowth.i
+
+# target to preprocess a source file
+src/CaterpillarGrowth.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.i
+.PHONY : src/CaterpillarGrowth.cpp.i
+
+src/CaterpillarGrowth.s: src/CaterpillarGrowth.cpp.s
+.PHONY : src/CaterpillarGrowth.s
+
+# target to generate assembly for a file
+src/CaterpillarGrowth.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.s
+.PHONY : src/CaterpillarGrowth.cpp.s
+
 src/Glial.o: src/Glial.cpp.o
 .PHONY : src/Glial.o
 
@@ -371,29 +395,29 @@ src/Glial.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/Glial.cpp.s
 .PHONY : src/Glial.cpp.s
 
-src/axongammadistribution.o: src/axongammadistribution.cpp.o
-.PHONY : src/axongammadistribution.o
+src/SphereGrid.o: src/SphereGrid.cpp.o
+.PHONY : src/SphereGrid.o
 
 # target to build an object file
-src/axongammadistribution.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.o
-.PHONY : src/axongammadistribution.cpp.o
+src/SphereGrid.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.o
+.PHONY : src/SphereGrid.cpp.o
 
-src/axongammadistribution.i: src/axongammadistribution.cpp.i
-.PHONY : src/axongammadistribution.i
+src/SphereGrid.i: src/SphereGrid.cpp.i
+.PHONY : src/SphereGrid.i
 
 # target to preprocess a source file
-src/axongammadistribution.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.i
-.PHONY : src/axongammadistribution.cpp.i
+src/SphereGrid.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.i
+.PHONY : src/SphereGrid.cpp.i
 
-src/axongammadistribution.s: src/axongammadistribution.cpp.s
-.PHONY : src/axongammadistribution.s
+src/SphereGrid.s: src/SphereGrid.cpp.s
+.PHONY : src/SphereGrid.s
 
 # target to generate assembly for a file
-src/axongammadistribution.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.s
-.PHONY : src/axongammadistribution.cpp.s
+src/SphereGrid.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CATERPillar.dir/build.make CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.s
+.PHONY : src/SphereGrid.cpp.s
 
 src/core_logic.o: src/core_logic.cpp.o
 .PHONY : src/core_logic.o
@@ -646,12 +670,15 @@ help:
 	@echo "... src/Blood_Vessel.o"
 	@echo "... src/Blood_Vessel.i"
 	@echo "... src/Blood_Vessel.s"
+	@echo "... src/CaterpillarGrowth.o"
+	@echo "... src/CaterpillarGrowth.i"
+	@echo "... src/CaterpillarGrowth.s"
 	@echo "... src/Glial.o"
 	@echo "... src/Glial.i"
 	@echo "... src/Glial.s"
-	@echo "... src/axongammadistribution.o"
-	@echo "... src/axongammadistribution.i"
-	@echo "... src/axongammadistribution.s"
+	@echo "... src/SphereGrid.o"
+	@echo "... src/SphereGrid.i"
+	@echo "... src/SphereGrid.s"
 	@echo "... src/core_logic.o"
 	@echo "... src/core_logic.i"
 	@echo "... src/core_logic.s"

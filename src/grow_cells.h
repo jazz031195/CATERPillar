@@ -7,6 +7,7 @@
 #include "Glial.h"
 #include "sphere.h"
 #include "Blood_Vessel.h"
+#include "SphereGrid.h"
 #include "threads.h"
 #include <random>
 
@@ -17,31 +18,21 @@
 class CellGrowth
 {
 public:
-    virtual ~CellGrowth(); 
+    virtual ~CellGrowth();
     CellGrowth();
     CellGrowth(const CellGrowth& other);
-    void update_environment(const std::vector<Axon>* axons_,
-                                const std::vector<Glial>* glial_pop1_,
-                                const std::vector<Glial>* glial_pop2_, const std::vector<Blood_Vessel>* blood_vessel_) noexcept;
     bool check_borders(const Eigen::Vector3d& min_l, const Eigen::Vector3d& max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
     double clamp(double value, double lower, double upper);
     Eigen::Vector3d generate_random_point_on_sphere(double std);
     Eigen::Matrix3d rotation_matrix_from_vectors(const Eigen::Vector3d& vec1, const Eigen::Vector3d& vec2);
     Eigen::Vector3d apply_bias_toward_target(const Eigen::Vector3d& point, const Eigen::Vector3d& target);
-    bool canSpherebePlaced(Sphere& sph);
-    bool checkAxonsOverlap(Sphere &sph);
-    bool checkBloodVesselOverlap(Sphere &sph);
-    const std::vector<Axon>& AX() const;
-    const std::vector<Axon>* AXptr() const;
+    bool canSpherebePlaced(Sphere& sph, bool check_collision_with_branches = true);
 
     bool finished = false;
 
 protected:
 
-    const std::vector<Glial>* glial_pop1;
-    const std::vector<Glial>* glial_pop2;
-    const std::vector<Axon>* axons;  
-    const std::vector<Blood_Vessel>* blood_vessels;
+    const SphereGrid* sphere_grid;
 
     Eigen::Vector3d min_limits;
     Eigen::Vector3d max_limits;
@@ -54,27 +45,22 @@ protected:
 
     std::mt19937 gen;
 
-    CellGrowth(const std::vector<Axon>* axons_,
-               const std::vector<Glial>* glial_pop1_,
-               const std::vector<Glial>* glial_pop2_,
-               const std::vector<Blood_Vessel>* blood_vessels_,
+    CellGrowth(const SphereGrid* sphere_grid_,
                const Eigen::Vector3d& extended_min_limits_,
                const Eigen::Vector3d& extended_max_limits_,
                const Eigen::Vector3d& min_limits_,
                const Eigen::Vector3d& max_limits_,
                const double& epsilon_,
                const double& min_radius_)
-        : min_limits(min_limits_),
+        : sphere_grid(sphere_grid_),
+          min_limits(min_limits_),
           max_limits(max_limits_),
           extended_min_limits(extended_min_limits_),
           extended_max_limits(extended_max_limits_),
           epsilon(epsilon_),
           min_radius(min_radius_),
           grow_straight(epsilon_ == 0.0 ? 0 : 1),
-          finished(false),
-          axons(axons_),
-          glial_pop1(glial_pop1_),
-          glial_pop2(glial_pop2_), blood_vessels(blood_vessels_) {
+          finished(false) {
         std::random_device rd;
         gen.seed(rd());
     }

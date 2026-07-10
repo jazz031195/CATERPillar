@@ -1274,7 +1274,35 @@ def tortuosity_plot(folder_path):
     # Display the plot
     plt.show()
 
-def plot_radii(file_path, axon_id, z_step=0.005):
+def plot_radii(file_path, cell_type):
+    swc_df = read_swc_file(file_path)
+
+    swc_df = swc_df[swc_df["cell_type"] == cell_type].copy()
+
+    if cell_type =="glial_cell":
+        swc_df = swc_df[swc_df["component"] == "soma"].copy()
+
+    # mean inner and outer radius per cell
+    mean_radii = swc_df.groupby("cell_id")[["outer_radius", "inner_radius"]].mean().reset_index()
+    # plot histogram of mean inner and outer radius
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.hist(mean_radii["outer_radius"], bins=20, color="blue", alpha=0.7, label="Outer Radius")
+    plt.hist(mean_radii["inner_radius"], bins=20, color="#d62728", alpha=0.7, label="Inner Radius")
+    plt.xlabel("Mean Radius (µm)")
+    plt.ylabel("Frequency")
+    plt.title(f"Histogram of Mean Radii for {cell_type.capitalize()}")
+    plt.legend()
+    plt.subplot(1, 2, 2)
+    plt.scatter(mean_radii["outer_radius"], mean_radii["inner_radius"], color="purple", alpha=0.7)
+    plt.xlabel("Mean Outer Radius (µm)")
+    plt.ylabel("Mean Inner Radius (µm)")
+    plt.title(f"Mean Inner vs Outer Radius for {cell_type.capitalize()}")
+    plt.grid(True)
+    plt.show()
+
+
+def plot_radii_with_length(file_path, axon_id, z_step=0.005):
     swc_df = read_swc_file(file_path)
 
     axon_df = swc_df[swc_df["cell_id"] == axon_id].copy()
@@ -1319,58 +1347,11 @@ def plot_radii(file_path, axon_id, z_step=0.005):
     plt.show()
 
 
-
-
 if __name__ == "__main__":
 
-    file_path_GM= "/home/localadmin/Documents/CATERPillar/astrocytes/GM.swc"
-    file_path_WM = "/home/localadmin/Documents/CATERPillar/astrocytes/WM_2.swc"
-    file_path = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/incoherent_blood_flow/State1.csv"
-    #draw_spheres(file_path_GM, 100, 30)
-    #print(coefficient_of_variation(file_path))
-    #mean_dist_between_maxima(file_path, old = False)
-    #plot_radii(file_path, 100)
-    #plot_radius_power_spectrum(file_path)
-    #diameter_variation(file_path, num_axons=50, max_z=30)
-    # tortuosity_ring_plot(file_path)
-    #p2_plot(file_path)
-    #draw_one_glial_pyvista(file_path, chosen_id = 1)
-    #draw_one_axon_pyvista(file_path, chosen_id = 10)
-    #cv = coefficient_of_variation(file_path)
-    #print(f"Coefficient of variation of axonal diameters: {cv:.4f}")
-    #draw_spheres_pyvista(file_path,  cell_types=["blood_vessel"] , chosen_id=None)
-    #create_subplots(file_path)
-    draw_cells(file_path, axon_indices = list(np.range(1, 50)))
-    #draw_spheres(file_path, 150, 140)
-    #diameter_variation(file_path, num_axons = 10, max_z = 15)
-    #mean_dist_between_maxima(file_path)
-    
-    #sholl_intersections(file_path, None)
+    file_path = "/home/localadmin/Documents/Santi/Healthy_Voxel_corrected.csv"
 
-
-    #files = []
-    #stds = []
-    #lengths = []
-    #for std in [10]:
-    #    for length in [20,10, 30,40]:
-    #        lengths.append(length)
-    #        stds.append(std)
-    #        files.append(f"/home/localadmin/Documents/CATERPillar/growth_vox_100_factor_2_0_length_{length}_std_{std}.swc")
-    #varying_sholl(files, stds, lengths)
-    
-    #files = []
-    #stds = []
-    #lengths = []
-    #for std in [10, 1, 5, 15, 20]:
-    #    for length in [20]:
-    #        lengths.append(length)
-    #        stds.append(std)
-    #        files.append(f"/home/localadmin/Documents/CATERPillar/growth_vox_100_factor_2_0_length_{length}_std_{std}.swc")
-    
-    
-    #varying_sholl(files, stds, lengths)
-    #folder_path = "/home/localadmin/Documents/CATERPillar/tortuosities/"
-    #tortuosity_plot(folder_path)
+    plot_radii(file_path, "glial_cell")
 
     
 

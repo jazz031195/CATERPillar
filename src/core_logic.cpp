@@ -1,5 +1,5 @@
 #include "core_logic.h"
-#include "axongammadistribution.h"
+#include "CaterpillarGrowth.h"
 #include <iostream>
 #include <chrono>
 #include <Eigen/Dense>
@@ -33,10 +33,10 @@ CoreLogic::SimResult CoreLogic::runSimulation(const Parameters& params) {
         // ==========================================
         
         // 1. Initialize the distribution engine using our clean parameters object
-        AxonGammaDistribution AxonDistribution(params, min_l, max_l);
+        CaterpillarGrowth Sim(params, min_l, max_l);
 
         // 2. Grow the Substrate!
-        AxonDistribution.createSubstrate();
+        Sim.createSubstrate();
 
         // ==========================================
 
@@ -65,7 +65,7 @@ CoreLogic::SimResult CoreLogic::runSimulation(const Parameters& params) {
         }
         cout << "Creating file: " << swc_file_name << endl;
         // write to file
-        AxonDistribution.create_SWC_file(swc_file);
+        Sim.create_SWC_file(swc_file);
         swc_file.close();
 
         // Check if files opened successfully
@@ -77,7 +77,7 @@ CoreLogic::SimResult CoreLogic::runSimulation(const Parameters& params) {
 
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime);
-        AxonDistribution.simulation_file(simulation_file, duration);
+        Sim.simulation_file(simulation_file, duration);
         simulation_file.close();
 
         if (rep == params.repetitions -1){
@@ -85,10 +85,10 @@ CoreLogic::SimResult CoreLogic::runSimulation(const Parameters& params) {
             std::cout << " All simulations completed successfully! " << std::endl;
             std::cout << "========================================" << std::endl;
 
-            return std::make_tuple(AxonDistribution.axons, 
-                                AxonDistribution.blood_vessels, 
-                                AxonDistribution.glial_pop1, 
-                                AxonDistribution.glial_pop2);
+            return std::make_tuple(Sim.axons, 
+                                Sim.blood_vessels, 
+                                Sim.glial_pop1, 
+                                Sim.glial_pop2);
                 } 
 
     }

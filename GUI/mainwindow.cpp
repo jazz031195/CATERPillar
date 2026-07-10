@@ -7,12 +7,12 @@
 #include "../src/Blood_Vessel.h"
 #include "../src/Glial.h"
 #include "ScatterDataModifier.h"
+#include <QDir>
 #include <fstream>
 #include <QFile>
 #include <QTextStream>
 #include <QMessageBox>
 #include <QDebug>
-#include <QMessageBox>
 #include <QFileDialog>
 #include <chrono>
 #include <variant>
@@ -20,72 +20,343 @@
 #include <QFontComboBox>
 #include "qcustomplot-source/qcustomplot.h"
 
-
 Window::Window(QWidget *parent)
     : QWidget(parent)
 {
-
-    this->openglWindow = nullptr;
+    // Initialize your windows/processes
+    this->openglWindow = new OpenGLWindow(); // Make sure this is instantiated
     this->visualizationWidget = nullptr;
+    this->simulatorProcess = new QProcess(this);
 
-    // Inside your Window constructor or init function
-    QVBoxLayout *startupLayout = new QVBoxLayout;
+    // Main layout for the entire window
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    QTabWidget *mainTabs = new QTabWidget(this);
+    mainLayout->addWidget(mainTabs);
 
-    // 1. Welcome Image
-    QLabel *imageLabel = new QLabel(this);
-    QPixmap image("../logo_catrepillar.png"); // replace with the actual image path in your resource
-    imageLabel->setPixmap(image.scaled(800, 800, Qt::KeepAspectRatio));
-    imageLabel->setAlignment(Qt::AlignCenter);
-    startupLayout->addWidget(imageLabel);
+    // =========================================================
+    // STEP 1: WHITE MATTER CELL GENERATION
+    // =========================================================
+    QWidget *tabWhiteMatter = new QWidget();
+    QVBoxLayout *wmLayout = new QVBoxLayout(tabWhiteMatter);
 
-    // 2. Welcome Buttons
-    growButton = new QPushButton("Grow Substrate", this);
-    visualiseButton = new QPushButton("Visualise Substrate", this);
+    // 1A. Clickable Images using QToolButton
+    QHBoxLayout *imagesLayout = new QHBoxLayout();
+    
+    auto createPictureButton = [](const QString& text, const QString& iconPath) {
+        QToolButton *btn = new QToolButton();
+        btn->setText(text);
+        btn->setIcon(QIcon(iconPath)); // Make sure to add these to your Qt Resource file (.qrc)
+        btn->setIconSize(QSize(100, 100)); // Adjust size as needed
+        btn->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+        return btn;
+    };
 
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    buttonLayout->addWidget(growButton);
-    buttonLayout->addWidget(visualiseButton);
+    QToolButton *btnGeneral = createPictureButton("General", ":/images/general.png");
+    QToolButton *btnAxons = createPictureButton("Axons", ":/images/axons.png");
+    QToolButton *btnMyelin = createPictureButton("Myelinated", ":/images/myelin.png");
+    QToolButton *btnGlial1 = createPictureButton("Glial Pop 1", ":/images/glial_cells.jpeg");
+    QToolButton *btnGlial2 = createPictureButton("Glial Pop 2", ":/images/glial_cells.jpeg");
+    QToolButton *btnBlood = createPictureButton("Blood Vessels", ":/images/blood_vessels.png");
 
-    startupLayout->addLayout(buttonLayout);
+    imagesLayout->addWidget(btnGeneral);
+    imagesLayout->addWidget(btnAxons);
+    imagesLayout->addWidget(btnMyelin);
+    imagesLayout->addWidget(btnGlial1);
+    imagesLayout->addWidget(btnGlial2);
+    imagesLayout->addWidget(btnBlood);
 
-    // 3. Central widget stack (to switch between views)
-    QWidget *startupWidget = new QWidget;
-    startupWidget->setLayout(startupLayout);
+    wmLayout->addLayout(imagesLayout);
 
+    initParameters();
+    buildParameterStack(wmLayout);
 
-    QWidget *mainWidget = new QWidget;
-    QVBoxLayout *mainLayout = new QVBoxLayout(mainWidget);
+    // 1C. Connect Buttons to Stacked Widget
+    connect(btnGeneral, &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(0); });
+    connect(btnAxons,   &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(1); });
+    connect(btnMyelin,  &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(2); });
+    connect(btnGlial1,  &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(3); });
+    connect(btnGlial2,  &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(4); });
+    connect(btnBlood,   &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(5); });
 
-    // Your parameter group
-    controlsGroup = createControls(tr("Parameters"));
+    cellParamsStack->setCurrentIndex(0);
 
-    mainLayout->addWidget(controlsGroup);
+    QPushButton *btnGrow = new QPushButton("Grow White Matter Substrate", this);
+    btnGrow->setStyleSheet("font-weight: bold; padding: 10px; margin-top: 10px;");
+    wmLayout->addWidget(btnGrow);
+    
+    mainTabs->addTab(tabWhiteMatter, "1. White Matter Cell Generation");
 
-    // OK and Select Directory buttons
-    okButton = new QPushButton("OK", this);
-    selectDirectoryButton = new QPushButton("Select Directory", this);
-    QHBoxLayout *mainButtonLayout = new QHBoxLayout;
-    mainButtonLayout->addWidget(okButton);
-    mainButtonLayout->addWidget(selectDirectoryButton);
-    mainLayout->addLayout(mainButtonLayout);
+    connect(btnGrow, &QPushButton::clicked, this, &Window::onSaveButtonClicked);
 
-    // 4. Stacked layout to switch views
-    QStackedLayout *stack = new QStackedLayout(this);
-    stack->addWidget(startupWidget); // index 0
-    stack->addWidget(mainWidget);    // index 1
-    this->setLayout(stack);
+    // =========================================================
+    // STEP 2: VISUALISATION
+    // =========================================================
+    QWidget *tabVisualisation = new QWidget();
+    QVBoxLayout *visLayout = new QVBoxLayout(tabVisualisation);
 
-    // 5. Connections
-    connect(growButton, &QPushButton::clicked, [stack]() {
-        stack->setCurrentIndex(1); // Show parameters layout
+    // Crucial: QOpenGLWindow inherits from QWindow, not QWidget. 
+    // We must wrap it in a container to embed it inside our QTabWidget.
+    QWidget *glContainer = QWidget::createWindowContainer(openglWindow, this);
+    glContainer->setMinimumSize(600, 400); // Set an appropriate minimum size
+    visLayout->addWidget(glContainer, 1);
+
+    // Create the button and label it for your SWC/CSV functionality
+    QPushButton *btnLoadVisFile = new QPushButton("Load SWC/CSV for Visualisation", this);
+    btnLoadVisFile->setStyleSheet("padding: 8px; font-weight: bold;");
+    visLayout->addWidget(btnLoadVisFile);
+
+    // CONNECT DIRECTLY TO YOUR EXISTING SLOT
+    connect(btnLoadVisFile, &QPushButton::clicked, this, &Window::SelectSWCFileButton);
+
+    mainTabs->addTab(tabVisualisation, "2. Visualisation");
+
+    // =========================================================
+    // STEP 3: MONTE CARLO SIMULATIONS
+    // =========================================================
+    QWidget *tabMonteCarlo = new QWidget();
+    QVBoxLayout *mcLayout = new QVBoxLayout(tabMonteCarlo);
+    QFormLayout *mcForm = new QFormLayout();
+
+    // Default values
+    inputN = new QLineEdit("6044");
+    inputT = new QLineEdit("55200");
+    inputDuration = new QLineEdit("0.092");
+    inputDiffIntra = new QLineEdit("2.5e-9");
+    inputDiffExtra = new QLineEdit("1.5e-9");
+    inputSchemeFile = new QLineEdit("/users/jnguyend/MCDS/Permeable_MCDS/Santi/ukbb_protocol.scheme");
+    inputCsvPath = new QLineEdit("/users/jnguyend/MCDS/Permeable_MCDS/Santi/Healthy_Voxel_corrected.csv");
+
+    mcForm->addRow("N (Walkers):", inputN);
+    mcForm->addRow("T (Time steps):", inputT);
+    mcForm->addRow("Duration:", inputDuration);
+    mcForm->addRow("Diffusivity Intra:", inputDiffIntra);
+    mcForm->addRow("Diffusivity Extra:", inputDiffExtra);
+    mcForm->addRow("Scheme File:", inputSchemeFile);
+    
+    // Adding a layout with a browse button for the CSV file
+    QHBoxLayout *csvLayout = new QHBoxLayout();
+    csvLayout->addWidget(inputCsvPath);
+    QPushButton *btnBrowseCsv = new QPushButton("Browse...");
+    csvLayout->addWidget(btnBrowseCsv);
+    mcForm->addRow("Obstacle CSV Path:", csvLayout);
+
+    QHBoxLayout *SchemeLayout = new QHBoxLayout();
+    SchemeLayout->addWidget(inputSchemeFile);
+    QPushButton *btnBrowseScheme = new QPushButton("Browse...");
+    SchemeLayout->addWidget(btnBrowseScheme);
+    mcForm->addRow("Scheme File Path:", SchemeLayout);
+
+    connect(btnBrowseCsv, &QPushButton::clicked, [this]() {
+        QString file = QFileDialog::getOpenFileName(this, "Select Obstacle CSV", "", "CSV Files (*.csv)");
+        if (!file.isEmpty()) inputCsvPath->setText(file);
     });
 
+    mcLayout->addLayout(mcForm);
 
-    connect(visualiseButton, &QPushButton::clicked, this, &Window::SelectSWCFileButton);
+    QPushButton *btnRun = new QPushButton("Run", this);
+    btnRun->setStyleSheet("font-weight: bold; padding: 10px;"); // Make it stand out
+    mcLayout->addWidget(btnRun);
 
-    connect(okButton, &QPushButton::clicked, this, &Window::onSaveButtonClicked);
-    connect(selectDirectoryButton, &QPushButton::clicked, this, &Window::onSelectDirectoryButtonClicked);
+    connect(btnRun, &QPushButton::clicked, this, &Window::runMCSimulation);
 
+    mainTabs->addTab(tabMonteCarlo, "3. Monte Carlo Simulation");
+}
+
+void Window::buildParameterStack(QVBoxLayout *wmLayout)
+{
+    // 1. DEFINE VECTORS
+    std::vector<QLabel*> general_labels = { nbr_repetitions_qlabel, voxel_size_qlabel, overlapping_factor_qlabel, minimum_radius_qlabel, nbr_threads_qlabel };
+    std::vector<QDoubleSpinBox*> general_spinBoxes = { nbr_repetitions_SpinBox, voxel_size_SpinBox, overlapping_factor_SpinBox, minimum_radius_SpinBox, nbr_threads_SpinBox };
+    
+    std::vector<QLabel*> axons_labels = { axons_icvf_qlabel, nbr_axons_populations_qlabel, epsilon_qlabel, c2_qlabel, beading_amplitude_qlabel, beading_std_qlabel, alpha_qlabel, beta_qlabel };
+    std::vector<QDoubleSpinBox*> axons_spinBoxes = { axons_icvf_SpinBox, nbr_axons_populations_SpinBox, epsilon_SpinBox, c2_SpinBox, beading_amplitude_SpinBox, beading_std_SpinBox, alpha_SpinBox, beta_SpinBox };
+    
+    std::vector<QLabel*> myelin_labels = { axons_w_myelin_icvf_qlabel, k1_qlabel, k2_qlabel, k3_qlabel };
+    std::vector<QDoubleSpinBox*> myelin_spinBoxes = { axons_w_myelin_icvf_SpinBox, k1_SpinBox, k2_SpinBox, k3_SpinBox };
+
+    std::vector<QLabel*> glials_labels1 = { glial_pop1_soma_icvf_qlabel, glial_pop1_processes_icvf_qlabel, glial_pop1_radius_mean_qlabel, glial_pop1_radius_std_qlabel, glial_pop1_mean_process_length_qlabel, glial_pop1_std_process_length_qlabel, glial_pop1_nbr_primary_processes_qlabel };
+    std::vector<QDoubleSpinBox*> glials_spinBoxes1 = { glial_pop1_soma_icvf_SpinBox, glial_pop1_processes_icvf_SpinBox, glial_pop1_radius_mean_SpinBox, glial_pop1_radius_std_SpinBox, glial_pop1_mean_process_length_SpinBox, glial_pop1_std_process_length_SpinBox, glial_pop1_nbr_primary_processes_SpinBox };
+    
+    std::vector<QLabel*> glials_labels2 = { glial_pop2_soma_icvf_qlabel, glial_pop2_processes_icvf_qlabel, glial_pop2_radius_mean_qlabel, glial_pop2_radius_std_qlabel, glial_pop2_mean_process_length_qlabel, glial_pop2_std_process_length_qlabel, glial_pop2_nbr_primary_processes_qlabel };
+    std::vector<QDoubleSpinBox*> glials_spinBoxes2 = { glial_pop2_soma_icvf_SpinBox, glial_pop2_processes_icvf_SpinBox, glial_pop2_radius_mean_SpinBox, glial_pop2_radius_std_SpinBox, glial_pop2_mean_process_length_SpinBox, glial_pop2_std_process_length_SpinBox, glial_pop2_nbr_primary_processes_SpinBox };
+
+    // 2. INITIALIZE STACK
+    cellParamsStack = new QStackedWidget();
+
+    // --- PAGE 0: GENERAL ---
+    QGroupBox *generalGroup = new QGroupBox("General Parameters");
+    QFormLayout *generalLayout = new QFormLayout; 
+    for (size_t i = 0; i < general_labels.size(); i++) {
+        generalLayout->addRow(general_labels[i], general_spinBoxes[i]);
+    }
+    generalLayout->addRow(visualise_voxel_qlabel, visualise_voxel_checkbox);
+    generalGroup->setLayout(generalLayout);
+    cellParamsStack->addWidget(generalGroup);
+
+    // --- PAGE 1: AXONS ---
+    QGroupBox *axonsGroup = new QGroupBox("Axon Parameters");
+    QFormLayout *axonsLayout = new QFormLayout;
+    for (size_t i = 0; i < axons_labels.size(); i++) {
+        if (i == axons_labels.size() - 2) { 
+            QLabel *gammaLabel = new QLabel("<b>Gamma Distribution parameters for inner radii:</b>");
+            axonsLayout->addRow(gammaLabel);
+        }
+        axonsLayout->addRow(axons_labels[i], axons_spinBoxes[i]);
+    }
+    axonsGroup->setLayout(axonsLayout);
+    cellParamsStack->addWidget(axonsGroup);
+
+    // --- PAGE 2: MYELINATED AXONS ---
+    QGroupBox *myelinGroup = new QGroupBox("Myelinated Axon Parameters");
+    QGridLayout *myelinLayout = new QGridLayout;
+    int mRow = 0;
+    QLabel *inheritLabel = new QLabel("<i>Note: Geometry (α, β, beading) is inherited from the Axons tab.</i>");
+    myelinLayout->addWidget(inheritLabel, mRow++, 0, 1, 6);
+    myelinLayout->addWidget(myelin_labels[0], mRow, 0); 
+    myelinLayout->addWidget(myelin_spinBoxes[0], mRow++, 1);
+
+    myelinLayout->addWidget(myelin_labels[1], mRow, 0); // K1
+    myelinLayout->addWidget(myelin_spinBoxes[1], mRow, 1);
+    myelinLayout->addWidget(myelin_labels[2], mRow, 2); // K2
+    myelinLayout->addWidget(myelin_spinBoxes[2], mRow, 3);
+    myelinLayout->addWidget(myelin_labels[3], mRow, 4); // K3
+    myelinLayout->addWidget(myelin_spinBoxes[3], mRow++, 5);
+
+    QLabel *formulaLabel = new QLabel("<b>Myelin thickness = K1 + K2 × Inner diameter + K3 × log(Inner diameter)</b>");
+    formulaLabel->setAlignment(Qt::AlignCenter);
+    myelinLayout->addWidget(formulaLabel, mRow++, 0, 1, 6);
+    myelinGroup->setLayout(myelinLayout);
+    cellParamsStack->addWidget(myelinGroup);
+
+    // --- PAGE 3: GLIAL POPULATION 1 ---
+    QGroupBox *glialGroup1 = new QGroupBox("Glial Cell Population 1 Parameters");
+    QFormLayout *glialLayout1 = new QFormLayout;
+    for (size_t i = 0; i < glials_labels1.size(); i++) {
+        glialLayout1->addRow(glials_labels1[i], glials_spinBoxes1[i]);
+    }
+    glialLayout1->addRow(glial_pop1_branching_qlabel, glial_pop1_branching_checkbox);
+    glialGroup1->setLayout(glialLayout1);
+    cellParamsStack->addWidget(glialGroup1);
+
+    // --- PAGE 4: GLIAL POPULATION 2 ---
+    QGroupBox *glialGroup2 = new QGroupBox("Glial Cell Population 2 Parameters");
+    QFormLayout *glialLayout2 = new QFormLayout;
+    for (size_t i = 0; i < glials_labels2.size(); i++) {
+        glialLayout2->addRow(glials_labels2[i], glials_spinBoxes2[i]);
+    }
+    glialLayout2->addRow(glial_pop2_branching_qlabel, glial_pop2_branching_checkbox);
+    glialGroup2->setLayout(glialLayout2);
+    cellParamsStack->addWidget(glialGroup2);
+
+    // --- PAGE 5: BLOOD VESSELS ---
+    QGroupBox *bloodVesselGroup = new QGroupBox("Blood Vessel Parameters");
+    QFormLayout *bloodLayout = new QFormLayout;
+    bloodLayout->addRow(blood_vessels_icvf_qlabel, blood_vessels_icvf_SpinBox);
+    bloodVesselGroup->setLayout(bloodLayout);
+    cellParamsStack->addWidget(bloodVesselGroup);
+
+    // 3. ADD TO THE MAIN TAB LAYOUT
+    wmLayout->addWidget(cellParamsStack);
+}
+
+void Window::runMCSimulation()
+{
+    // 1. Define a temporary configuration file path in the current directory
+    QString confFilePath = QDir::currentPath() + "/temp_simulation.conf";
+    QFile file(confFilePath);
+    
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Error", "Could not create configuration file.");
+        return;
+    }
+
+    // 2. Write parameters to the configuration file
+    QTextStream out(&file);
+    out << "N " << inputN->text() << "\n";
+    out << "T " << inputT->text() << "\n";
+    out << "duration " << inputDuration->text() << "\n";
+    out << "diffusivity_intra " << inputDiffIntra->text() << "\n";
+    out << "diffusivity_extra " << inputDiffExtra->text() << "\n\n";
+    
+    out << "scheme_file " << inputSchemeFile->text() << "\n\n";
+
+    // Inject the user's CSV path directly into the obstacle list
+    out << "<obstacle>\n";
+    out << "<axons_list>\n";
+    out << inputCsvPath->text() << "\n"; 
+    out << "permeability global 0\n";
+    out << "</axons_list>\n";
+    out << "</obstacle>\n\n";
+
+    // Add necessary fixed blocks (voxel, sampling_area)
+    out << "<voxel>\n0.0 0.0 0.0\n0.1 0.1 0.1\n</voxel>\n\n";
+    out << "<sampling_area>\n0.015 0.015 0.015\n0.085 0.085 0.085\n</sampling_area>\n\n";
+    out << "<END>\n";
+    file.close();
+
+    // 3. Execute the simulation
+    QString executablePath = "./MC-DC_Simulator"; // Adjust if your executable is named differently or elsewhere
+    QStringList arguments;
+    arguments << confFilePath;
+
+    connect(simulatorProcess, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), 
+            this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            QMessageBox::information(this, "Success", "Simulation finished successfully.");
+        } else {
+            QMessageBox::warning(this, "Error", "Simulation crashed or exited with an error.");
+        }
+    });
+
+    simulatorProcess->start(executablePath, arguments);
+
+    if (!simulatorProcess->waitForStarted()) {
+        QMessageBox::critical(this, "Error", "Could not start the simulator executable. Make sure it is in the same directory.");
+    }
+}
+
+void Window::generateMonteCarloConf()
+{
+    // Ask the user where they want to save the .conf file
+    QString savePath = QFileDialog::getSaveFileName(this, 
+                                                    tr("Save Monte Carlo Config"), 
+                                                    "simulation.conf", 
+                                                    tr("Configuration Files (*.conf)"));
+    if (savePath.isEmpty()) {
+        return; // User canceled the dialog
+    }
+
+    QFile file(savePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Error", "Could not open file for writing.");
+        return;
+    }
+
+    QTextStream out(&file);
+
+    // Write the parameters exactly as the executable expects them
+    out << "N " << inputN->text() << "\n";
+    out << "T " << inputT->text() << "\n";
+    out << "duration " << inputDuration->text() << "\n";
+    out << "diffusivity_intra " << inputDiffIntra->text() << "\n";
+    out << "diffusivity_extra " << inputDiffExtra->text() << "\n\n";
+    
+    out << "scheme_file " << inputSchemeFile->text() << "\n\n";
+
+    // You can hardcode standard blocks or dynamically generate them from other inputs
+    out << "<obstacle>\n";
+    out << "<axons_list>\n";
+    out << "/path/to/axons.csv\n"; // Replace with actual dynamically fetched path if needed
+    out << "permeability global 0\n";
+    out << "</axons_list>\n";
+    out << "</obstacle>\n\n";
+
+    // ... Write remaining fixed/variable blocks (voxel, sampling_area) here ...
+
+    out << "<END>\n";
+
+    file.close();
+    QMessageBox::information(this, "Success", "Configuration file saved successfully!");
 }
 
 void Window::SelectSWCFileButton() {
@@ -286,6 +557,221 @@ void Window::HideGlialCells(){
     openglWindow->update();
 }
 
+void Window::initParameters()
+{
+    nbr_repetitions_qlabel = new QLabel(tr("Number of Repetitions:"));
+    visualise_voxel_qlabel = new QLabel(tr("Visualise Voxel:"));
+    axons_icvf_qlabel = new QLabel(tr("Axons ICVF (%):"));
+    axons_w_myelin_icvf_qlabel = new QLabel(tr("Axons with myelin ICVF (%):"));
+    k1_qlabel = new QLabel(tr("K1 :"));
+    k2_qlabel = new QLabel(tr("K2 :"));
+    k3_qlabel = new QLabel(tr("K3 :"));
+    glial_pop1_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
+    glial_pop1_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
+    glial_pop2_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
+    glial_pop2_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
+    blood_vessels_icvf_qlabel = new QLabel(tr("Blood Vessels ICVF (%):"));
+    voxel_size_qlabel = new QLabel(tr("Voxel Edge Length (μm):"));
+    minimum_radius_qlabel = new QLabel(tr("Minimum Sphere Radius (μm):"));
+    nbr_threads_qlabel = new QLabel(tr("Number of Threads:"));
+    overlapping_factor_qlabel = new QLabel(tr("Overlapping Factor (R/f):"));
+    c2_qlabel = new QLabel(tr("c2 (fODF):"));
+    nbr_axons_populations_qlabel = new QLabel(tr("Number of populations:"));
+    epsilon_qlabel = new QLabel(tr("ε (tortuousity):"));
+    beading_amplitude_qlabel = new QLabel(tr("Beading Amplitude :"));
+    beading_std_qlabel = new QLabel(tr("Beading Standard Deviation :"));
+    glial_pop1_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
+    glial_pop1_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
+    glial_pop2_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
+    glial_pop2_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
+    alpha_qlabel = new QLabel(tr("α:"));
+    beta_qlabel = new QLabel(tr("β:"));
+    glial_pop1_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
+    glial_pop1_radius_std_qlabel = new QLabel(tr("Glial Cell Soma Radius Standard Deviation:"));
+    glial_pop2_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
+    glial_pop2_radius_std_qlabel = new QLabel(tr("Glial Cell Soma Radius Standard Deviation:"));
+    glial_pop1_nbr_primary_processes_qlabel = new QLabel(tr("Number of Primary Processes:"));
+    glial_pop2_nbr_primary_processes_qlabel = new QLabel(tr("Number of Primary Processes:"));
+    glial_pop1_branching_qlabel = new QLabel(tr("Can Glial Cell Population have branching ? "));
+    glial_pop2_branching_qlabel = new QLabel(tr("Can Glial Cell Population have branching ? "));
+
+    nbr_repetitions_SpinBox = new QDoubleSpinBox;
+    nbr_repetitions_SpinBox->setRange(1, 100);
+    nbr_repetitions_SpinBox->setSingleStep(1);
+    nbr_repetitions_SpinBox->setValue(1);
+
+    visualise_voxel_checkbox = new QCheckBox;
+    visualise_voxel_checkbox->setChecked(true);
+
+    glial_pop1_branching_checkbox = new QCheckBox;
+    glial_pop1_branching_checkbox->setChecked(true);
+
+    glial_pop2_branching_checkbox = new QCheckBox;
+    glial_pop2_branching_checkbox->setChecked(true);
+
+    beading_amplitude_SpinBox = new QDoubleSpinBox;
+    beading_amplitude_SpinBox->setRange(0, 1);
+    beading_amplitude_SpinBox->setSingleStep(0.1);
+    beading_amplitude_SpinBox->setValue(0.3);
+
+    beading_std_SpinBox = new QDoubleSpinBox;
+    beading_std_SpinBox->setRange(0, 1);
+    beading_std_SpinBox->setSingleStep(0.1);
+    beading_std_SpinBox->setValue(0.1);
+
+    alpha_SpinBox = new QDoubleSpinBox;
+    alpha_SpinBox->setRange(0, 10);
+    alpha_SpinBox->setSingleStep(0.1);
+    alpha_SpinBox->setValue(4);
+
+    beta_SpinBox = new QDoubleSpinBox;
+    beta_SpinBox->setRange(0, 10);
+    beta_SpinBox->setSingleStep(0.001);
+    beta_SpinBox->setValue(0.25);
+
+    epsilon_SpinBox = new QDoubleSpinBox;
+    epsilon_SpinBox->setRange(0, 2);
+    epsilon_SpinBox->setSingleStep(0.1);
+    epsilon_SpinBox->setValue(0.4);
+
+    glial_pop1_mean_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop1_mean_process_length_SpinBox->setRange(0, 100);
+    glial_pop1_mean_process_length_SpinBox->setSingleStep(1);
+    glial_pop1_mean_process_length_SpinBox->setValue(10);
+
+    glial_pop1_std_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop1_std_process_length_SpinBox->setRange(0, 100);
+    glial_pop1_std_process_length_SpinBox->setSingleStep(1);
+    glial_pop1_std_process_length_SpinBox->setValue(15);
+
+    glial_pop2_mean_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop2_mean_process_length_SpinBox->setRange(0, 100);
+    glial_pop2_mean_process_length_SpinBox->setSingleStep(1);
+    glial_pop2_mean_process_length_SpinBox->setValue(10);
+
+    glial_pop2_std_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop2_std_process_length_SpinBox->setRange(0, 100);
+    glial_pop2_std_process_length_SpinBox->setSingleStep(1);
+    glial_pop2_std_process_length_SpinBox->setValue(15);
+
+
+    glial_pop1_nbr_primary_processes_SpinBox = new QDoubleSpinBox;
+    glial_pop1_nbr_primary_processes_SpinBox->setRange(1, 20);
+    glial_pop1_nbr_primary_processes_SpinBox->setSingleStep(1);
+    glial_pop1_nbr_primary_processes_SpinBox->setValue(10);
+
+    glial_pop2_nbr_primary_processes_SpinBox = new QDoubleSpinBox;
+    glial_pop2_nbr_primary_processes_SpinBox->setRange(1, 20);
+    glial_pop2_nbr_primary_processes_SpinBox->setSingleStep(1);
+    glial_pop2_nbr_primary_processes_SpinBox->setValue(10);
+
+    axons_icvf_SpinBox = new QDoubleSpinBox;
+    axons_icvf_SpinBox->setRange(0, 100);
+    axons_icvf_SpinBox->setSingleStep(1);
+
+    axons_w_myelin_icvf_SpinBox = new QDoubleSpinBox;
+    axons_w_myelin_icvf_SpinBox->setRange(0, 100);
+    axons_w_myelin_icvf_SpinBox->setSingleStep(1);
+
+    blood_vessels_icvf_SpinBox = new QDoubleSpinBox;
+    blood_vessels_icvf_SpinBox->setRange(0, 100);
+    blood_vessels_icvf_SpinBox->setSingleStep(1);
+
+    glial_pop1_soma_icvf_SpinBox = new QDoubleSpinBox;
+    glial_pop1_soma_icvf_SpinBox->setRange(0, 100);
+    glial_pop1_soma_icvf_SpinBox->setSingleStep(1);
+
+    glial_pop1_processes_icvf_SpinBox = new QDoubleSpinBox;
+    glial_pop1_processes_icvf_SpinBox->setRange(0, 100);
+    glial_pop1_processes_icvf_SpinBox->setSingleStep(1);
+
+    glial_pop2_soma_icvf_SpinBox = new QDoubleSpinBox;
+    glial_pop2_soma_icvf_SpinBox->setRange(0, 100);
+    glial_pop2_soma_icvf_SpinBox->setSingleStep(1);
+
+    glial_pop2_processes_icvf_SpinBox = new QDoubleSpinBox;
+    glial_pop2_processes_icvf_SpinBox->setRange(0, 100);
+    glial_pop2_processes_icvf_SpinBox->setSingleStep(1);
+
+    nbr_threads_SpinBox = new QDoubleSpinBox;
+    nbr_threads_SpinBox->setRange(1, 1000);
+    nbr_threads_SpinBox->setSingleStep(1);
+
+    voxel_size_SpinBox = new QDoubleSpinBox;
+    voxel_size_SpinBox->setRange(10, 1000);
+    voxel_size_SpinBox->setSingleStep(1);
+    voxel_size_SpinBox->setValue(30);
+
+    minimum_radius_SpinBox = new QDoubleSpinBox;
+    minimum_radius_SpinBox->setRange(0.05, 10);
+    minimum_radius_SpinBox->setSingleStep(0.05);
+    minimum_radius_SpinBox->setValue(0.15);
+
+    overlapping_factor_SpinBox = new QDoubleSpinBox;
+    overlapping_factor_SpinBox->setRange(1, 64);
+    overlapping_factor_SpinBox->setSingleStep(1);
+    overlapping_factor_SpinBox->setValue(4);
+
+    glial_pop1_radius_mean_SpinBox = new QDoubleSpinBox;
+    glial_pop1_radius_mean_SpinBox->setRange(0, 10);
+    glial_pop1_radius_mean_SpinBox->setSingleStep(0.1);
+    glial_pop1_radius_mean_SpinBox->setValue(5);
+
+    glial_pop1_radius_std_SpinBox = new QDoubleSpinBox;
+    glial_pop1_radius_std_SpinBox->setRange(0, 10);
+    glial_pop1_radius_std_SpinBox->setSingleStep(0.1);
+    glial_pop1_radius_std_SpinBox->setValue(0.5);
+
+    glial_pop2_radius_mean_SpinBox = new QDoubleSpinBox;
+    glial_pop2_radius_mean_SpinBox->setRange(0, 10);
+    glial_pop2_radius_mean_SpinBox->setSingleStep(0.1);
+    glial_pop2_radius_mean_SpinBox->setValue(5);
+
+    glial_pop2_radius_std_SpinBox = new QDoubleSpinBox;
+    glial_pop2_radius_std_SpinBox->setRange(0, 10);
+    glial_pop2_radius_std_SpinBox->setSingleStep(0.1);
+    glial_pop2_radius_std_SpinBox->setValue(0.5);
+
+    k1_SpinBox = new QDoubleSpinBox;
+    k1_SpinBox->setRange(0, 10);
+    k1_SpinBox->setSingleStep(0.05);
+    k1_SpinBox->setValue(0.35);
+    k1_SpinBox->setDecimals(3); // Set at least 3 decimals
+
+    k2_SpinBox = new QDoubleSpinBox;
+    k2_SpinBox->setRange(0, 10);
+    k2_SpinBox->setSingleStep(0.001);
+    k2_SpinBox->setValue(0.006);
+    k2_SpinBox->setDecimals(4); // Needed for values like 0.006
+
+    k3_SpinBox = new QDoubleSpinBox;
+    k3_SpinBox->setRange(0, 10);
+    k3_SpinBox->setSingleStep(0.001);
+    k3_SpinBox->setValue(0.024);
+    k3_SpinBox->setDecimals(4); // Shows 0.024 cleanly
+
+    
+    // --- Configuration ComboBox (Initially Hidden) ---
+    configurationComboBox = new QComboBox;
+    configurationComboBox->addItem("Sheet Configuration");
+    configurationComboBox->addItem("Interwoven Configuration");
+    configurationComboBox->setVisible(false); // Initially hidden
+
+    nbr_axons_populations_SpinBox = new QDoubleSpinBox;
+    nbr_axons_populations_SpinBox->setRange(1, 3);
+    nbr_axons_populations_SpinBox->setSingleStep(1);
+
+    // --- Connect the SpinBox Signal to a Slot Function ---
+    connect(nbr_axons_populations_SpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &Window::updateConfigurationSelectionVisibility);
+
+    c2_SpinBox = new QDoubleSpinBox;
+    c2_SpinBox->setRange(0, 1);
+    c2_SpinBox->setSingleStep(0.05);
+    c2_SpinBox->setValue(1);
+
+
+}
 QGroupBox* Window::createControls(const QString &title)
 {
     controlsGroup = new QGroupBox(title);
@@ -631,6 +1117,9 @@ void Window::resizeEvent(QResizeEvent *)
 
 void Window::onSaveButtonClicked()
 {
+
+    onSelectDirectoryButtonClicked();
+
 
     // Retrieve values from spin boxes and checkboxes
     parameters.repetitions = nbr_repetitions_SpinBox->value();
@@ -1161,12 +1650,12 @@ void Window::StartSimulation(){
             double _r_ = axons[i].outer_spheres[j].radius;
             Eigen::Vector3d pos = {_x_, _y_, _z_};
 
-            if (check_borders(min_l, max_l, pos, 0.0)) {
-                x_.push_back(_x_);
-                y_.push_back(_y_);
-                z_.push_back(_z_);
-                r_.push_back(_r_);
-            }
+            //if (check_borders(min_l, max_l, pos, 0.0)) {
+            x_.push_back(_x_);
+            y_.push_back(_y_);
+            z_.push_back(_z_);
+            r_.push_back(_r_);
+            //}
         }
         X_axons.push_back(x_);
         Y_axons.push_back(y_);
@@ -1191,13 +1680,13 @@ void Window::StartSimulation(){
         double _r_ = glial_pop1[i].soma.radius;
         Eigen::Vector3d pos = {_x_, _y_, _z_};
 
-        if (check_borders(min_l, max_l, pos, 0.0)) {
-            x_.push_back(_x_);
-            y_.push_back(_y_);
-            z_.push_back(_z_);
-            r_.push_back(_r_);
-            b_.push_back(0);
-        }
+        //if (check_borders(min_l, max_l, pos, 0.0)) {
+        x_.push_back(_x_);
+        y_.push_back(_y_);
+        z_.push_back(_z_);
+        r_.push_back(_r_);
+        b_.push_back(0);
+        //}
 
 
         for (unsigned j=0; j< glial_pop1[i].ramification_spheres.size(); ++j){
@@ -1209,9 +1698,9 @@ void Window::StartSimulation(){
                 double _z_ = glial_pop1[i].ramification_spheres[j][k].center[2];
                 double _r_ = glial_pop1[i].ramification_spheres[j][k].radius;
                 Eigen::Vector3d pos = {_x_, _y_, _z_};
-                if (!check_borders(min_l, max_l, pos, 0.0)) {
-                    continue;
-                }
+                //if (!check_borders(min_l, max_l, pos, 0.0)) {
+                //    continue;
+                //}
                 x_.push_back(_x_);
                 y_.push_back(_y_);
                 z_.push_back(_z_);
@@ -1244,13 +1733,13 @@ void Window::StartSimulation(){
         double _z_ = glial_pop2[i].soma.center[2];
         double _r_ = glial_pop2[i].soma.radius;
 
-        if (check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
-            x_.push_back(_x_);
-            y_.push_back(_y_);
-            z_.push_back(_z_);
-            r_.push_back(_r_);
-            b_.push_back(0);
-        }
+        //if (check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
+        x_.push_back(_x_);
+        y_.push_back(_y_);
+        z_.push_back(_z_);
+        r_.push_back(_r_);
+        b_.push_back(0);
+        //}
 
 
         for (unsigned j=0; j< glial_pop2[i].ramification_spheres.size(); ++j){
@@ -1262,9 +1751,9 @@ void Window::StartSimulation(){
                 double _z_ = glial_pop2[i].ramification_spheres[j][k].center[2];
                 double _r_ = glial_pop2[i].ramification_spheres[j][k].radius;
 
-                if (!check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
-                    continue;
-                }
+                //if (!check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
+                //    continue;
+                //}
                 x_.push_back(_x_);
                 y_.push_back(_y_);
                 z_.push_back(_z_);
@@ -1298,12 +1787,12 @@ void Window::StartSimulation(){
             double _r_ = blood_vessels[i].spheres[j].radius;
             Eigen::Vector3d pos = {_x_, _y_, _z_};
 
-            if (check_borders(min_l, max_l, pos, 0.0)) {
-                x_.push_back(_x_);
-                y_.push_back(_y_);
-                z_.push_back(_z_);
-                r_.push_back(_r_);
-            }
+            //if (check_borders(min_l, max_l, pos, 0.0)) {
+            x_.push_back(_x_);
+            y_.push_back(_y_);
+            z_.push_back(_z_);
+            r_.push_back(_r_);
+            //}
         }
         X_blood_vessels.push_back(x_);
         Y_blood_vessels.push_back(y_);
@@ -1330,11 +1819,23 @@ void Window::StartSimulation(){
 }
 
 void Window::onSelectDirectoryButtonClicked() {
-    QString dirPath = QFileDialog::getExistingDirectory(this, tr("Select Directory"), "", QFileDialog::ShowDirsOnly);
-    if (!dirPath.isEmpty()) {
-        selectedDirectory = dirPath;
-        qDebug() << "Selected directory:" << selectedDirectory;
+    QString dirPath = QFileDialog::getExistingDirectory(
+        this, 
+        tr("Select Output Directory for Substrate"), 
+        "", 
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+    );
+
+    // 2. Check if the user clicked "Cancel" or closed the window
+    if (dirPath.isEmpty()) {
+        qDebug() << "Growth aborted: No directory selected.";
+        return; // Halt execution cleanly
     }
+
+    // 3. Save the path for your backend to use
+    selectedDirectory = dirPath;
+    
+    qDebug() << "Proceeding with growth. Output directory:" << selectedDirectory;
 }
 
 

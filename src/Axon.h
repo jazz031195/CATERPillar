@@ -11,6 +11,7 @@
 #define AXON_H
 
 #include "sphere.h"
+#include "SphereGrid.h"
 #include <vector>
 
 using namespace std;
@@ -28,7 +29,6 @@ public:
     double inner_radius;                            /*!< inner radius of axon */
     Eigen::Vector3d begin;                          /*!< position of first sphere */
     Eigen::Vector3d end;                            /*!< target position to grow towards */
-    std::vector<Eigen::Vector2d> Box;               /*!< Box with <min, max> for each axis (x,y,z) */
     int growth_attempts;                            /*!< Number of attempts to grow axon in a row*/
     double beading_amplitude;                       /*!< Amplitude of beading */
     double beading_std;                          /*!< Standard deviation of beading */
@@ -58,7 +58,6 @@ public:
         inner_radius = radius_;
         inner_spheres.clear();
         outer_spheres.clear();
-        Box.clear();
         growth_attempts = 0;
         beading_amplitude = beading_amplitude_;
         beading_std = beading_std_;
@@ -83,7 +82,6 @@ public:
             radius = ax.radius;
             begin = ax.begin;
             end = ax.end;
-            Box = ax.Box;
             growth_attempts = ax.growth_attempts;
             beading_amplitude = ax.beading_amplitude;
             undulation_factor = ax.undulation_factor;
@@ -109,36 +107,15 @@ public:
     void add_sphere(const Sphere &sphere_to_add);
 
     /*!
-     *  \param sph sphere to check
-     *  \brief Checks if a sphere collides with this axon
+     *  \brief Adds every sphere of this axon (outer and inner) to the grid.
      */
-    bool isSphereInsideAxon(const Sphere &sph) const;
-
-    /*!
-     *  \param sph sphere to check
-        \param axis axis (0, 1 or 2)
-     *  \brief Checks if a sphere collides with this axon along a specific axis
-     */
-    std::vector<int> checkAxisForCollision(const Sphere &sph, const int &axis) const;
-
-    /*!
-     *  \param position position in voxel
-        \param distance_to_be_inside distance to be inside Box
-     *  \brief Checks if a position is near this axon (inside the Box)
-     */
-    bool isNearAxon(const Eigen::Vector3d &position, const double &distance_to_be_inside) const;
-
+    void addToGrid(SphereGrid &grid) const;
 
     /*!
      *  \brief Deletes all spheres in axon.
      */
     void destroy();
 
-    bool isSphereInsideInnerAxon(const Sphere &sph) const;
-
-    std::vector<int> checkAxisForInnerCollision(const Sphere &sph, const int &axis) const;
-
-    void updateBox();
 
     void update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits);
 

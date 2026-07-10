@@ -1,4 +1,4 @@
-#include "axongammadistribution.h"
+#include "CaterpillarGrowth.h"
 #include "grow_blood_vessels.h"
 #include <algorithm> // std::sort
 #include <random>
@@ -16,17 +16,14 @@ using namespace std::chrono;
 BloodVesselGrowth::~BloodVesselGrowth() {}
 
 BloodVesselGrowth::BloodVesselGrowth(Blood_Vessel &bv_to_grow_,
-                       const std::vector<Glial>* glial_pop1_,
-                       const std::vector<Glial>* glial_pop2_,
-                       const std::vector<Axon>* axons_,
-                       const std::vector<Blood_Vessel>* blood_vessels_,
+                       const SphereGrid* sphere_grid_,
                        const Eigen::Vector3d &extended_min_limits_,
                        const Eigen::Vector3d &extended_max_limits_,
                        const Eigen::Vector3d &min_limits_,
                        const Eigen::Vector3d &max_limits_,
                        const double &epsilon_,
                        const double &min_radius_)
-    : CellGrowth(axons_, glial_pop1_, glial_pop2_, blood_vessels_,
+    : CellGrowth(sphere_grid_,
                  extended_min_limits_, extended_max_limits_,
                  min_limits_, max_limits_,
                  epsilon_, min_radius_),
@@ -94,7 +91,7 @@ bool BloodVesselGrowth::AddOneSphere(double radius_, bool create_sphere, int gro
     // New sphere to attempt placing
     Sphere s(bv_to_grow.spheres.size() + factor,
              bv_to_grow.id,
-             /*object_type=*/3,
+             /*object_type=*/blood_constant,
              bv_to_grow.begin,
              radius_);
 

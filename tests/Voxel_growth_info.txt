@@ -1,0 +1,46 @@
+Duration 123
+Num_axons 523
+Voxel Size 100
+Axon icvf 0.239265
+Axon without myelin icvf 0.239265
+Axon with myelin icvf 0
+Myelin icvf 0
+Glial cell population 1 icvf soma 0
+Glial cell population 1 icvf branches 0
+Glial cell population 2 icvf soma 0
+Glial cell population 2 icvf branches 0
+Blood vessel icvf 0
+Total icvf 0.239265
+nbr_axons_populations 1
+crossing_fibers_type 0
+Number of threads 1
+alpha 4
+beta 0.25
+regrowth threshold 10
+minimum sphere radius 0.15
+epsilon (Tortuosity) 0.4
+undulation_factor 5
+beading_amplitude 0.3
+beading_std 0.1
+swelling_factor 1
+axons can shrink true
+spheres overlap factor 4
+epsilon_blood_vessels 0.8
+mean_vessel_rad 6
+std_vessel_rad 1
+cosPhiSquared 0.996833
+c1 0.35
+c2 0.01
+c3 0.02
+glial_pop1_nbr_primary_processes 10
+glial_pop1_branching true
+mean_glial_pop1_process_length 10
+std_glial_pop1_process_length 15
+glial_pop1_radius_mean 5
+glial_pop1_radius_std 0.5
+glial_pop2_nbr_primary_processes 10
+glial_pop2_branching true
+mean_glial_pop2_process_length 10
+std_glial_pop2_process_length 15
+glial_pop2_radius_mean 5
+glial_pop2_radius_std 0.5

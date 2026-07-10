@@ -188,10 +188,24 @@ CMakeFiles/CATERPillar.dir/src/Blood_Vessel.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/CATERPillar.dir/src/Blood_Vessel.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/localadmin/Documents/CATERPillar/src/Blood_Vessel.cpp -o CMakeFiles/CATERPillar.dir/src/Blood_Vessel.cpp.s
 
+CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
+CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.o: /home/localadmin/Documents/CATERPillar/src/CaterpillarGrowth.cpp
+CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.o -MF CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.o -c /home/localadmin/Documents/CATERPillar/src/CaterpillarGrowth.cpp
+
+CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/localadmin/Documents/CATERPillar/src/CaterpillarGrowth.cpp > CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.i
+
+CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/localadmin/Documents/CATERPillar/src/CaterpillarGrowth.cpp -o CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.s
+
 CMakeFiles/CATERPillar.dir/src/Glial.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
 CMakeFiles/CATERPillar.dir/src/Glial.cpp.o: /home/localadmin/Documents/CATERPillar/src/Glial.cpp
 CMakeFiles/CATERPillar.dir/src/Glial.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/CATERPillar.dir/src/Glial.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/CATERPillar.dir/src/Glial.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/Glial.cpp.o -MF CMakeFiles/CATERPillar.dir/src/Glial.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/Glial.cpp.o -c /home/localadmin/Documents/CATERPillar/src/Glial.cpp
 
 CMakeFiles/CATERPillar.dir/src/Glial.cpp.i: cmake_force
@@ -202,24 +216,24 @@ CMakeFiles/CATERPillar.dir/src/Glial.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/CATERPillar.dir/src/Glial.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/localadmin/Documents/CATERPillar/src/Glial.cpp -o CMakeFiles/CATERPillar.dir/src/Glial.cpp.s
 
-CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
-CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.o: /home/localadmin/Documents/CATERPillar/src/axongammadistribution.cpp
-CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.o -MF CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.o -c /home/localadmin/Documents/CATERPillar/src/axongammadistribution.cpp
+CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
+CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.o: /home/localadmin/Documents/CATERPillar/src/SphereGrid.cpp
+CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.o -MF CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.o -c /home/localadmin/Documents/CATERPillar/src/SphereGrid.cpp
 
-CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/localadmin/Documents/CATERPillar/src/axongammadistribution.cpp > CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.i
+CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/localadmin/Documents/CATERPillar/src/SphereGrid.cpp > CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.i
 
-CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/localadmin/Documents/CATERPillar/src/axongammadistribution.cpp -o CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.s
+CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/localadmin/Documents/CATERPillar/src/SphereGrid.cpp -o CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.s
 
 CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
 CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o: /home/localadmin/Documents/CATERPillar/src/core_logic.cpp
 CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o -MF CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o -c /home/localadmin/Documents/CATERPillar/src/core_logic.cpp
 
 CMakeFiles/CATERPillar.dir/src/core_logic.cpp.i: cmake_force
@@ -233,7 +247,7 @@ CMakeFiles/CATERPillar.dir/src/core_logic.cpp.s: cmake_force
 CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
 CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.o: /home/localadmin/Documents/CATERPillar/src/grow_axons.cpp
 CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.o -MF CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.o -c /home/localadmin/Documents/CATERPillar/src/grow_axons.cpp
 
 CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.i: cmake_force
@@ -247,7 +261,7 @@ CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.s: cmake_force
 CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
 CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.o: /home/localadmin/Documents/CATERPillar/src/grow_blood_vessels.cpp
 CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.o -MF CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.o -c /home/localadmin/Documents/CATERPillar/src/grow_blood_vessels.cpp
 
 CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.i: cmake_force
@@ -261,7 +275,7 @@ CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.s: cmake_force
 CMakeFiles/CATERPillar.dir/src/grow_cells.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
 CMakeFiles/CATERPillar.dir/src/grow_cells.cpp.o: /home/localadmin/Documents/CATERPillar/src/grow_cells.cpp
 CMakeFiles/CATERPillar.dir/src/grow_cells.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object CMakeFiles/CATERPillar.dir/src/grow_cells.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building CXX object CMakeFiles/CATERPillar.dir/src/grow_cells.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/grow_cells.cpp.o -MF CMakeFiles/CATERPillar.dir/src/grow_cells.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/grow_cells.cpp.o -c /home/localadmin/Documents/CATERPillar/src/grow_cells.cpp
 
 CMakeFiles/CATERPillar.dir/src/grow_cells.cpp.i: cmake_force
@@ -275,7 +289,7 @@ CMakeFiles/CATERPillar.dir/src/grow_cells.cpp.s: cmake_force
 CMakeFiles/CATERPillar.dir/src/grow_glial_cells.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
 CMakeFiles/CATERPillar.dir/src/grow_glial_cells.cpp.o: /home/localadmin/Documents/CATERPillar/src/grow_glial_cells.cpp
 CMakeFiles/CATERPillar.dir/src/grow_glial_cells.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building CXX object CMakeFiles/CATERPillar.dir/src/grow_glial_cells.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building CXX object CMakeFiles/CATERPillar.dir/src/grow_glial_cells.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/grow_glial_cells.cpp.o -MF CMakeFiles/CATERPillar.dir/src/grow_glial_cells.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/grow_glial_cells.cpp.o -c /home/localadmin/Documents/CATERPillar/src/grow_glial_cells.cpp
 
 CMakeFiles/CATERPillar.dir/src/grow_glial_cells.cpp.i: cmake_force
@@ -289,7 +303,7 @@ CMakeFiles/CATERPillar.dir/src/grow_glial_cells.cpp.s: cmake_force
 CMakeFiles/CATERPillar.dir/src/main.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
 CMakeFiles/CATERPillar.dir/src/main.cpp.o: /home/localadmin/Documents/CATERPillar/src/main.cpp
 CMakeFiles/CATERPillar.dir/src/main.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building CXX object CMakeFiles/CATERPillar.dir/src/main.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object CMakeFiles/CATERPillar.dir/src/main.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/main.cpp.o -MF CMakeFiles/CATERPillar.dir/src/main.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/main.cpp.o -c /home/localadmin/Documents/CATERPillar/src/main.cpp
 
 CMakeFiles/CATERPillar.dir/src/main.cpp.i: cmake_force
@@ -303,7 +317,7 @@ CMakeFiles/CATERPillar.dir/src/main.cpp.s: cmake_force
 CMakeFiles/CATERPillar.dir/src/obstacle.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
 CMakeFiles/CATERPillar.dir/src/obstacle.cpp.o: /home/localadmin/Documents/CATERPillar/src/obstacle.cpp
 CMakeFiles/CATERPillar.dir/src/obstacle.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object CMakeFiles/CATERPillar.dir/src/obstacle.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building CXX object CMakeFiles/CATERPillar.dir/src/obstacle.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/obstacle.cpp.o -MF CMakeFiles/CATERPillar.dir/src/obstacle.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/obstacle.cpp.o -c /home/localadmin/Documents/CATERPillar/src/obstacle.cpp
 
 CMakeFiles/CATERPillar.dir/src/obstacle.cpp.i: cmake_force
@@ -317,7 +331,7 @@ CMakeFiles/CATERPillar.dir/src/obstacle.cpp.s: cmake_force
 CMakeFiles/CATERPillar.dir/src/sphere.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
 CMakeFiles/CATERPillar.dir/src/sphere.cpp.o: /home/localadmin/Documents/CATERPillar/src/sphere.cpp
 CMakeFiles/CATERPillar.dir/src/sphere.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building CXX object CMakeFiles/CATERPillar.dir/src/sphere.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object CMakeFiles/CATERPillar.dir/src/sphere.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/sphere.cpp.o -MF CMakeFiles/CATERPillar.dir/src/sphere.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/sphere.cpp.o -c /home/localadmin/Documents/CATERPillar/src/sphere.cpp
 
 CMakeFiles/CATERPillar.dir/src/sphere.cpp.i: cmake_force
@@ -331,7 +345,7 @@ CMakeFiles/CATERPillar.dir/src/sphere.cpp.s: cmake_force
 CMakeFiles/CATERPillar.dir/src/threads.cpp.o: CMakeFiles/CATERPillar.dir/flags.make
 CMakeFiles/CATERPillar.dir/src/threads.cpp.o: /home/localadmin/Documents/CATERPillar/src/threads.cpp
 CMakeFiles/CATERPillar.dir/src/threads.cpp.o: CMakeFiles/CATERPillar.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object CMakeFiles/CATERPillar.dir/src/threads.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object CMakeFiles/CATERPillar.dir/src/threads.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/CATERPillar.dir/src/threads.cpp.o -MF CMakeFiles/CATERPillar.dir/src/threads.cpp.o.d -o CMakeFiles/CATERPillar.dir/src/threads.cpp.o -c /home/localadmin/Documents/CATERPillar/src/threads.cpp
 
 CMakeFiles/CATERPillar.dir/src/threads.cpp.i: cmake_force
@@ -352,8 +366,9 @@ CATERPillar_OBJECTS = \
 "CMakeFiles/CATERPillar.dir/GUI/slidergroup.cpp.o" \
 "CMakeFiles/CATERPillar.dir/src/Axon.cpp.o" \
 "CMakeFiles/CATERPillar.dir/src/Blood_Vessel.cpp.o" \
+"CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.o" \
 "CMakeFiles/CATERPillar.dir/src/Glial.cpp.o" \
-"CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.o" \
+"CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.o" \
 "CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o" \
 "CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.o" \
 "CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.o" \
@@ -375,8 +390,9 @@ CATERPillar: CMakeFiles/CATERPillar.dir/GUI/qcustomplot-source/qcustomplot.cpp.o
 CATERPillar: CMakeFiles/CATERPillar.dir/GUI/slidergroup.cpp.o
 CATERPillar: CMakeFiles/CATERPillar.dir/src/Axon.cpp.o
 CATERPillar: CMakeFiles/CATERPillar.dir/src/Blood_Vessel.cpp.o
+CATERPillar: CMakeFiles/CATERPillar.dir/src/CaterpillarGrowth.cpp.o
 CATERPillar: CMakeFiles/CATERPillar.dir/src/Glial.cpp.o
-CATERPillar: CMakeFiles/CATERPillar.dir/src/axongammadistribution.cpp.o
+CATERPillar: CMakeFiles/CATERPillar.dir/src/SphereGrid.cpp.o
 CATERPillar: CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o
 CATERPillar: CMakeFiles/CATERPillar.dir/src/grow_axons.cpp.o
 CATERPillar: CMakeFiles/CATERPillar.dir/src/grow_blood_vessels.cpp.o
@@ -394,7 +410,7 @@ CATERPillar: /usr/lib/x86_64-linux-gnu/libQt5Widgets.so.5.15.3
 CATERPillar: /usr/lib/x86_64-linux-gnu/libQt5Gui.so.5.15.3
 CATERPillar: /usr/lib/x86_64-linux-gnu/libQt5Core.so.5.15.3
 CATERPillar: CMakeFiles/CATERPillar.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Linking CXX executable CATERPillar"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/localadmin/Documents/CATERPillar/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Linking CXX executable CATERPillar"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/CATERPillar.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

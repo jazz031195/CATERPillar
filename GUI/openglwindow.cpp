@@ -1,4 +1,5 @@
 #include "openglwindow.h"
+#include <QSurfaceFormat>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
 #include <QtMath>
@@ -21,6 +22,18 @@ OpenGLWindow::OpenGLWindow(QWindow *parent)
       zoomFactor(1.0f),      // <--- CRITICAL: Must be 1.0, not 0
       totalBatchedVertices(0)
 {
+    // By default QSurfaceFormat has depthBufferSize == 0, which means the
+    // window is created WITHOUT a depth buffer. glEnable(GL_DEPTH_TEST) is
+    // then silently a no-op, and spheres get drawn in draw-call order
+    // instead of true depth order (back objects overpaint front ones).
+    // We must request a depth buffer before the underlying native window
+    // is created.
+    QSurfaceFormat format;
+    format.setDepthBufferSize(24);
+    format.setStencilBufferSize(8);
+    format.setSamples(4); // optional: anti-aliasing
+    setFormat(format);
+
     connect(&timer, &QTimer::timeout, this, static_cast<void(QWindow::*)()>(&OpenGLWindow::update));
     timer.start(16); // Refresh every ~16 ms (60 FPS)
 }
@@ -249,7 +262,8 @@ void OpenGLWindow::initializeGL()
         "    gl_Position = mvp * vec4(position, 1.0);\n"
         "    fragColor = color;\n"
         //   Adjust the 10.0 multiplier depending on how large you want the cells
-        "    gl_PointSize = (radius * 20.0) / (gl_Position.w * zoom);\n" 
+        "    float calculatedSize = (radius * 60.0) / (gl_Position.w * zoom);\n"
+        "    gl_PointSize = clamp(calculatedSize, 4.0, 100.0);\n" 
         "}\n";
 
     const char *fragmentShaderSource =

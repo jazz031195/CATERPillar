@@ -9,113 +9,105 @@ import random
 from simulationgraphs import get_spheres_array, read_swc_file
 from scipy.optimize import least_squares
 from reduce_astrocytes_in_substrate import write_new_swc
+from compute_icvf import intra_volume
 
-def compute_icvf_axons(df_axon, limit,factor):
-
-    total_volume = 0
-    for i in np.arange(factor,len(df_axon),factor):
-        sphere1 = df_axon.iloc[i-factor]
-        sphere2 = df_axon.iloc[i]
-        distance_between_spheres = np.linalg.norm(
-            np.array([sphere1.x, sphere1.y, sphere1.z]) - np.array([sphere2.x, sphere2.y, sphere2.z])
-        )
-        volume = np.pi * (sphere1.Rout**2 + sphere2.Rout**2 + sphere2.Rout * sphere1.Rout) * distance_between_spheres / 3
-        total_volume += volume
-
-    return total_volume/(limit**3)
-
-
-def myelin_thickness(inner_radius):
+def reduce_myelin_volume(input_path_swc, output_path, reduction_fraction=0.5):
     """
-    Compute the myelin thickness based on the inner radius.
-    """
-    return 0.35 + 0.006 * 2.0 * inner_radius + 0.024 * np.log(2.0 * inner_radius)
-
-def compute_outer_radius(inner_radius):
-    """
-    Compute the outer radius based on the inner radius.
-    """
-    return inner_radius + myelin_thickness(inner_radius)
-
-def compute_inner_radius(outer_radius):
-    """
-    Compute the inner radius given an outer radius using least squares optimization.
-
+    Reduces the myelin volume of axon segments by a specified fraction 
+    by adjusting only the outer radius.
+    
     Parameters:
-        outer_radius (float): The outer radius value.
-
+    df (pd.DataFrame): DataFrame containing 'inner_radius', 'outer_radius', and 'cell_id'
+    reduction_fraction (float): The fraction by which to reduce the volume (default 0.5 for 50%)
+    
     Returns:
-        float: The computed inner radius.
+    pd.DataFrame: A copy of the DataFrame with updated 'outer_radius' values.
     """
-    def residual(inner_radius):
-        # Residual function: difference between given and computed outer radius
-        return compute_outer_radius(inner_radius) - outer_radius
-
-    # Initial guess for the inner radius (can be tuned based on the expected range)
-    initial_guess = outer_radius / 2.0
-
-    # Solve using least squares
-    result = least_squares(residual, initial_guess, bounds=(0, outer_radius))  # Non-negative inner radius
-
-    if result.success:
-        return result.x[0]
-    else:
-        raise ValueError("Optimization failed to converge.")
+    # Create a copy to avoid SettingWithCopy warnings on the original dataframe
+    df = read_swc_file(input_path_swc)
+    df_axons = df[df['cell_type'] == "axon"]
     
-def add_myelin_to_one_axon(df_axon):
-
-    df_axon["Rin"] = list(map(lambda x: compute_inner_radius(x), list(df_axon["Rout"])))
+    # Extract the radii as numpy arrays for clean calculations
+    r_in = df_axons['inner_radius'].values
+    r_out_old = df_axons['outer_radius'].values
     
-    return df_axon
+    # Calculate the new outer radius using the derived geometric formula
+    # Factor is the amount of volume to KEEP (e.g., 1.0 - 0.50 = 0.50)
+    retention_factor = 1.0 - reduction_fraction
+    
+    r_out_new_squared = (retention_factor * (r_out_old**2 - r_in**2)) + r_in**2
+    r_out_new = np.sqrt(r_out_new_squared)
+    
+    # Update the dataframe
+    df_axons['outer_radius'] = r_out_new
 
-def add_myelin(f_myelinated_axons_to_reach, path_swc, factor):
-    f_myelinated_axons_reached = 0
+    #save the modified dataframe to a new SWC file
+    pd.concat([ df_axons, df[df['cell_type'] != "axon"]]).to_csv(output_path, index=False, sep=" ")
+    
+    print(f"Myelin volume reduced by {reduction_fraction*100:.1f}%. Updated SWC saved to {output_path}")
 
-    df = read_swc_file(path_swc)
-    df_axons = df[df['type'] == "axon"]
-    limit = 150
 
-    new_df = pd.DataFrame(columns=df.columns)
-    ax_ids = df_axons['ax_id'].unique()
-    #shuffle ax_ids
-    random.shuffle(ax_ids)
-    for axon_id in ax_ids:
-        print(f"Processing axon {axon_id}")
-        df_axon = df_axons[df_axons['ax_id'] == axon_id]
-        if (f_myelinated_axons_reached >= f_myelinated_axons_to_reach):
-            new_df = pd.concat([new_df, df_axon])
-        else:
-            icvf_axon = compute_icvf_axons(df_axon, limit,factor)
-            if (icvf_axon <= (f_myelinated_axons_to_reach-f_myelinated_axons_reached)+0.05):
-                print(f"myelinated")
-                df_axon = add_myelin_to_one_axon(df_axon)
-                f_myelinated_axons_reached += icvf_axon
-            new_df = pd.concat([new_df, df_axon])
 
-    print(f"Reached ICVF: {f_myelinated_axons_reached}")
-    return new_df
+def simulate_axon_loss(input_path_swc, output_path_swc, volume_func, factor, square_bounds, 
+                       cell_type="axon", reduction_fraction=0.3):
+    """
+    Randomly removes entire cells of a specific type until the total 
+    intracellular volume is reduced by the specified fraction.
+    """
+    df = read_swc_file(input_path_swc)
+    
+    # 1. Isolate the specific cell type to calculate the baseline
+    df_type = df[df["cell_type"] == cell_type].copy()
+    
+    # 2. Calculate the initial total volume and our target reduction
+    total_vol = volume_func(df_type, factor, square_bounds, "intra")
+    target_reduction_vol = total_vol * reduction_fraction
+    
+    # 3. Get unique cell IDs and shuffle them for random deletion
+    cell_ids = df_type["cell_id"].unique()
+    np.random.shuffle(cell_ids)
+    
+    removed_vol = 0.0
+    ids_to_remove = []
+    
+    # 4. Iteratively select cells to remove until the target volume is met
+    for cid in cell_ids:
+        if removed_vol >= target_reduction_vol:
+            break
+            
+        df_single_cell = df_type[df_type["cell_id"] == cid]
+        cell_vol = volume_func(df_single_cell, factor, square_bounds, "intra")
+        
+        removed_vol += cell_vol
+        ids_to_remove.append(cid)
+        
+    # 5. Clean filtering of the original dataframe
+    # Find rows that are BOTH the target cell_type AND in the removal list
+    mask_to_drop = (df["cell_type"] == cell_type) & (df["cell_id"].isin(ids_to_remove))
+    
+    # Keep everything that is NOT in the drop mask
+    df_final = df[~mask_to_drop].copy()
+    
+    # Print a quick summary
+    actual_reduction_pct = (removed_vol / total_vol) * 100 if total_vol > 0 else 0
+    print(f"--- {cell_type.capitalize()} Loss Summary ---")
+    print(f"Initial Volume:   {total_vol:.2f}")
+    print(f"Target Reduction: {target_reduction_vol:.2f} ({(reduction_fraction*100):.1f}%)")
+    print(f"Actual Reduction: {removed_vol:.2f} ({actual_reduction_pct:.1f}%)")
+    print(f"Cells Removed:    {len(ids_to_remove)} out of {len(cell_ids)} {cell_type}s")
 
-def compute_total_icvf(path_swc, factor):
-    df = read_swc_file(path_swc)
-    df_axons = df[df['type'] == "axon"]
-    limit = 150
-
-    ax_ids = df_axons['ax_id'].unique()
-    total_icvf = 0
-    for axon_id in ax_ids:
-        print(f"Processing axon {axon_id}")
-        df_axon = df_axons[df_axons['ax_id'] == axon_id]
-        icvf_axon = compute_icvf_axons(df_axon, limit,factor)
-        total_icvf += icvf_axon
-
-    return total_icvf
+    # 6. Save the modified dataframe to a new SWC file
+    df_final.to_csv(output_path_swc, index=False, sep=" ")
+    print(f"Updated SWC with reduced {cell_type} volume saved to {output_path_swc}")
+    
+    return df_final # Returning it just in case you need to use it immediately
 
 if __name__ == "__main__":
-    path_swc = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/SMI_pred/complex_axons/f_0.2.swc"
-    f_myelinated_axons_to_reach = 0.1
+    path_swc = "/home/localadmin/Documents/Santi/Inflammation.csv"
+    output_path1 = "/home/localadmin/Documents/Santi/Inflammation_reduced_myelin.csv"
     factor = 4
-    total_icvf = compute_total_icvf(path_swc, factor)
-    print   (f"Total ICVF: {total_icvf}")
-    #new_df = add_myelin(f_myelinated_axons_to_reach, path_swc,factor)
-    #new_path_swc = f"/home/localadmin/Documents/MCDS/Permeable_MCDS/output/SMI_pred/permeable_axons/axons_{f_myelinated_axons_to_reach}.swc"
-    #write_new_swc(new_path_swc, new_df)
+    square_bounds = (0, 100, 0, 100, 0, 100)
+    reduce_myelin_volume(path_swc, output_path1, reduction_fraction=0.5)
+    output_path2 = "/home/localadmin/Documents/Santi/Neuroinfl.csv"
+    simulate_axon_loss(output_path1, output_path2, intra_volume, factor, square_bounds, cell_type="axon", reduction_fraction=0.3)
+

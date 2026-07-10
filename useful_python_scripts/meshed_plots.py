@@ -80,13 +80,13 @@ def create_mesh(cell_type, cell_id=None, max_cell_id=None):
 
 if __name__ == "__main__":
     # --- Example Usage ---
-    file_path = "/home/localadmin/Documents/MCDS/Permeable_MCDS/output/incoherent_blood_flow/State1.csv"
+    file_path = "/home/localadmin/Documents/Santi/Healthy_Voxel.csv"
     
     # Assuming read_swc_file returns a pandas DataFrame
     df = read_swc_file(file_path)
 
     # 1. Create the meshes and save them to SEPARATE variables
-    mesh_vessels = create_mesh(cell_type="blood_vessel", cell_id=None, max_cell_id=None)
+    mesh_vessels = create_mesh(cell_type="glial_cell", cell_id=None, max_cell_id=2)
     mesh_axons = create_mesh(cell_type="axon", cell_id=None, max_cell_id=25)
 
     # 2. ADDING DATA ELEMENTS TO THE MESH
@@ -110,10 +110,10 @@ if __name__ == "__main__":
     if mesh_vessels.n_points > 0:
         plotter.add_mesh(
             mesh_vessels, 
-            color="red", 
+            color="green", 
             smooth_shading=True, 
             specular=0.5, 
-            label="Blood Vessels"
+            label="Glial Cells"
         )
         
     # Add the axons to the scene (colored green)

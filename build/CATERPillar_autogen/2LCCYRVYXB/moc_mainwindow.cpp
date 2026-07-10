@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_Window_t {
-    QByteArrayData data[19];
-    char stringdata0[313];
+    QByteArrayData data[21];
+    char stringdata0[352];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -50,7 +50,9 @@ QT_MOC_LITERAL(14, 216, 8), // "fileName"
 QT_MOC_LITERAL(15, 225, 17), // "ReadAxonsFromFile"
 QT_MOC_LITERAL(16, 243, 22), // "ReadGlialCellsFromFile"
 QT_MOC_LITERAL(17, 266, 21), // "ReadGlialCellsFromCSV"
-QT_MOC_LITERAL(18, 288, 24) // "ReadBloodVesselsFromFile"
+QT_MOC_LITERAL(18, 288, 24), // "ReadBloodVesselsFromFile"
+QT_MOC_LITERAL(19, 313, 22), // "generateMonteCarloConf"
+QT_MOC_LITERAL(20, 336, 15) // "runMCSimulation"
 
     },
     "Window\0onSaveButtonClicked\0\0"
@@ -61,7 +63,8 @@ QT_MOC_LITERAL(18, 288, 24) // "ReadBloodVesselsFromFile"
     "filePath\0ReadAxonsFromSWC\0ReadAxonsFromCSV\0"
     "fileName\0ReadAxonsFromFile\0"
     "ReadGlialCellsFromFile\0ReadGlialCellsFromCSV\0"
-    "ReadBloodVesselsFromFile"
+    "ReadBloodVesselsFromFile\0"
+    "generateMonteCarloConf\0runMCSimulation"
 };
 #undef QT_MOC_LITERAL
 
@@ -71,7 +74,7 @@ static const uint qt_meta_data_Window[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      11,   14, // methods
+      13,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -79,17 +82,19 @@ static const uint qt_meta_data_Window[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    0,   69,    2, 0x08 /* Private */,
-       3,    0,   70,    2, 0x08 /* Private */,
-       4,    0,   71,    2, 0x08 /* Private */,
-       5,    4,   72,    2, 0x08 /* Private */,
-      10,    1,   81,    2, 0x08 /* Private */,
-      12,    1,   84,    2, 0x08 /* Private */,
-      13,    1,   87,    2, 0x08 /* Private */,
-      15,    1,   90,    2, 0x08 /* Private */,
-      16,    1,   93,    2, 0x08 /* Private */,
-      17,    1,   96,    2, 0x08 /* Private */,
-      18,    1,   99,    2, 0x08 /* Private */,
+       1,    0,   79,    2, 0x08 /* Private */,
+       3,    0,   80,    2, 0x08 /* Private */,
+       4,    0,   81,    2, 0x08 /* Private */,
+       5,    4,   82,    2, 0x08 /* Private */,
+      10,    1,   91,    2, 0x08 /* Private */,
+      12,    1,   94,    2, 0x08 /* Private */,
+      13,    1,   97,    2, 0x08 /* Private */,
+      15,    1,  100,    2, 0x08 /* Private */,
+      16,    1,  103,    2, 0x08 /* Private */,
+      17,    1,  106,    2, 0x08 /* Private */,
+      18,    1,  109,    2, 0x08 /* Private */,
+      19,    0,  112,    2, 0x08 /* Private */,
+      20,    0,  113,    2, 0x08 /* Private */,
 
  // slots: parameters
     QMetaType::Void,
@@ -103,6 +108,8 @@ static const uint qt_meta_data_Window[] = {
     QMetaType::Void, QMetaType::QString,   14,
     QMetaType::Void, QMetaType::QString,   14,
     QMetaType::Void, QMetaType::QString,   14,
+    QMetaType::Void,
+    QMetaType::Void,
 
        0        // eod
 };
@@ -124,6 +131,8 @@ void Window::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
         case 8: _t->ReadGlialCellsFromFile((*reinterpret_cast< const QString(*)>(_a[1]))); break;
         case 9: _t->ReadGlialCellsFromCSV((*reinterpret_cast< const QString(*)>(_a[1]))); break;
         case 10: _t->ReadBloodVesselsFromFile((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 11: _t->generateMonteCarloConf(); break;
+        case 12: _t->runMCSimulation(); break;
         default: ;
         }
     }
@@ -158,13 +167,13 @@ int Window::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 11)
+        if (_id < 13)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 11;
+        _id -= 13;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 11)
+        if (_id < 13)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 11;
+        _id -= 13;
     }
     return _id;
 }

@@ -312,10 +312,9 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /home/localadmin/Documents/CATERPillar/src/Eigen/src/Core/StlIterators.h \
  /home/localadmin/Documents/CATERPillar/src/Eigen/src/Core/GlobalFunctions.h \
  /home/localadmin/Documents/CATERPillar/src/Eigen/src/Core/util/ReenableStupidWarnings.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMainWindow \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qmainwindow.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtwidgetsglobal.h \
- /usr/include/x86_64-linux-gnu/qt5/QtGui/qtguiglobal.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/QProcess \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qprocess.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qiodevice.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qglobal.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qconfig.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qtcore-config.h \
@@ -333,14 +332,10 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qglobalstatic.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qnumeric.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qversiontagging.h \
- /usr/include/x86_64-linux-gnu/qt5/QtGui/qtgui-config.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtwidgets-config.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qwidget.h \
- /usr/include/x86_64-linux-gnu/qt5/QtGui/qwindowdefs.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qobject.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qobjectdefs.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qnamespace.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qobjectdefs_impl.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qobject.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qstring.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qchar.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qbytearray.h \
@@ -382,6 +377,15 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qobject_impl.h \
  /usr/include/c++/11/chrono /usr/include/c++/11/ratio \
  /usr/include/c++/11/ctime /usr/include/c++/11/bits/parse_numbers.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qshareddata.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qhash.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QWidget \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qwidget.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtwidgetsglobal.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/qtguiglobal.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/qtgui-config.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtwidgets-config.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/qwindowdefs.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qmargins.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qpaintdevice.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qrect.h \
@@ -396,15 +400,12 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qpolygon.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qregion.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qdatastream.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qiodevice.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qline.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qtransform.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qimage.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qpixelformat.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qpixmap.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qsharedpointer.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qshareddata.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qhash.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qsharedpointer_impl.h \
  /usr/include/c++/11/memory \
  /usr/include/c++/11/bits/stl_raw_storage_iter.h \
@@ -420,26 +421,49 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qsizepolicy.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qcursor.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qkeysequence.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QTabWidget \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtabwidget.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qwidget.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qicon.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QStackedWidget \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstackedwidget.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qframe.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QToolButton \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtoolbutton.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractbutton.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QFormLayout \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qformlayout.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLayout \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayoutitem.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qboxlayout.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgridlayout.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLineEdit \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlineedit.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/qtextcursor.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/qtextformat.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qvariant.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qmap.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/qpen.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/qtextoption.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMainWindow \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qmainwindow.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtabwidget.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QSlider \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qslider.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractslider.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLabel \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlabel.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qframe.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QString \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qstring.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QCheckBox \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qcheckbox.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractbutton.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QDoubleSpinBox \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qspinbox.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractspinbox.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qvalidator.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qregularexpression.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qvariant.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qmap.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qlocale.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QPushButton \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qpushbutton.h \
@@ -529,10 +553,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qdial.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QBoxLayout \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qboxlayout.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayoutitem.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qboxlayout.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgridlayout.h \
  /home/localadmin/Documents/CATERPillar/GUI/ScatterDataModifier.h \
  /usr/include/x86_64-linux-gnu/qt5/QtDataVisualization/QScatterDataProxy \
  /usr/include/x86_64-linux-gnu/qt5/QtDataVisualization/qscatterdataproxy.h \
@@ -595,7 +615,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QStatusBar \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstatusbar.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QWidget \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qwidget.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/core_logic.h \
  /home/localadmin/Documents/CATERPillar/src/parameters.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/../src/Axon.h \
@@ -667,11 +686,15 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /home/localadmin/Documents/CATERPillar/GUI/../src/../src/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/../src/Eigen/src/Eigenvalues/./RealQZ.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/../src/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+ /home/localadmin/Documents/CATERPillar/GUI/../src/../src/SphereGrid.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/../src/Blood_Vessel.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/../src/Glial.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/Axon.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/Blood_Vessel.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/Glial.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/QDir \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qdir.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qfileinfo.h \
  /usr/include/c++/11/fstream /usr/include/c++/11/bits/codecvt.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/basic_file.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++io.h \
@@ -688,7 +711,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QFileDialog \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qfiledialog.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qdir.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qfileinfo.h \
  /usr/include/c++/11/variant \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QFontComboBox \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qfontcombobox.h \
@@ -702,8 +724,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QTimer \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/QPainter \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qpainter.h \
- /usr/include/x86_64-linux-gnu/qt5/QtGui/qtextoption.h \
- /usr/include/x86_64-linux-gnu/qt5/QtGui/qpen.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/QPainterPath \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qpainterpath.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/QPaintEvent \
@@ -778,7 +798,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qdatastream.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qdeadlinetimer.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qelapsedtimer.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qdir.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qdiriterator.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qeasingcurve.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qelapsedtimer.h \
@@ -854,7 +873,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qpluginloader.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qlibrary.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qplugin.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qprocess.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qprocessordetection.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qpropertyanimation.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qvariantanimation.h \
@@ -936,10 +954,8 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qabstracttextdocumentlayout.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qtextlayout.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qevent.h \
- /usr/include/x86_64-linux-gnu/qt5/QtGui/qtextformat.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qglyphrun.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qrawfont.h \
- /usr/include/x86_64-linux-gnu/qt5/QtGui/qtextcursor.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qtextdocument.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qaccessible.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qaccessiblebridge.h \
@@ -1088,9 +1104,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qdiriterator.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qfocusframe.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qfontdialog.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qformlayout.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLayout \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qframe.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgesture.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgesturerecognizer.h \
@@ -1126,7 +1139,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qkeysequenceedit.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayoutitem.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlcdnumber.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlineedit.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlistview.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlistwidget.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlistview.h \
@@ -1156,7 +1168,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qsplashscreen.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qsplitter.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstackedlayout.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstackedwidget.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstyle.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstyleditemdelegate.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstylefactory.h \
@@ -1168,12 +1179,10 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtableview.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtablewidget.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtableview.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtabwidget.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtextbrowser.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtextedit.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtoolbar.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtoolbox.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtoolbutton.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtooltip.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtreeview.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtreewidget.h \

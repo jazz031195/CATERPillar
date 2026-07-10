@@ -1,4 +1,4 @@
-#include "axongammadistribution.h"
+#include "CaterpillarGrowth.h"
 #include "grow_glial_cells.h"
 #include <algorithm> // std::sort
 #include <random>
@@ -16,15 +16,12 @@ using namespace std::chrono;
 GlialCellGrowth::~GlialCellGrowth() {}
 
 GlialCellGrowth::GlialCellGrowth(Glial &glial_cell_to_grow_,
-            const std::vector<Glial>* glial_pop1_,
-            const std::vector<Glial>* glial_pop2_,
-            const std::vector<Axon>* axons_,
-            const std::vector<Blood_Vessel>* blood_vessels_,
+            const SphereGrid* sphere_grid_,
             const Eigen::Vector3d &extended_min_limits_,
             const Eigen::Vector3d &extended_max_limits_,
             const Eigen::Vector3d &min_limits_,
             const Eigen::Vector3d &max_limits_,
-            const double &min_radius_, const double &epsilon_) : CellGrowth(axons_, glial_pop1_, glial_pop2_, blood_vessels_, extended_min_limits_, extended_max_limits_, min_limits_, max_limits_, epsilon_, min_radius_), glial_cell_to_grow(glial_cell_to_grow_){}
+            const double &min_radius_, const double &epsilon_) : CellGrowth(sphere_grid_, extended_min_limits_, extended_max_limits_, min_limits_, max_limits_, epsilon_, min_radius_), glial_cell_to_grow(glial_cell_to_grow_){}
 
 GlialCellGrowth::GlialCellGrowth(const GlialCellGrowth &other)
   : CellGrowth(other),             // Call the base-class copy constructor
@@ -49,38 +46,22 @@ void GlialCellGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const 
             double rad = last_sphere.radius + (sph.radius - last_sphere.radius)*(i+1)/(nbr_spheres+1);
             id_ = last_sphere.id + i + 1;
             Sphere s(id_, last_sphere.object_id, last_sphere.object_type, position, rad, last_sphere.branch_id, sph.parent_id);
-            bool can_grow_;
-            if (check_collision_with_branches){
-                can_grow_ = canSpherebePlaced(s) && !collideswithItself(s);
-            }
-            else{
-                can_grow_ = canSpherebePlaced(s);
-            }
+            bool can_grow_ = canSpherebePlaced(s, check_collision_with_branches);
             if(can_grow_){
                 glial_cell_to_grow.ramification_spheres[index_ram_spheres].push_back(s);
-                glial_cell_to_grow.update_all_boxes(s);
             }
 
 
         }
     }
     sph.id = last_sphere.id + nbr_spheres + 1;
-    glial_cell_to_grow.ramification_spheres[index_ram_spheres].push_back(sph); 
-    glial_cell_to_grow.update_all_boxes(sph);
+    glial_cell_to_grow.ramification_spheres[index_ram_spheres].push_back(sph);
 }
 
 
 bool GlialCellGrowth::AddOneSphere(const double &radius_, const bool &create_sphere, int &grow_straight, const int &i, const bool &check_collision_with_branches, const int &parent, const int &factor)
 {
 
-    if (glial_cell_to_grow.ramification_boxes.size() != glial_cell_to_grow.ramification_spheres.size())
-    {
-        std::cout << "ramification boxes and spheres are not the same size" << std::endl;
-        cout << "ramification boxes size: " << glial_cell_to_grow.ramification_boxes.size() << endl;
-        cout << "ramification spheres size: " << glial_cell_to_grow.ramification_spheres.size() << endl;
-        assert(0);
-    }
- 
     if (glial_cell_to_grow.ramification_spheres[i].size() > 1e10)
     {
         return false;
@@ -102,7 +83,7 @@ bool GlialCellGrowth::AddOneSphere(const double &radius_, const bool &create_sph
     bool can_grow_ = false;
 
     int id_ = last_sphere.id + factor;
-    Sphere s(id_, glial_cell_to_grow.id, 1, {0,0,0}, radius_, i);
+    Sphere s(id_, glial_cell_to_grow.id, glial_cell_constant, {0,0,0}, radius_, i);
 
     int tries = 0;
     int threshold_tries = 100;
@@ -111,12 +92,8 @@ bool GlialCellGrowth::AddOneSphere(const double &radius_, const bool &create_sph
 
         find_next_center(s, distance, glial_cell_to_grow.ramification_spheres[i], destination);
         // check if there is a collision
-        if (check_collision_with_branches){
-            can_grow_ = canSpherebePlaced(s) && !collideswithItself(s);
-        }
-        else{
-            can_grow_ = canSpherebePlaced(s);
-        }
+        can_grow_ = canSpherebePlaced(s, check_collision_with_branches);
+        
         tries += 1;
     }
 
@@ -147,25 +124,6 @@ bool GlialCellGrowth::AddOneSphere(const double &radius_, const bool &create_sph
         return false;
     }
         
-}
-
-
-
-bool GlialCellGrowth::collideswithItself(Sphere &sph){
-
-
-    // if collides with own soma
-    if (glial_cell_to_grow.soma.CollideswithSphere(sph, barrier_tickness)){
-        return true;
-    }
-
-    // check other branches of same glial cell
-    bool collides_with_branches = glial_cell_to_grow.collidesWithItsOwnRamification(sph, barrier_tickness);
-    if (collides_with_branches){
-        return true;
-    }
-
-    return false;
 }
 
 void GlialCellGrowth::find_next_center_straight(double distance, Sphere &s, const std::vector<Sphere> &spheres)
@@ -214,9 +172,9 @@ bool GlialCellGrowth::GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::
         sphere_to_emerge_from.getPointOnSphereSurface(point, vector, vector_to_prev_center, primary_process);
         //cout << "Point on sphere surface: " << point.transpose() << ", Direction vector: " << vector.transpose() << endl;
         attractor = findDistantPoint(vector, point, max_limits[0]);
-        first_sphere = Sphere(nbr_spheres + nbr_spheres_between + 1, cell_id, 1, point, radius, branch_id, sphere_to_emerge_from.id);
+        first_sphere = Sphere(nbr_spheres + nbr_spheres_between + 1, cell_id, glial_cell_constant, point, radius, branch_id, sphere_to_emerge_from.id);
         //cout <<"check placement for first sphere at position: " << first_sphere.center.transpose() << " with radius: " << first_sphere.radius << endl;
-        if (canSpherebePlaced(first_sphere)) {
+        if (canSpherebePlaced(first_sphere, /*check_collision_with_branches=*/ false)) {
             stop = true;
             // check boundaries
             bool is_inside_voxel = check_borders(extended_min_limits, extended_max_limits, first_sphere.center, first_sphere.radius);
@@ -237,8 +195,8 @@ bool GlialCellGrowth::GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::
 }
 
 
-std::vector<Sphere> GlialCellGrowth::addIntermediateSpheres(const Sphere &random_sphere, const Sphere &first_sphere,  const int &branch_nbr, const int &nbr_spheres, const int &nbr_spheres_between) {
-    
+std::vector<Sphere> GlialCellGrowth::addIntermediateSpheres(const Sphere &random_sphere, const Sphere &first_sphere,  const int &branch_nbr, const int &nbr_spheres, const int &nbr_spheres_between, const std::function<double(double)> &compute_radius, const double &t_start, const double &t_end) {
+
     std::vector<Sphere> intermediate_spheres;
 
     // Direction vector for sphere placement
@@ -249,15 +207,15 @@ std::vector<Sphere> GlialCellGrowth::addIntermediateSpheres(const Sphere &random
     // Add intermediate spheres
     for (int i = 0; i < nbr_spheres_between; ++i) {
         Eigen::Vector3d position = random_sphere.center + direction * distance_between_spheres * (i + 1);
-        double rad = random_sphere.radius +
-                        (first_sphere.radius - random_sphere.radius) * (i + 1) / (nbr_spheres_between + 1);
+        double t = t_start + (t_end - t_start) * (i + 1) / (nbr_spheres_between + 1);
+        double rad = compute_radius(t);
 
         Sphere next(
             nbr_spheres + i + 1, first_sphere.object_id, first_sphere.object_type, position, rad, branch_nbr,
             random_sphere.id);
 
         // Check if the sphere can be placed
-        if (canSpherebePlaced(next)) {
+        if (canSpherebePlaced(next, /*check_collision_with_branches=*/ false)) {
             intermediate_spheres.emplace_back(next);
         }
     }
@@ -339,7 +297,7 @@ bool GlialCellGrowth::growPrimaryBranch(int &nbr_spheres, const double &mean_pri
     if (factor >1)
     {
         // add spheres between the first and the last
-        vector_first_spheres = addIntermediateSpheres(glial_cell_to_grow.soma, first_sphere, j, nbr_spheres, nbr_spheres_between);
+        vector_first_spheres = addIntermediateSpheres(glial_cell_to_grow.soma, first_sphere, j, nbr_spheres, nbr_spheres_between, compute_radius, 0.0, initial_radius);
     }
     else{
         vector_first_spheres = {first_sphere};
@@ -358,7 +316,6 @@ bool GlialCellGrowth::growPrimaryBranch(int &nbr_spheres, const double &mean_pri
 
     glial_cell_to_grow.ramification_spheres.resize(j + 1);
     glial_cell_to_grow.lengths_branches.resize(j + 1);
-    glial_cell_to_grow.ramification_boxes.resize(j + 1);
     glial_cell_to_grow.attractors.resize(j + 1);
     glial_cell_to_grow.ramification_spheres[j] = vector_first_spheres;
     glial_cell_to_grow.attractors[j] = attractor;
@@ -497,7 +454,7 @@ bool GlialCellGrowth::growSecondaryBranch(int &nbr_spheres, const double &mean_p
     std::vector<Sphere> vector_first_spheres;
     if (factor > 1) {
         // add spheres between the first and the last
-        vector_first_spheres = addIntermediateSpheres(random_sphere, first_sphere, nbr_branches, nbr_spheres, nbr_spheres_between);
+        vector_first_spheres = addIntermediateSpheres(random_sphere, first_sphere, nbr_branches, nbr_spheres, nbr_spheres_between, compute_radius, 0.0, 0.0);
     } else {
         vector_first_spheres = {first_sphere};
     }
@@ -506,7 +463,6 @@ bool GlialCellGrowth::growSecondaryBranch(int &nbr_spheres, const double &mean_p
     int current_branch = glial_cell_to_grow.ramification_spheres.size();
     if (glial_cell_to_grow.ramification_spheres.size() <= current_branch) {
         glial_cell_to_grow.ramification_spheres.resize(current_branch + 1);
-        glial_cell_to_grow.ramification_boxes.resize(current_branch + 1);
         glial_cell_to_grow.lengths_branches.resize(current_branch + 1);
         glial_cell_to_grow.lengths_branches[current_branch].resize(vector_first_spheres.size());
     }

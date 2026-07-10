@@ -1,4 +1,4 @@
-//! AxonGammaDistribution Class ================================================================ /
+//! CaterpillarGrowth Class ================================================================ /
 /*!
 *   \details   This class constructs a substrate taken from a Gamma distribution of radii placed in
 *              a single voxel structure.
@@ -6,8 +6,8 @@
 *   \date      September 2023
 =============================================================================================== */
 
-#ifndef AXONGAMMADISTRIBUTION_H
-#define AXONGAMMADISTRIBUTION_H
+#ifndef CaterpillarGrowth_H
+#define CaterpillarGrowth_H
 
 #include "Eigen/Core"
 #include <vector>
@@ -19,11 +19,12 @@
 #include "Blood_Vessel.h"
 #include "grow_axons.h"
 #include "sphere.h"
+#include "SphereGrid.h"
 #include <thread>
 #include <mutex>
 #include <random>
 
-class AxonGammaDistribution
+class CaterpillarGrowth
 {
 public:
     std::mt19937 gen; 
@@ -34,6 +35,8 @@ public:
     std::vector<Glial> glial_pop1;     /*!< Vector of glial_pop1 */
     std::vector<Glial> glial_pop2;    /*!< Vector of glial_pop2s */
     std::vector<Blood_Vessel> blood_vessels; /*!< Vector of blood vessels */
+
+    SphereGrid sphere_grid;              /*!< Spatial grid indexing every sphere added to the environment */
 
     int nbr_axons_populations;                /*!< Number of populations of axons (1-3) */
     int crossing_fibers_type;                /*!< Type of crossing fibers (0 : sheet crossing, 1 : interwoven crossing) */
@@ -117,12 +120,12 @@ public:
     /*!
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution() {}
+    CaterpillarGrowth() {}
 
     /*!
      *  \brief Initialize everything.
      */
-    AxonGammaDistribution(const Parameters &params, const Eigen::Vector3d &min_l, const Eigen::Vector3d &max_l);
+    CaterpillarGrowth(const Parameters &params, const Eigen::Vector3d &min_l, const Eigen::Vector3d &max_l);
     
     
     /*!
@@ -201,13 +204,6 @@ public:
      */
     bool shrinkRadius(AxonGrowth &growth, const double &radius_to_shrink, Axon &axon);
 
-    /*!
-     *  \param sph Sphere
-     *  \param axs Axons to check overlapping with
-     * \param gls Glial cells to check overlapping with
-     *  \brief Checks if a sphere overlaps with any of the axons in axs
-     */
-    bool canSpherebePlaced(const Sphere &sph, const std::vector<Axon> &axs, const std::vector<Glial> &astros, const std::vector<Glial> &oligos, const std::vector<Blood_Vessel> &bvs);
 
     /*!
      *  \param axs Axons to check overlapping with
@@ -215,6 +211,14 @@ public:
      *  \brief Checks if any axon overlaps with another
      */
     bool FinalCheck(std::vector<Axon> &axs, std::vector<double> &stuck_radii_, std::vector<int> &stuck_indices_);
+
+    /*!
+     *  \brief Rebuilds sphere_grid from the current axons/glial_pop1/glial_pop2/blood_vessels
+     *         and checks that no sphere collides with a sphere of another object. Meant to be
+     *         run once, at the very end of the simulation; uses the grid so it stays fast even
+     *         with many cells.
+     */
+    bool checkNoCollisions();
     /*!
      *  \param radii_ List of axon radii 
         \param indices List of axon indices
@@ -364,10 +368,8 @@ public:
     double derivative(const double &x);
     double myelin_thickness(const double &inner_radius);
 
-    bool PushSurroundingSpheres(const Sphere &swollen_sph, int max_iterations);
-
 };
 
 
-#endif // AXONGAMMADISTRIBUTION_H
+#endif // CaterpillarGrowth_H
 

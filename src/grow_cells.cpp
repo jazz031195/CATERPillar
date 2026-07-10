@@ -1,4 +1,4 @@
-#include "axongammadistribution.h"
+#include "CaterpillarGrowth.h"
 #include "grow_cells.h"
 #include <algorithm> // std::sort
 #include <random>
@@ -16,10 +16,7 @@ using namespace std::chrono;
 CellGrowth::~CellGrowth() {}
 
 CellGrowth::CellGrowth(const CellGrowth &other)
-  : axons(other.axons),
-    glial_pop1(other.glial_pop1),
-    glial_pop2(other.glial_pop2),
-    blood_vessels(other.blood_vessels),
+  : sphere_grid(other.sphere_grid),
     min_limits(other.min_limits),
     max_limits(other.max_limits),
     extended_min_limits(other.extended_min_limits),
@@ -30,19 +27,6 @@ CellGrowth::CellGrowth(const CellGrowth &other)
     finished(other.finished)
 {}
 
-
-const std::vector<Axon>& CellGrowth::AX() const { return *axons; }
-
-const std::vector<Axon>* CellGrowth::AXptr() const { return axons; }
-
-void CellGrowth::update_environment(const std::vector<Axon>* axons_,
-                                const std::vector<Glial>* glial_pop1_,
-                                const std::vector<Glial>* glial_pop2_, const std::vector<Blood_Vessel>* blood_vessel_) noexcept {
-    axons      = axons_;
-    glial_pop1 = glial_pop1_;
-    glial_pop2 = glial_pop2_;
-    blood_vessels = blood_vessel_;
-}
 
 // Function to check if a point is inside a dilated box
 bool CellGrowth::check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border) {
@@ -118,60 +102,6 @@ Eigen::Vector3d CellGrowth::apply_bias_toward_target(const Eigen::Vector3d &poin
 }
 
 
-bool CellGrowth::checkAxonsOverlap(Sphere &sph){
-
-    for (const auto& axon : *axons) {
-        if (axon.isSphereInsideAxon(sph)) {
-            return false;  
-        }
-    }
-    return true; 
-    
+bool CellGrowth::canSpherebePlaced(Sphere &sph, bool check_collision_with_branches){
+    return sphere_grid->canSpherebePlaced(sph, check_collision_with_branches);
 }
-
-bool CellGrowth::checkBloodVesselOverlap(Sphere &sph){
-
-    for (const auto& blood_vessel : *blood_vessels) {
-        if (blood_vessel.isSphereInsideBlood_Vessel(sph)) {
-            return false;  
-        }
-    }
-    return true; 
-    
-}
-
-
-bool CellGrowth::canSpherebePlaced(Sphere &sph){
-
-    bool bv_check = checkBloodVesselOverlap(sph);
-
-    if (!bv_check){
-        return false;
-    }
-
-    bool axons_check = checkAxonsOverlap(sph);
-
-    if (!axons_check){
-        return false;
-    }
-
-
-    // check collision other glial cells 
-    for (const Glial& glial : *glial_pop1) {
-
-        if (glial.collides_with_GlialCell(sph, barrier_tickness)) {
-
-            return false;
-        }
-
-    }
-
-    for (const Glial& glial : *glial_pop2) {
-        if (glial.collides_with_GlialCell(sph, barrier_tickness)) {
-            return false;
-        }
-    }
-
-
-    return true;
-} 

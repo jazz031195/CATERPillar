@@ -2,6 +2,13 @@
 #define MAINWINDOW_H
 
 #include "Eigen/Core"
+#include <QProcess>
+#include <QWidget>
+#include <QTabWidget>
+#include <QStackedWidget>
+#include <QToolButton>
+#include <QFormLayout>
+#include <QLineEdit>
 #include <QMainWindow>
 #include <QSlider>
 #include <QLabel>
@@ -48,14 +55,29 @@ private slots:
     void ReadGlialCellsFromFile(const QString& fileName);
     void ReadGlialCellsFromCSV(const QString& fileName);
     void ReadBloodVesselsFromFile(const QString& fileName);
+    void generateMonteCarloConf();
+    void runMCSimulation();
 
 private:
+    void initParameters();
+    void buildParameterStack(QVBoxLayout *wmLayout);
     QGroupBox* createControls(const QString &title);
     void resizeEvent(QResizeEvent *e);
     void StartSimulation();
     SlidersGroup *slidersGroup;
     OpenGLWindow *openglWindow = nullptr;
     QWidget *visualizationWidget = nullptr;
+
+    QStackedWidget *cellParamsStack;
+
+    QLineEdit *inputN;
+    QLineEdit *inputT;
+    QLineEdit *inputDuration;
+    QLineEdit *inputDiffIntra;
+    QLineEdit *inputDiffExtra;
+    QLineEdit *inputSchemeFile;
+    QLineEdit *inputCsvPath; 
+    QProcess *simulatorProcess; 
 
     QComboBox *configurationComboBox;
     QGroupBox *controlsGroup;
@@ -66,6 +88,8 @@ private:
     QGroupBox *axonsGroup;
     QGroupBox *glialGroup1;
     QGroupBox *glialGroup2;
+    QGroupBox *myelinatedGroup;
+    QGroupBox *bloodVesselGroup;
 
     QLabel *nbr_repetitions_qlabel;
     QLabel *visualise_voxel_qlabel;

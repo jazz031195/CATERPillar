@@ -18,7 +18,7 @@ SOURCES += \
     openglwindow.cpp \
     ScatterDataModifier.cpp \
     ../src/Axon.cpp \
-    ../src/axongammadistribution.cpp \
+    ../src/caterpillargrowth.cpp \
     ../src/Glial.cpp \
     ../src/grow_axons.cpp \
     ../src/grow_cells.cpp \
@@ -29,6 +29,7 @@ SOURCES += \
     ../src/threads.cpp \
     ../src/grow_blood_vessels.cpp \
     ../src/Blood_Vessel.cpp \
+    /images/glial_cells.jpeg \
 
     
 SOURCES += qcustomplot-source/qcustomplot.cpp
@@ -39,7 +40,7 @@ HEADERS += \
     openglwindow.h \
     ScatterDataModifier.h \
     ../src/Axon.h \
-    ../src/axongammadistribution.h \
+    ../src/caterpillargrowth.h \
     ../src/Glial.h \
     ../src/grow_axons.h \
     ../src/grow_cells.h \
@@ -51,7 +52,8 @@ HEADERS += \
     ../src/constants.h \
     ../src/grow_blood_vessels.h\
     ../src/Blood_Vessel.h \
-    qcustomplot-source/qcustomplot.h
+    qcustomplot-source/qcustomplot.h \
+    /images/glial_cells.jpeg \
 
 
 FORMS += \

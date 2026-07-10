@@ -387,9 +387,10 @@ CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o: \
  /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
  /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/./RealQZ.h \
  /home/localadmin/Documents/CATERPillar/src/../src/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+ /home/localadmin/Documents/CATERPillar/src/../src/SphereGrid.h \
  /home/localadmin/Documents/CATERPillar/src/../src/Blood_Vessel.h \
  /home/localadmin/Documents/CATERPillar/src/../src/Glial.h \
- /home/localadmin/Documents/CATERPillar/src/axongammadistribution.h \
+ /home/localadmin/Documents/CATERPillar/src/CaterpillarGrowth.h \
  /home/localadmin/Documents/CATERPillar/src/constants.h \
  /home/localadmin/Documents/CATERPillar/src/parameters.h \
  /usr/include/c++/11/iostream \
@@ -407,6 +408,7 @@ CMakeFiles/CATERPillar.dir/src/core_logic.cpp.o: \
  /home/localadmin/Documents/CATERPillar/src/Eigen/Eigenvalues \
  /home/localadmin/Documents/CATERPillar/src/grow_cells.h \
  /home/localadmin/Documents/CATERPillar/src/sphere.h \
+ /home/localadmin/Documents/CATERPillar/src/SphereGrid.h \
  /home/localadmin/Documents/CATERPillar/src/threads.h \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/unique_ptr.h \
