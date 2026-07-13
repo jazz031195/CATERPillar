@@ -37,6 +37,7 @@ public:
     std::vector<Blood_Vessel> blood_vessels; /*!< Vector of blood vessels */
 
     SphereGrid sphere_grid;              /*!< Spatial grid indexing every sphere added to the environment */
+    double grid_voxel_size;              /*!< Voxel edge length used to size sphere_grid (and any scratch grids) */
 
     int nbr_axons_populations;                /*!< Number of populations of axons (1-3) */
     int crossing_fibers_type;                /*!< Type of crossing fibers (0 : sheet crossing, 1 : interwoven crossing) */
@@ -74,6 +75,9 @@ public:
     double epsilon_blood_vessels;
     double mean_vessel_rad;
     double std_vessel_rad;
+
+    double target_blood_vessels_processes_icvf;  /*!< Target Intracellular Compartment Volume Fraction of blood vessel branches */
+    double blood_vessels_processes_icvf;         /*!< Achieved Intracellular Compartment Volume Fraction of blood vessel branches */
 
     double swelling_factor;
 
@@ -196,21 +200,7 @@ public:
     void PlaceBloodVessels();
     void GrowBloodVessels();
     
-    /*!
-     *  \param growth Growth object with knowledge of the environment
-     *  \param radius_to_shrink Radius to shrink
-     *  \param axon Axon to shrink
-     *  \brief Shrinks the radius to allow passage between axons
-     */
-    bool shrinkRadius(AxonGrowth &growth, const double &radius_to_shrink, Axon &axon);
 
-
-    /*!
-     *  \param axs Axons to check overlapping with
-      * \param stuck_radii_ radii of axons that got stuck
-     *  \brief Checks if any axon overlaps with another
-     */
-    bool FinalCheck(std::vector<Axon> &axs, std::vector<double> &stuck_radii_, std::vector<int> &stuck_indices_);
 
     /*!
      *  \brief Rebuilds sphere_grid from the current axons/glial_pop1/glial_pop2/blood_vessels
@@ -284,11 +274,6 @@ public:
     void PlaceGlialCells();
 
 
-    void growFirstPrimaryBranches(Glial &glial_cell, const int &number_ramification_points, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
-
-
-    bool growSecondaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
-
     /*!
      *  \brief Add myelin sheath by creating an inner_axonal membrane
      */
@@ -348,16 +333,25 @@ public:
 
     double findInnerRadius(const double &outerRadius);
 
-    bool growPrimaryBranch(Glial &glial_cell, int &nbr_spheres, const double &mean_process_length, const double &std_process_length);
-
-    double RandomradiusVariation(Axon &axon);
-
     void growBranches(const int &population_nbr);
+
+    /*!
+     *  \brief Grows blood vessel branches (branch_id >= 1) off the already-grown main
+     *         vessels, until target_blood_vessels_processes_icvf is reached. Mirrors
+     *         growBranches, but there is a single population and no primary-branch phase:
+     *         every vessel starts with only its main vessel (branch 0) to branch off of.
+     */
+    void GrowBloodVesselBranches();
+
+    /*!
+     *  \brief Enforces Murray's law at every blood vessel branching point, once all
+     *         vessels (main vessel and every branch) are fully grown. See
+     *         Blood_Vessel::enforceMurraysLaw for the per-vessel algorithm.
+     */
+    void ApplyMurraysLawToBloodVessels();
 
     void ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos, const std::vector<Blood_Vessel> &blood_vessels);
     
-    std::vector<Sphere> addIntermediateSpheres(const Sphere &random_sphere, const Sphere &first_sphere, const int &branch_nbr, const int &nbr_spheres, const int &nbr_spheres_between);
-    bool GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::Vector3d &attractor, const double &radius, const Sphere &sphere_to_emerge_from, const Eigen::Vector3d &vector_to_prev_center, const int &nbr_spheres, const int &nbr_spheres_between, const int &cell_id, const int &branch_id, const bool &primary_process);
     double draw_angle(double kappa);
     double c2toKappa(double c2_target, double c2_tol, double kappa_max);
     std::vector<double> generate_angles(const int &num_samples);

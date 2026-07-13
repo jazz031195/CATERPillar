@@ -23,6 +23,11 @@ public:
                     const std::vector<std::vector<double>>& radius,
                     const std::vector<int>& groupIds);
 
+    // Registers the true voxel boundary [minCorner, maxCorner] so it can be drawn
+    // as a wireframe cube alongside the spheres, letting tips near a wall be
+    // visually judged against the actual simulation box rather than guessed at.
+    void setVoxelBounds(const QVector3D& minCorner, const QVector3D& maxCorner);
+
     void resetCamera();
     enum class SphereGroup : int { Axon = 0, Glial1 = 1, Glial2 = 2, Blood = 3 };
 
@@ -45,6 +50,11 @@ protected:
 private:
 
     class QOpenGLShaderProgram *shaderProgram = nullptr; // Brings the shader back
+    class QOpenGLShaderProgram *lineShaderProgram = nullptr; // Wireframe voxel box shader
+    QVector3D voxelMinCorner;
+    QVector3D voxelMaxCorner;
+    bool hasVoxelBounds = false;
+    void drawVoxelWireframe();
     std::vector<GLfloat> batchedRadii;                   // Stores the unique sizes
     std::vector<GLfloat> batchedVertices;
     std::vector<GLfloat> batchedColors;

@@ -252,6 +252,7 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
     QGroupBox *bloodVesselGroup = new QGroupBox("Blood Vessel Parameters");
     QFormLayout *bloodLayout = new QFormLayout;
     bloodLayout->addRow(blood_vessels_icvf_qlabel, blood_vessels_icvf_SpinBox);
+    bloodLayout->addRow(blood_vessels_processes_icvf_qlabel, blood_vessels_processes_icvf_SpinBox);
     bloodVesselGroup->setLayout(bloodLayout);
     cellParamsStack->addWidget(bloodVesselGroup);
 
@@ -471,6 +472,9 @@ void Window::PlotCells(const bool& axons_plot,
     // 3. DATA UPDATE
     if (this->openglWindow) {
         this->openglWindow->setSpheres(X, Y, Z, R, groupIds);
+        this->openglWindow->setVoxelBounds(
+            QVector3D(0.0f, 0.0f, 0.0f),
+            QVector3D(parameters.voxel_size, parameters.voxel_size, parameters.voxel_size));
         this->openglWindow->update();
     }
 
@@ -571,6 +575,7 @@ void Window::initParameters()
     glial_pop2_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
     glial_pop2_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
     blood_vessels_icvf_qlabel = new QLabel(tr("Blood Vessels ICVF (%):"));
+    blood_vessels_processes_icvf_qlabel = new QLabel(tr("Blood Vessel Branches ICVF (%):"));
     voxel_size_qlabel = new QLabel(tr("Voxel Edge Length (μm):"));
     minimum_radius_qlabel = new QLabel(tr("Minimum Sphere Radius (μm):"));
     nbr_threads_qlabel = new QLabel(tr("Number of Threads:"));
@@ -676,6 +681,11 @@ void Window::initParameters()
     blood_vessels_icvf_SpinBox = new QDoubleSpinBox;
     blood_vessels_icvf_SpinBox->setRange(0, 100);
     blood_vessels_icvf_SpinBox->setSingleStep(1);
+
+    blood_vessels_processes_icvf_SpinBox = new QDoubleSpinBox;
+    blood_vessels_processes_icvf_SpinBox->setRange(0, 100);
+    blood_vessels_processes_icvf_SpinBox->setSingleStep(1);
+    blood_vessels_processes_icvf_SpinBox->setValue(0);
 
     glial_pop1_soma_icvf_SpinBox = new QDoubleSpinBox;
     glial_pop1_soma_icvf_SpinBox->setRange(0, 100);
@@ -795,6 +805,7 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop2_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
     glial_pop2_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
     blood_vessels_icvf_qlabel = new QLabel(tr("Blood Vessels ICVF (%):"));
+    blood_vessels_processes_icvf_qlabel = new QLabel(tr("Blood Vessel Branches ICVF (%):"));
     voxel_size_qlabel = new QLabel(tr("Voxel Edge Length (μm):"));
     minimum_radius_qlabel = new QLabel(tr("Minimum Sphere Radius (μm):"));
     nbr_threads_qlabel = new QLabel(tr("Number of Threads:"));
@@ -900,6 +911,11 @@ QGroupBox* Window::createControls(const QString &title)
     blood_vessels_icvf_SpinBox = new QDoubleSpinBox;
     blood_vessels_icvf_SpinBox->setRange(0, 100);
     blood_vessels_icvf_SpinBox->setSingleStep(1);
+
+    blood_vessels_processes_icvf_SpinBox = new QDoubleSpinBox;
+    blood_vessels_processes_icvf_SpinBox->setRange(0, 100);
+    blood_vessels_processes_icvf_SpinBox->setSingleStep(1);
+    blood_vessels_processes_icvf_SpinBox->setValue(0);
 
     glial_pop1_soma_icvf_SpinBox = new QDoubleSpinBox;
     glial_pop1_soma_icvf_SpinBox->setRange(0, 100);
@@ -1131,6 +1147,7 @@ void Window::onSaveButtonClicked()
     parameters.axons_wo_myelin_icvf = axons_icvf_SpinBox->value()/100.0;
     parameters.axons_w_myelin_icvf = axons_w_myelin_icvf_SpinBox->value()/100.0;
     parameters.blood_vessels_icvf = blood_vessels_icvf_SpinBox->value()/100.0;
+    parameters.blood_vessels_processes_icvf = blood_vessels_processes_icvf_SpinBox->value()/100.0;
     parameters.glial_pop1_soma_icvf = glial_pop1_soma_icvf_SpinBox->value()/100.0;
     parameters.glial_pop1_processes_icvf = glial_pop1_processes_icvf_SpinBox->value()/100.0;
     parameters.glial_pop2_soma_icvf = glial_pop2_soma_icvf_SpinBox->value()/100.0;
@@ -1779,12 +1796,13 @@ void Window::StartSimulation(){
         std::vector<double> y_;
         std::vector<double> z_;
         std::vector<double> r_;
-        for (unsigned j=0; j< blood_vessels[i].spheres.size(); ++j){
+        for (const auto &branch : blood_vessels[i].ramification_spheres){
+        for (unsigned j=0; j< branch.size(); ++j){
 
-            double _x_ = blood_vessels[i].spheres[j].center[0];
-            double _y_ = blood_vessels[i].spheres[j].center[1];
-            double _z_ = blood_vessels[i].spheres[j].center[2];
-            double _r_ = blood_vessels[i].spheres[j].radius;
+            double _x_ = branch[j].center[0];
+            double _y_ = branch[j].center[1];
+            double _z_ = branch[j].center[2];
+            double _r_ = branch[j].radius;
             Eigen::Vector3d pos = {_x_, _y_, _z_};
 
             //if (check_borders(min_l, max_l, pos, 0.0)) {
@@ -1793,6 +1811,7 @@ void Window::StartSimulation(){
             z_.push_back(_z_);
             r_.push_back(_r_);
             //}
+        }
         }
         X_blood_vessels.push_back(x_);
         Y_blood_vessels.push_back(y_);

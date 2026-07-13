@@ -229,6 +229,14 @@ void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
     update();
 }
 
+void OpenGLWindow::setVoxelBounds(const QVector3D& minCorner, const QVector3D& maxCorner)
+{
+    voxelMinCorner = minCorner;
+    voxelMaxCorner = maxCorner;
+    hasVoxelBounds = true;
+    update();
+}
+
 void OpenGLWindow::resetCamera()
 {
     orbitTheta = 0.0f;
@@ -280,6 +288,28 @@ void OpenGLWindow::initializeGL()
     shaderProgram->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
     shaderProgram->addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource);
     shaderProgram->link();
+
+    // Simple flat-color line shader, used only to draw the voxel wireframe box.
+    const char *lineVertexShaderSource =
+        "#version 330 core\n"
+        "layout(location = 0) in vec3 position;\n"
+        "uniform mat4 mvp;\n"
+        "void main() {\n"
+        "    gl_Position = mvp * vec4(position, 1.0);\n"
+        "}\n";
+
+    const char *lineFragmentShaderSource =
+        "#version 330 core\n"
+        "uniform vec3 lineColor;\n"
+        "out vec4 finalColor;\n"
+        "void main() {\n"
+        "    finalColor = vec4(lineColor, 1.0);\n"
+        "}\n";
+
+    lineShaderProgram = new QOpenGLShaderProgram(this);
+    lineShaderProgram->addShaderFromSourceCode(QOpenGLShader::Vertex, lineVertexShaderSource);
+    lineShaderProgram->addShaderFromSourceCode(QOpenGLShader::Fragment, lineFragmentShaderSource);
+    lineShaderProgram->link();
 }
 
 void OpenGLWindow::resizeGL(int w, int h)
@@ -389,6 +419,63 @@ void OpenGLWindow::paintGL()
     shaderProgram->disableAttributeArray(1);
     shaderProgram->disableAttributeArray(2);
     shaderProgram->release();
+
+    // 8. Draw the voxel boundary wireframe, so tips near a wall can be judged
+    // against the actual simulation box instead of guessed at.
+    if (hasVoxelBounds) {
+        drawVoxelWireframe();
+    }
+}
+
+void OpenGLWindow::drawVoxelWireframe()
+{
+    if (!lineShaderProgram || !lineShaderProgram->isLinked()) {
+        return;
+    }
+
+    // Recenter the box corners by the same average offset applied to the
+    // sphere positions in setSpheres(), so the wireframe lines up with them.
+    QVector3D avg(avgX, avgY, avgZ);
+    QVector3D lo = voxelMinCorner - avg;
+    QVector3D hi = voxelMaxCorner - avg;
+
+    QVector3D corners[8];
+    for (int c = 0; c < 8; ++c) {
+        corners[c] = QVector3D(
+            (c & 1) ? hi.x() : lo.x(),
+            (c & 2) ? hi.y() : lo.y(),
+            (c & 4) ? hi.z() : lo.z()
+        );
+    }
+
+    // Two corners are connected by an edge iff they differ in exactly one bit.
+    std::vector<GLfloat> lineVertices;
+    lineVertices.reserve(12 * 2 * 3);
+    for (int c = 0; c < 8; ++c) {
+        for (int bit = 1; bit <= 4; bit <<= 1) {
+            if (c & bit) continue; // only emit each edge once
+            const QVector3D &a = corners[c];
+            const QVector3D &b = corners[c | bit];
+            lineVertices.push_back(a.x()); lineVertices.push_back(a.y()); lineVertices.push_back(a.z());
+            lineVertices.push_back(b.x()); lineVertices.push_back(b.y()); lineVertices.push_back(b.z());
+        }
+    }
+
+    QMatrix4x4 viewMatrix;
+    viewMatrix.lookAt(cameraPosition, QVector3D(0.0f, 0.0f, 0.0f), QVector3D(0, 1, 0));
+    QMatrix4x4 mvpMatrix = projectionMatrix * viewMatrix;
+
+    lineShaderProgram->bind();
+    lineShaderProgram->setUniformValue("mvp", mvpMatrix);
+    lineShaderProgram->setUniformValue("lineColor", QVector3D(1.0f, 1.0f, 0.0f)); // yellow
+
+    lineShaderProgram->enableAttributeArray(0);
+    lineShaderProgram->setAttributeArray(0, GL_FLOAT, lineVertices.data(), 3);
+
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(lineVertices.size() / 3));
+
+    lineShaderProgram->disableAttributeArray(0);
+    lineShaderProgram->release();
 }
 
 bool OpenGLWindow::isSphereInFrustum(const QVector3D& pos, float radius) {

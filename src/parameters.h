@@ -46,9 +46,11 @@ public:
     double beading_amplitude = 0.3;    
     double beading_std = 0.05;
 
-    double epsilon_blood_vessels = 0.8;
+    double epsilon_blood_vessels = 0.2;
     double mean_vessel_rad = 6;
     double std_vessel_rad = 1;
+
+    double blood_vessels_processes_icvf = 0.0;
 
     double swelling_factor = 1.0;     
 

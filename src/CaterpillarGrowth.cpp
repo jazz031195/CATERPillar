@@ -97,6 +97,8 @@ CaterpillarGrowth::CaterpillarGrowth(const Parameters &params, const Eigen::Vect
     epsilon_blood_vessels = params.epsilon_blood_vessels;
     mean_vessel_rad = params.mean_vessel_rad;
     std_vessel_rad = params.std_vessel_rad;
+    target_blood_vessels_processes_icvf = params.blood_vessels_processes_icvf;
+    blood_vessels_processes_icvf = 0.0;
 
     // Axon morphology
     alpha = params.alpha;
@@ -130,7 +132,7 @@ CaterpillarGrowth::CaterpillarGrowth(const Parameters &params, const Eigen::Vect
     blood_vessels.clear();
 
     // Size grid voxels off the largest sphere radius expected in this simulation
-    double grid_voxel_size = 2.0 * std::max({min_radius, glial_pop1_radius_mean, glial_pop2_radius_mean, mean_vessel_rad});
+    grid_voxel_size = 2.0 * std::max({min_radius, glial_pop1_radius_mean, glial_pop2_radius_mean, mean_vessel_rad});
     if (grid_voxel_size <= 0.0) {
         grid_voxel_size = 1.0;
     }
@@ -510,6 +512,11 @@ void CaterpillarGrowth::ICVF(const std::vector<Axon> &axs, const std::vector<Gli
         blood_vessels_icvf += bv.volume;
     }
 
+    blood_vessels_processes_icvf = 0.0;
+    for (const auto &bv : blood_vessels) {
+        blood_vessels_processes_icvf += bv.volume_processes;
+    }
+
     axons_w_myelin_icvf = axons_w_myelin_icvf / total_volume;
     axons_wo_myelin_icvf = axons_wo_myelin_icvf / total_volume;
     axons_icvf = axons_w_myelin_icvf + axons_wo_myelin_icvf;
@@ -517,7 +524,8 @@ void CaterpillarGrowth::ICVF(const std::vector<Axon> &axs, const std::vector<Gli
     glial_pop1_soma_icvf = glial_pop1_soma_icvf / total_volume;
     glial_pop2_processes_icvf = glial_pop2_processes_icvf / total_volume;
     glial_pop2_soma_icvf = glial_pop2_soma_icvf / total_volume;
-    extracellular_icvf = 1 - (axons_w_myelin_icvf + axons_wo_myelin_icvf + glial_pop1_processes_icvf + glial_pop1_soma_icvf + glial_pop2_processes_icvf + glial_pop2_soma_icvf);
+    blood_vessels_processes_icvf = blood_vessels_processes_icvf / total_volume;
+    extracellular_icvf = 1 - (axons_w_myelin_icvf + axons_wo_myelin_icvf + glial_pop1_processes_icvf + glial_pop1_soma_icvf + glial_pop2_processes_icvf + glial_pop2_soma_icvf + blood_vessels_processes_icvf);
     blood_vessels_icvf = blood_vessels_icvf / total_volume;
 }
 
@@ -978,6 +986,9 @@ void CaterpillarGrowth::createSubstrate()
     cout << "Place Blood Vessels" << endl;
     PlaceBloodVessels();
     GrowBloodVessels();
+    cout << "Grow Blood Vessel Branches" << endl;
+    GrowBloodVesselBranches();
+    ApplyMurraysLawToBloodVessels();
     cout << "Place Glial Cells" << endl;
     PlaceGlialCells();
     cout << "Grow all Axons" << endl;
@@ -987,7 +998,7 @@ void CaterpillarGrowth::createSubstrate()
     ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
     cout << "GrowAllGlialCells" << endl;
     GrowAllGlialCells();
-    
+
     bool cells_ok = checkNoCollisions();
 
     if (!cells_ok)
@@ -1018,7 +1029,9 @@ void CaterpillarGrowth::PlaceBloodVessels(){
 
     int global_fail_count = 0;
 
-    while(achieved_icvf < target_blood_vessels_icvf && global_fail_count < MAX_GLOBAL_FAILS){
+    double occupancy_many_branches = 0.5;
+
+    while(achieved_icvf < target_blood_vessels_icvf*occupancy_many_branches && global_fail_count < MAX_GLOBAL_FAILS){
         Sphere s;
         for (int attempt = 0; attempt < 100; ++attempt) {
             double rad = dis_blood_vessel(gen);
@@ -1080,9 +1093,123 @@ void CaterpillarGrowth::GrowBloodVessels() {
 
     blood_vessels.erase(
         std::remove_if(blood_vessels.begin() + initial_n, blood_vessels.end(),
-                    [](const Blood_Vessel& bv) { return bv.spheres.size() <= 1; }),
+                    [](const Blood_Vessel& bv) { return bv.ramification_spheres.empty() || bv.ramification_spheres[0].size() <= 1; }),
         blood_vessels.end());
 
+    ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
+}
+
+void CaterpillarGrowth::GrowBloodVesselBranches() {
+
+    if (blood_vessels.empty()) {
+        return;
+    }
+    if (target_blood_vessels_processes_icvf <= 0.0) {
+        return;
+    }
+
+    std::vector<BloodVesselGrowth> growths;
+    growths.reserve(blood_vessels.size());
+    for (size_t i = 0; i < blood_vessels.size(); ++i) {
+        growths.emplace_back(blood_vessels[i], &sphere_grid, min_limits, max_limits,
+                             min_limits, max_limits, epsilon_blood_vessels, barrier_tickness);
+    }
+
+    // Each vessel starts with only its main vessel (branch 0). Seed a length-tracking
+    // vector for it so a branch can emerge off any of its spheres with old_length = 0.
+    std::vector<int> nbr_spheres(blood_vessels.size(), 0);
+    for (size_t i = 0; i < blood_vessels.size(); ++i) {
+        int trunk_size = blood_vessels[i].ramification_spheres[0].size();
+        blood_vessels[i].lengths_branches.resize(1);
+        blood_vessels[i].lengths_branches[0] = std::vector<double>(trunk_size, 0.0);
+        blood_vessels[i].attractors.resize(1); // placeholder for branch 0, never read
+        blood_vessels[i].children_branches.resize(1); // branch 0 (trunk) has no children yet
+        nbr_spheres[i] = trunk_size;
+    }
+
+    ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
+    display_progress(blood_vessels_processes_icvf, target_blood_vessels_processes_icvf);
+    if (blood_vessels_processes_icvf >= target_blood_vessels_processes_icvf) return;
+
+    int nbr_tries = 0;
+    const int max_tries = 100000;
+    double prev_icvf = blood_vessels_processes_icvf;
+    int stall_count = 0;
+    const int stall_limit = 100;
+    const double rel_eps = 1e-6;
+
+    while (blood_vessels_processes_icvf < target_blood_vessels_processes_icvf && nbr_tries <= max_tries) {
+        for (size_t i = 0; i < growths.size(); ++i) {
+            bool grew = growths[i].growBranch(nbr_spheres[i], spheres_overlap_factor);
+            blood_vessels[i] = growths[i].bv_to_grow;
+            if (grew) {
+                // Register the newly grown branch immediately, so other vessels'
+                // branches (grown later in this same loop, or in later iterations)
+                // can see it instead of growing blind to it.
+                for (const auto &sph : blood_vessels[i].ramification_spheres.back()) {
+                    sphere_grid.insert(sph);
+                }
+            }
+        }
+
+        if (nbr_tries % 10 == 0) {
+            for (auto& bv : blood_vessels) {
+                bv.compute_processes_icvf(spheres_overlap_factor, min_limits, max_limits);
+            }
+            ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
+            display_progress(blood_vessels_processes_icvf, target_blood_vessels_processes_icvf);
+
+            if (blood_vessels_processes_icvf >= target_blood_vessels_processes_icvf) break;
+
+            double denom = std::max(1.0, std::abs(prev_icvf));
+            if (std::abs(blood_vessels_processes_icvf - prev_icvf) / denom < rel_eps) {
+                if (++stall_count > stall_limit) {
+                    std::cerr << "Stuck in a loop, stopping blood vessel branch growth!\n";
+                    break;
+                }
+            } else {
+                stall_count = 0;
+            }
+            prev_icvf = blood_vessels_processes_icvf;
+        }
+        ++nbr_tries;
+    }
+
+    if (nbr_tries > max_tries) {
+        std::cerr << "Max attempts reached while growing blood vessel branches!\n";
+    }
+
+    // No final grid sync needed here: the trunk was added to the grid when it
+    // finished growing (in GrowBloodVessels), and each branch was added as soon
+    // as it was grown, above.
+}
+
+void CaterpillarGrowth::ApplyMurraysLawToBloodVessels() {
+
+    for (auto &bv : blood_vessels) {
+        bv.enforceMurraysLaw();
+        // some branches may have shrunk below the minimum radius they're meant to
+        // decay toward: delete them (and their own sub-branches) rather than keep
+        // a vanishingly thin sliver.
+        bv.pruneUndersizedBranches(min_limits, max_limits);
+        // enforceMurraysLaw only rescales radii (centers never move), so a branch's
+        // attachment point to its parent can end up with too little combined radius
+        // for the (fixed) distance between them once upstream junctions have
+        // cascaded shrinks onto that parent sphere; close any such junction gap
+        // before checking/fixing intra-branch spacing below.
+        bv.bridgeJunctionGaps(spheres_overlap_factor);
+        // shrinking radii above doesn't touch sphere spacing, so a chain that
+        // overlapped fine at its original radius can now have visible gaps;
+        // reinsert spheres so consecutive spheres never drift too far apart.
+        bv.reinterpolateAfterShrink(spheres_overlap_factor);
+
+        // radii/spheres changed: refresh this vessel's own volume figures
+        bv.update_Volume(spheres_overlap_factor, min_limits, max_limits);
+        bv.compute_processes_icvf(spheres_overlap_factor, min_limits, max_limits);
+    }
+
+    // sphere_grid still holds the pre-correction radii; checkNoCollisions() (called
+    // later in createSubstrate) rebuilds the grid from scratch, so no sync needed here.
     ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
 }
 
@@ -1436,49 +1563,6 @@ void CaterpillarGrowth::PlaceGlialCells() {
     }
 }
 
-bool CaterpillarGrowth::FinalCheck(std::vector<Axon> &axs, std::vector<double> &stuck_radii_, std::vector<int> &stuck_indices_)
-{
-    // std::cout << "--- Final Check ---" << endl;
-    std::vector<Axon> final_axons;
-    bool not_collide;
-
-    for (long unsigned int j = 0; j < axs.size(); j++)
-    {
-        bool all_spheres_can_be_placed = true;
-        for (long unsigned int i = 0; i < axs[j].outer_spheres.size(); i++)
-        { // for all spheres
-            if (!sphere_grid.canSpherebePlaced(axs[j].outer_spheres[i]))
-            {
-                std::cout << " Axon :" << axs[j].id << ", sphere : " << axs[j].outer_spheres[i].id << " collides with environment !" << endl;
-                all_spheres_can_be_placed = false;
-                break;
-            }
-        }
-        if (all_spheres_can_be_placed)
-        {
-            final_axons.push_back(axs[j]);
-        }
-        else
-        {
-            stuck_radii_.push_back(axs[j].radius);
-            stuck_indices_.push_back(axs[j].id);
-        }
-    }
-    if (final_axons.size() == axs.size())
-    {
-        //std::cout << " No Axon collides with environment !" << endl;
-        not_collide = true;
-    }
-    else
-    {
-        //std::cout << " Axon COLLIDE with environment !" << endl;
-        not_collide = false;
-        axs.clear();
-        axs = final_axons;
-    }
-
-    return not_collide;
-}
 
 bool CaterpillarGrowth::checkNoCollisions()
 {
@@ -1500,30 +1584,38 @@ bool CaterpillarGrowth::checkNoCollisions()
 
     int nbr_collisions = 0;
 
+    // check_collision_with_branches=false everywhere below: this pass checks each sphere
+    // against *other objects*, not against its own object's other branches. A branch's
+    // spheres near its point of origin are supposed to touch the trunk/soma/parent branch
+    // they emerged from (that's how a branch attaches) -- true self-intersection between
+    // a cell's own branches is already prevented during growth (see collideswithItself).
+
     for (const auto &axon : axons) {
         for (const auto &sph : axon.outer_spheres) {
-            if (!sphere_grid.canSpherebePlaced(sph)) {
+            if (!sphere_grid.canSpherebePlaced(sph, false)) {
                 cout << "Axon : " << axon.id << ", sphere : " << sph.id << " collides with environment !" << endl;
                 nbr_collisions++;
             }
         }
     }
     for (const auto &bv : blood_vessels) {
-        for (const auto &sph : bv.spheres) {
-            if (!sphere_grid.canSpherebePlaced(sph)) {
-                cout << "Blood vessel : " << bv.id << ", sphere : " << sph.id << " collides with environment !" << endl;
-                nbr_collisions++;
+        for (const auto &branch : bv.ramification_spheres) {
+            for (const auto &sph : branch) {
+                if (!sphere_grid.canSpherebePlaced(sph, false)) {
+                    cout << "Blood vessel : " << bv.id << ", sphere : " << sph.id << " (branch_id=" << sph.branch_id << ") collides with environment !" << endl;
+                    nbr_collisions++;
+                }
             }
         }
     }
     for (const auto &g : glial_pop1) {
-        if (!sphere_grid.canSpherebePlaced(g.soma)) {
+        if (!sphere_grid.canSpherebePlaced(g.soma, false)) {
             cout << "Glial pop1 : " << g.id << ", soma collides with environment !" << endl;
             nbr_collisions++;
         }
         for (const auto &branch : g.ramification_spheres) {
             for (const auto &sph : branch) {
-                if (!sphere_grid.canSpherebePlaced(sph)) {
+                if (!sphere_grid.canSpherebePlaced(sph, false)) {
                     cout << "Glial pop1 : " << g.id << ", sphere : " << sph.id << " collides with environment !" << endl;
                     nbr_collisions++;
                 }
@@ -1531,13 +1623,13 @@ bool CaterpillarGrowth::checkNoCollisions()
         }
     }
     for (const auto &g : glial_pop2) {
-        if (!sphere_grid.canSpherebePlaced(g.soma)) {
+        if (!sphere_grid.canSpherebePlaced(g.soma, false)) {
             cout << "Glial pop2 : " << g.id << ", soma collides with environment !" << endl;
             nbr_collisions++;
         }
         for (const auto &branch : g.ramification_spheres) {
             for (const auto &sph : branch) {
-                if (!sphere_grid.canSpherebePlaced(sph)) {
+                if (!sphere_grid.canSpherebePlaced(sph, false)) {
                     cout << "Glial pop2 : " << g.id << ", sphere : " << sph.id << " collides with environment !" << endl;
                     nbr_collisions++;
                 }
@@ -1555,11 +1647,9 @@ bool CaterpillarGrowth::checkNoCollisions()
 bool CaterpillarGrowth::SanityCheck(std::vector<Axon>& growing_axons,
                                         std::vector<double>& stuck_radii_,
                                         std::vector<int>& stuck_indices_) {
-    std::unordered_set<int> collided_ids;
-    std::vector<Axon> axons_to_check_collision_with = growing_axons;
 
-    if (growing_axons.size() <=1) {
-        return true;  // No axons to check
+    if (growing_axons.size() <= 1) {
+        return true;  // No axons to check against each other
     }
 
     int nbr_empty_spheres = 0;
@@ -1572,31 +1662,22 @@ bool CaterpillarGrowth::SanityCheck(std::vector<Axon>& growing_axons,
         return true;  // No axons to check
     }
 
-    // generate random number between 0 and growing_axons.size()
-    std::uniform_int_distribution<> dis(0, growing_axons.size() );
-    int random_index = dis(gen);
-
-    // check if this axon has spheres
-    while (growing_axons[random_index].outer_spheres.size() <= 1) {
-        random_index = dis(gen);
+    // growing_axons are private copies grown in parallel by processBatchWithThreadPool:
+    // none of them are in sphere_grid yet, so batch-mates are invisible to each other
+    // during growth. Build a scratch grid over just this batch to catch collisions
+    // between them, on top of the usual check against the already-committed environment.
+    SphereGrid batch_grid(min_limits, max_limits, grid_voxel_size);
+    for (auto& axon : growing_axons) {
+        axon.addToGrid(batch_grid);
     }
 
-    for (size_t i = 0; i < growing_axons.size(); ++i) {  // Start from second axon
-
-        if (i == random_index) continue;  // Skip the randomly selected axon
-
-        const auto& axon = growing_axons[i];
-
+    std::unordered_set<int> collided_ids;
+    for (const auto& axon : growing_axons) {
         if (axon.outer_spheres.empty()) continue;
 
         for (const auto& sphere : axon.outer_spheres) {
-            if (!sphere_grid.canSpherebePlaced(sphere)) {
+            if (!sphere_grid.canSpherebePlaced(sphere) || !batch_grid.canSpherebePlaced(sphere)) {
                 collided_ids.insert(axon.id);
-                axons_to_check_collision_with.erase(
-                    std::remove_if(axons_to_check_collision_with.begin(), axons_to_check_collision_with.end(),
-                                   [&axon](const Axon& a) { return a.id == axon.id; }),
-                    axons_to_check_collision_with.end()
-                );
                 break;
             }
         }
@@ -1833,22 +1914,7 @@ void CaterpillarGrowth::growBatch(int &number_axons_to_grow, std::vector<double>
             }
         }  
     }
-    //cout << "Grown axons added to list" << endl;
 
-    /*
-
-    bool no_collision = FinalCheck(axons, stuck_radii_, stuck_indices_);
-    if (!no_collision)
-    {
-        cout << "Final check failed" << endl;
-        assert(0);
-    }
-    else{
-        cout << "Final check passed" << endl;
-    }
-    */
-    
-    //cout << "axons.size() after check: " << axons.size() << endl;
 }
 
 void CaterpillarGrowth::growBatches(std::vector<double> &radii_, std::vector<int> &subsets_, std::vector<bool> &has_myelin, std::vector<double> &angles)
@@ -2119,18 +2185,20 @@ void CaterpillarGrowth ::create_SWC_file(std::ostream &out)
 
     for (auto &bv : blood_vessels)
     {
-        for (auto &s : bv.spheres) {
+        for (auto &branch : bv.ramification_spheres) {
+        for (auto &s : branch) {
             int cell_id = bv.id;
-            int component_id = 0;
+            int component_id = s.branch_id;
             std::string cell_type = "blood_vessel";
-            std::string component = "blood_vessel";
+            std::string component = (component_id == 0) ? "blood_vessel" : "branch";
             double x = s.center[0];
             double y = s.center[1];
             double z = s.center[2];
             double outer_radius = s.radius;
 
             out << cell_type << " " <<  cell_id << " " << component << " " << component_id << " " << x << " " << y << " " << z << " " << outer_radius << " " << outer_radius << endl;
-            
+
+        }
         }
 
     }

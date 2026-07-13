@@ -100,6 +100,7 @@ private:
     QLabel *glial_pop2_soma_icvf_qlabel;
     QLabel *glial_pop2_processes_icvf_qlabel;
     QLabel *blood_vessels_icvf_qlabel;
+    QLabel *blood_vessels_processes_icvf_qlabel;
     QLabel *voxel_size_qlabel;
     QLabel *minimum_radius_qlabel;
     QLabel *nbr_threads_qlabel;
@@ -138,6 +139,7 @@ private:
     QDoubleSpinBox *glial_pop2_soma_icvf_SpinBox;
     QDoubleSpinBox *glial_pop2_processes_icvf_SpinBox;
     QDoubleSpinBox *blood_vessels_icvf_SpinBox;
+    QDoubleSpinBox *blood_vessels_processes_icvf_SpinBox;
     QDoubleSpinBox *voxel_size_SpinBox;
     QDoubleSpinBox *minimum_radius_SpinBox;
     QDoubleSpinBox *nbr_threads_SpinBox;

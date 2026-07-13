@@ -140,7 +140,8 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     params.axons_wo_myelin_icvf = double(data["AxonParameters"]["AxonsICVF"]) / 100.0;
     params.axons_w_myelin_icvf = double(data["AxonParameters"]["AxonsWithMyelinICVF"]) / 100.0;
     params.blood_vessels_icvf = double(data["AxonParameters"]["BloodVesselsICVF"]) / 100.0;
-    
+    params.blood_vessels_processes_icvf = data["AxonParameters"].value("BloodVesselsProcessesICVF", 0.0) / 100.0;
+
     params.nbr_axons_populations = data["AxonParameters"]["NumberOfPopulations"];
     params.crossing_fibers_type = data["AxonParameters"]["CrossingFibersType"];
     params.nbr_threads = data["AxonParameters"]["NumberOfThreads"];
