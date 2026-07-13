@@ -13,3 +13,5 @@
 /GUI/.gitignore
 /compiler.sh
 /gitignore
+/tests
+/output
