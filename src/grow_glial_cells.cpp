@@ -290,22 +290,25 @@ bool GlialCellGrowth::growPrimaryBranch(int &nbr_spheres, const double &mean_pri
     Eigen::Vector3d vector_to_prev_center = {0, 0, 0};
     Sphere first_sphere;
     Eigen::Vector3d attractor = Eigen::Vector3d(0, 0, 0);
-    double first_radius = compute_radius(initial_radius);
+    // t=0 here means "at the branch's own start", i.e. the true initial_radius
+    // with no decay yet -- passing initial_radius itself as t (a radius value
+    // used as if it were a distance-along-branch) was a bug.
+    double first_radius = compute_radius(0.0);
     bool first_sphere_created = GenerateFirstSphereinProcess(first_sphere, attractor, first_radius, glial_cell_to_grow.soma, vector_to_prev_center, nbr_spheres, nbr_spheres_between, glial_cell_to_grow.id, j, true);
 
     if (!first_sphere_created) {
         return false;
     }
 
-    std::vector<Sphere> vector_first_spheres;
-    if (factor >1)
-    {
-        // add spheres between the first and the last
-        vector_first_spheres = addIntermediateSpheres(glial_cell_to_grow.soma, first_sphere, j, nbr_spheres, nbr_spheres_between, compute_radius, 0.0, initial_radius);
-    }
-    else{
-        vector_first_spheres = {first_sphere};
-    }
+    // No intermediate spheres between the soma and first_sphere: unlike a
+    // branch-to-branch attachment (where the parent sphere's own radius is a
+    // short, branch-scale hop worth subdividing), first_sphere already sits
+    // directly on the soma's surface with zero gap -- there's nothing to
+    // bridge. Interpolating from the soma's *center* (as addIntermediateSpheres
+    // would) placed several branch-radius-sized spheres deep inside the soma's
+    // own volume, visible in the GUI as a big lump right at the base of every
+    // primary process.
+    std::vector<Sphere> vector_first_spheres = {first_sphere};
 
     //cout << "First sphere in primary branch created at position: " << first_sphere.center.transpose() << " with radius: " << first_sphere.radius << endl;
 
@@ -448,7 +451,7 @@ bool GlialCellGrowth::growSecondaryBranch(int &nbr_spheres, const double &mean_p
     // as growPrimaryBranch: length_to_grow (a remaining-budget sample) can end
     // up larger than typical, and actual growth often stops well short of it,
     // leaving radius barely decayed if alpha is calibrated to the inflated value.
-    double alpha = -std::log(glial_cell_to_grow.minimum_radius / initial_radius)/std::min(length_to_grow, mean_process_length);
+    double alpha = -std::log(glial_cell_to_grow.minimum_radius / initial_radius)/std::max(length_to_grow, 20.0);
 
     auto compute_radius = [&](double t) {
         return std::exp(-alpha * t) * initial_radius;

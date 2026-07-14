@@ -1,8 +1,8 @@
-Duration 3
-Num_axons 101
+Duration 8
+Num_axons 125
 Voxel Size 50
-Axon icvf 0.220317
-Axon without myelin icvf 0.220317
+Axon icvf 0.228607
+Axon without myelin icvf 0.228607
 Axon with myelin icvf 0
 Myelin icvf 0
 Glial cell population 1 icvf soma 0
@@ -10,7 +10,7 @@ Glial cell population 1 icvf branches 0
 Glial cell population 2 icvf soma 0
 Glial cell population 2 icvf branches 0
 Blood vessel icvf 0
-Total icvf 0.220317
+Total icvf 0.228607
 nbr_axons_populations 1
 crossing_fibers_type 0
 Number of threads 4
@@ -28,7 +28,7 @@ spheres overlap factor 4
 epsilon_blood_vessels 0.2
 mean_vessel_rad 6
 std_vessel_rad 1
-cosPhiSquared 0.999799
+cosPhiSquared 0.999751
 c1 0.35
 c2 0.006
 c3 0.024
