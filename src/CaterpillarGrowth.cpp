@@ -131,8 +131,35 @@ CaterpillarGrowth::CaterpillarGrowth(const Parameters &params, const Eigen::Vect
     glial_pop2.clear();
     blood_vessels.clear();
 
-    // Size grid voxels off the largest sphere radius expected in this simulation
-    grid_voxel_size = 2.0 * std::max({min_radius, glial_pop1_radius_mean, glial_pop2_radius_mean, mean_vessel_rad});
+    // Size grid voxels off the largest sphere radius among populations actually
+    // being grown in this simulation. A disabled population's mean radius has
+    // no bearing on how densely this grid gets packed, so it's excluded rather
+    // than folded into the max (which would make cells needlessly coarse for
+    // whatever IS being grown) -- e.g. a large but disabled glial population
+    // shouldn't oversize the grid for an axon-only run.
+    std::vector<double> active_radii;
+    if (target_axons_wo_myelin_icvf > 0.0 || target_axons_w_myelin_icvf > 0.0) {
+        // min_radius is only ever used as a floor/clamp on drawn axon radii
+        // (see e.g. the "if (r < min_radius) r = min_radius;" clamp below), not
+        // a representative size -- axon radii are actually drawn from
+        // Gamma(alpha, beta), whose mean is alpha*beta.
+        active_radii.push_back(alpha * beta);
+    }
+    if (target_glial_pop1_soma_icvf > 0.0) {
+        active_radii.push_back(glial_pop1_radius_mean);
+    }
+    if (target_glial_pop2_soma_icvf > 0.0) {
+        active_radii.push_back(glial_pop2_radius_mean);
+    }
+    if (target_blood_vessels_icvf > 0.0) {
+        active_radii.push_back(mean_vessel_rad);
+    }
+
+    if (active_radii.empty()) {
+        grid_voxel_size = 1.0;
+    } else {
+        grid_voxel_size = 2.0 * *std::max_element(active_radii.begin(), active_radii.end());
+    }
     if (grid_voxel_size <= 0.0) {
         grid_voxel_size = 1.0;
     }
@@ -1271,8 +1298,28 @@ void CaterpillarGrowth::growBranches(const int &population_nbr) {
 
 
     for (size_t i = 0; i < growths.size(); ++i) {
-        growths[i].growFirstPrimaryBranches(nbr_primary_processes,
-                                            nbr_spheres[i], mean_len, std_len, spheres_overlap_factor);
+        // Grow each primary branch one at a time (instead of via
+        // growFirstPrimaryBranches, which grows all of them internally without
+        // ever touching sphere_grid) so every new branch is registered in the
+        // grid immediately -- otherwise this same cell's own later primary
+        // branches, and every other cell in this loop, grow blind to branches
+        // already placed and can end up overlapping them.
+        int primary_tries = 0;
+        const int max_primary_tries = 1000;
+        for (int j = 0; j < nbr_primary_processes; ++j) {
+            bool has_grown = growths[i].growPrimaryBranch(nbr_spheres[i], mean_len, std_len, spheres_overlap_factor);
+            if (has_grown) {
+                for (const auto &sph : growths[i].glial_cell_to_grow.ramification_spheres.back()) {
+                    sphere_grid.insert(sph);
+                }
+                primary_tries = 0;
+            } else if (primary_tries < max_primary_tries) {
+                --j;
+                ++primary_tries;
+            } else {
+                cout << "Failed to grow glial cell" << endl;
+            }
+        }
 
         pop[i] = growths[i].glial_cell_to_grow;
         pop[i].compute_processes_icvf(spheres_overlap_factor, min_limits, max_limits);
@@ -1295,12 +1342,21 @@ void CaterpillarGrowth::growBranches(const int &population_nbr) {
 
     while (current_icvf < target_icvf && nbr_tries <= max_tries) {
         for (size_t i = 0; i < growths.size(); ++i) {
+            bool grew;
             if (growths[i].glial_cell_to_grow.allow_branching) {
-                growths[i].growSecondaryBranch(nbr_spheres[i], mean_len, std_len, spheres_overlap_factor);
+                grew = growths[i].growSecondaryBranch(nbr_spheres[i], mean_len, std_len, spheres_overlap_factor);
             } else {
-                growths[i].growPrimaryBranch(nbr_spheres[i], mean_len, std_len, spheres_overlap_factor);
+                grew = growths[i].growPrimaryBranch(nbr_spheres[i], mean_len, std_len, spheres_overlap_factor);
             }
             pop[i] = growths[i].glial_cell_to_grow;
+            if (grew) {
+                // Register the newly grown branch immediately, so other cells'
+                // branches (grown later in this same loop, or in later
+                // iterations) can see it instead of growing blind to it.
+                for (const auto &sph : pop[i].ramification_spheres.back()) {
+                    sphere_grid.insert(sph);
+                }
+            }
         }
 
         if (nbr_tries % 10 == 0) {
@@ -1332,11 +1388,8 @@ void CaterpillarGrowth::growBranches(const int &population_nbr) {
         std::cerr << "Max attempts reached while growing branches!\n";
     }
 
-    // Branch growth is done for this population: register every sphere grown
-    // (the soma was already added to the grid when the cell was placed).
-    for (auto &cell : pop) {
-        cell.addToGrid(sphere_grid);
-    }
+    // No final grid sync needed here: the soma was added to the grid when the
+    // cell was placed, and each branch was added as soon as it was grown, above.
 }
 
 void CaterpillarGrowth::PlaceGlialCells() {

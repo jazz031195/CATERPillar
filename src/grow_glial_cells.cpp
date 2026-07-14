@@ -50,8 +50,6 @@ void GlialCellGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const 
             if(can_grow_){
                 glial_cell_to_grow.ramification_spheres[index_ram_spheres].push_back(s);
             }
-
-
         }
     }
     sph.id = last_sphere.id + nbr_spheres + 1;
@@ -268,7 +266,13 @@ bool GlialCellGrowth::growPrimaryBranch(int &nbr_spheres, const double &mean_pri
     }
 
     double initial_radius = glial_cell_to_grow.soma.radius/3;
-    double alpha = -std::log(glial_cell_to_grow.minimum_radius / initial_radius)/length;
+    // Cap the decay length at the mean (not the sampled) target: length here can
+    // occasionally be drawn much larger than typical, and actual growth often
+    // stops well short of it (collisions, running out of room, etc.) -- decay
+    // calibrated to an inflated target barely moves over the distance actually
+    // travelled, leaving the process looking uniformly thick instead of
+    // tapering toward minimum_radius.
+    double alpha = -std::log(glial_cell_to_grow.minimum_radius / initial_radius)/std::min(length, mean_primary_process_length);
 
     auto compute_radius = [&](double t) {
         return std::exp(-alpha * t) * initial_radius;
@@ -440,7 +444,11 @@ bool GlialCellGrowth::growSecondaryBranch(int &nbr_spheres, const double &mean_p
     //cout << "Initial radius for new branch: " << initial_radius << endl;
     bool first_sphere_created = GenerateFirstSphereinProcess(first_sphere, attractor, initial_radius, random_sphere, vector_to_prev_sphere, nbr_spheres, nbr_spheres_between, glial_cell_to_grow.id, nbr_branches, false);
     //cout << "First sphere created at position: " << first_sphere.center.transpose() << " with radius: " << first_sphere.radius << endl;
-    double alpha = -std::log(glial_cell_to_grow.minimum_radius / initial_radius)/length_to_grow;
+    // Cap the decay length at the mean (not the sampled) target, same reasoning
+    // as growPrimaryBranch: length_to_grow (a remaining-budget sample) can end
+    // up larger than typical, and actual growth often stops well short of it,
+    // leaving radius barely decayed if alpha is calibrated to the inflated value.
+    double alpha = -std::log(glial_cell_to_grow.minimum_radius / initial_radius)/std::min(length_to_grow, mean_process_length);
 
     auto compute_radius = [&](double t) {
         return std::exp(-alpha * t) * initial_radius;
