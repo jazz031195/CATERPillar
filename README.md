@@ -122,11 +122,7 @@ This mode allows you to execute heavy math and generate `.csv` files on remote s
 
 ## **Output**
 
-Once the simulation is complete, the **GUI** will display the generated substrate, allowing users to visually inspect the 3D microstructure. Additionally, the GUI provides analytical tools to plot:
-
-  * **Axonal radii distribution**
-  * **Axonal tortuosity distribution**
-  * **Sholl analysis for astrocytes**
+Once the simulation is complete, the **GUI** will display the generated substrate, allowing users to visually inspect the 3D microstructure. 
 
 ### **Generated Files**
 
@@ -152,3 +148,9 @@ The **`<filename>.csv`** file is a space-delimited file structured with the foll
 If you use CATERPillar in your research, please cite the following work:
 
 > Nguyen-Duc, J., Brammerloh, M., Cherchali, M., De Riedmatten, I., Pérot, J.-B., Rafael-Patiño, J., & Jelescu, I. O. (2026). CATERPillar : A flexible framework for generating white matter numerical substrates with incorporated glial cells. Medical Image Analysis, 110, 103946. https://doi.org/10.1016/j.media.2026.103946
+
+-----
+
+## **Contact**
+
+For any questions, please contact Jasmine Nguyen-Duc: jasmine.nguyenduc@gmail.com
