@@ -58,9 +58,9 @@ The GUI allows you to configure biophysical parameters and generate realistic nu
 To bypass the GUI entirely and run simulations in the terminal, pass the `--config` argument followed by the path to your JSON settings file:
 
 ```bash
-./CATERPillar --config example_config.json
+./CATERPillar --config example_config/example_config.json
 ```
-This mode allows you to execute heavy math and generate `.csv` files on remote servers without display capabilities (X11 forwarding is not required). An example configuration file (`example_config.json`) is included in the repository to help you correctly format your parameters.
+This mode allows you to execute heavy math and generate `.csv` files on remote servers without display capabilities (X11 forwarding is not required). An example configuration file (`example_config/example_config.json`) is included in the repository to help you correctly format your parameters.
 
 -----
 
@@ -110,7 +110,7 @@ This mode allows you to execute heavy math and generate `.csv` files on remote s
 
 ### **Advanced Parameters (JSON configuration only):**
 
-*(Note: These parameters are not exposed in the GUI and default to sensible values. They can be overridden in Headless / HPC mode by adding the corresponding key under `AxonParameters` in the JSON configuration file — see `example_config.json`.)*
+*(Note: These parameters are not exposed in the GUI and default to sensible values. They can be overridden in Headless / HPC mode by adding the corresponding key under `AxonParameters` in the JSON configuration file — see `example_config/example_config.json`.)*
 
   * **`Tortuous`** *(bool, default `true`)*: Enables stochastic tortuosity during axon growth.
   * **`CanShrink`** *(bool, default `true`)*: Allows axon radii to shrink locally to resolve collisions during growth.
