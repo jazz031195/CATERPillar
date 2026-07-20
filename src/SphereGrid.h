@@ -75,6 +75,25 @@ public:
      */
     bool canSpherebePlaced(const Sphere &sph, bool check_collision_with_branches = true) const;
 
+    /*!
+     *  \brief Finds the neighbor causing the deepest overlap with a candidate sphere of
+     *         the given center/radius, excluding spheres belonging to the same object
+     *         (object_type/object_id, matching canSpherebePlaced's exclusion). Iterates
+     *         voxels/entries directly instead of going through query(): unlike
+     *         canSpherebePlaced this can't early-exit (every candidate within
+     *         search_radius must be compared to find the worst one), but it still
+     *         avoids query()'s heap-allocated intermediate vector.
+     *  \param center candidate sphere's center
+     *  \param radius candidate sphere's radius, used for the overlap calculation
+     *  \param search_radius how far out to scan for candidates (independent of radius,
+     *         so callers can search wider than the candidate's own size when needed)
+     *  \return true if an external neighbor overlaps; blocker_center/blocker_radius are
+     *          only set when true.
+     */
+    bool findWorstOverlap(const Eigen::Vector3d &center, double radius, double search_radius,
+                          int self_object_type, int self_object_id,
+                          Eigen::Vector3d &blocker_center, double &blocker_radius) const;
+
 private:
 
     Eigen::Vector3d min_limits;

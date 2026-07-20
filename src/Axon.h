@@ -41,6 +41,10 @@ public:
     bool outside_voxel;
     bool has_shrunk;                            /*!< Axon has shrunk */
     int undulation_factor;                          /*!< Factor for ondulation */
+    int grow_straight;                              /*!< Whether the next sphere grows straight (1) or takes a fresh epsilon-random direction (0); persists across depth layers */
+    int straight_growths;                           /*!< Consecutive straight growths so far in the current straight streak; persists across depth layers */
+    Eigen::Vector3d turn_start_direction;            /*!< Heading at the start of the current turn cycle, interpolated away from as the cycle progresses */
+    Eigen::Vector3d turn_target_direction;           /*!< Freshly-sampled heading this turn cycle is gradually curving toward, reached by the cycle's last straight step */
 
     /*!
      *  \brief Default constructor. Does nothing
@@ -62,6 +66,10 @@ public:
         beading_amplitude = beading_amplitude_;
         beading_std = beading_std_;
         undulation_factor = undulation_factor_;
+        grow_straight = 0;
+        straight_growths = 0;
+        turn_start_direction = Eigen::Vector3d::Zero();
+        turn_target_direction = Eigen::Vector3d::Zero();
         myelin_sheath = myelin_sheath_;
         // random phase shift between 0 and 0.5
         phase_shift = abs((double)rand() / (RAND_MAX + 1.0))/2;
@@ -85,6 +93,10 @@ public:
             growth_attempts = ax.growth_attempts;
             beading_amplitude = ax.beading_amplitude;
             undulation_factor = ax.undulation_factor;
+            grow_straight = ax.grow_straight;
+            straight_growths = ax.straight_growths;
+            turn_start_direction = ax.turn_start_direction;
+            turn_target_direction = ax.turn_target_direction;
             beading_std = ax.beading_std;
             phase_shift = ax.phase_shift;
             myelin_sheath = ax.myelin_sheath;
@@ -100,6 +112,17 @@ public:
     }
 
     void keep_one_sphere();
+
+    /*!
+     *  \param n Number of leading spheres to keep
+     *  \brief Rolls outer_spheres back to its first n elements (no-op if already <= n).
+     *         Generalizes keep_one_sphere() (equivalent to truncate_to(1)) so a rollback
+     *         can target any earlier point in the axon's growth, not just the very
+     *         start -- needed so a mid-layer collision (depth-layered growth) only
+     *         undoes spheres added during the current layer, not previously-committed
+     *         layers already merged into the shared sphere grid.
+     */
+    void truncate_to(std::size_t n);
     /*!
      *  \param sphere_to_add sphere to add
      *  \brief Adds sphere to axon
@@ -116,6 +139,20 @@ public:
      */
     void destroy();
 
+    /*!
+     *  \param removed appended with every sphere dropped from outer_spheres
+     *  \brief Post-swelling cleanup: a sphere fully contained inside a
+     *         neighboring sphere in the chain contributes no exposed surface
+     *         of its own (any obstacle it could present, a bigger neighbor
+     *         already presents), so it is redundant once independent
+     *         per-sphere swelling has let radii diverge enough for that to
+     *         happen. Walks the chain once (monotonic-stack style) so a run
+     *         of several mutually-engulfing spheres collapses correctly, not
+     *         just adjacent pairs. Always keeps at least the first sphere.
+     *         Caller is responsible for removing the returned spheres from
+     *         the shared SphereGrid and recomputing volume/ICVF afterward.
+     */
+    void removeEngulfedSpheres(std::vector<Sphere> &removed);
 
     void update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits);
 

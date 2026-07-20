@@ -36,7 +36,8 @@
     bool AddOneSphere(double radius_,
                       bool create_sphere,
                       int grow_straight,
-                      const int& factor);
+                      const int& factor,
+                      bool axon_can_shrink);
 
     void add_spheres(Sphere& sph,
                      const Sphere& last_sphere,
@@ -50,9 +51,9 @@
                           const std::vector<Sphere>& spheres,
                           const Eigen::Vector3d& target);
 
-    void growthThread(double& stuck_radius, int& stuck_index, int factor, bool axon_can_shrink);
+    void growthThread(double& stuck_radius, int& stuck_index, int factor, bool axon_can_shrink,
+                       std::size_t layer_start_spheres);
     double RandomradiusVariation();
-    bool shrinkRadius(const double &radius_to_shrink, const bool& axon_can_shrink, const int &factor);
     void update_straight(bool can_grow_, int &grow_straight, int &straight_growths);
 
 };

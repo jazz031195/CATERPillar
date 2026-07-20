@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_Window_t {
-    QByteArrayData data[21];
-    char stringdata0[352];
+    QByteArrayData data[28];
+    char stringdata0[458];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -52,7 +52,14 @@ QT_MOC_LITERAL(16, 243, 22), // "ReadGlialCellsFromFile"
 QT_MOC_LITERAL(17, 266, 21), // "ReadGlialCellsFromCSV"
 QT_MOC_LITERAL(18, 288, 24), // "ReadBloodVesselsFromFile"
 QT_MOC_LITERAL(19, 313, 22), // "generateMonteCarloConf"
-QT_MOC_LITERAL(20, 336, 15) // "runMCSimulation"
+QT_MOC_LITERAL(20, 336, 15), // "runMCSimulation"
+QT_MOC_LITERAL(21, 352, 16), // "onGrowthProgress"
+QT_MOC_LITERAL(22, 369, 15), // "completed_depth"
+QT_MOC_LITERAL(23, 385, 11), // "total_depth"
+QT_MOC_LITERAL(24, 397, 18), // "onSwellingProgress"
+QT_MOC_LITERAL(25, 416, 12), // "current_icvf"
+QT_MOC_LITERAL(26, 429, 11), // "target_icvf"
+QT_MOC_LITERAL(27, 441, 16) // "onGrowthFinished"
 
     },
     "Window\0onSaveButtonClicked\0\0"
@@ -64,7 +71,10 @@ QT_MOC_LITERAL(20, 336, 15) // "runMCSimulation"
     "fileName\0ReadAxonsFromFile\0"
     "ReadGlialCellsFromFile\0ReadGlialCellsFromCSV\0"
     "ReadBloodVesselsFromFile\0"
-    "generateMonteCarloConf\0runMCSimulation"
+    "generateMonteCarloConf\0runMCSimulation\0"
+    "onGrowthProgress\0completed_depth\0"
+    "total_depth\0onSwellingProgress\0"
+    "current_icvf\0target_icvf\0onGrowthFinished"
 };
 #undef QT_MOC_LITERAL
 
@@ -74,7 +84,7 @@ static const uint qt_meta_data_Window[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-      13,   14, // methods
+      16,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -82,19 +92,22 @@ static const uint qt_meta_data_Window[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    0,   79,    2, 0x08 /* Private */,
-       3,    0,   80,    2, 0x08 /* Private */,
-       4,    0,   81,    2, 0x08 /* Private */,
-       5,    4,   82,    2, 0x08 /* Private */,
-      10,    1,   91,    2, 0x08 /* Private */,
-      12,    1,   94,    2, 0x08 /* Private */,
-      13,    1,   97,    2, 0x08 /* Private */,
-      15,    1,  100,    2, 0x08 /* Private */,
-      16,    1,  103,    2, 0x08 /* Private */,
-      17,    1,  106,    2, 0x08 /* Private */,
-      18,    1,  109,    2, 0x08 /* Private */,
-      19,    0,  112,    2, 0x08 /* Private */,
-      20,    0,  113,    2, 0x08 /* Private */,
+       1,    0,   94,    2, 0x08 /* Private */,
+       3,    0,   95,    2, 0x08 /* Private */,
+       4,    0,   96,    2, 0x08 /* Private */,
+       5,    4,   97,    2, 0x08 /* Private */,
+      10,    1,  106,    2, 0x08 /* Private */,
+      12,    1,  109,    2, 0x08 /* Private */,
+      13,    1,  112,    2, 0x08 /* Private */,
+      15,    1,  115,    2, 0x08 /* Private */,
+      16,    1,  118,    2, 0x08 /* Private */,
+      17,    1,  121,    2, 0x08 /* Private */,
+      18,    1,  124,    2, 0x08 /* Private */,
+      19,    0,  127,    2, 0x08 /* Private */,
+      20,    0,  128,    2, 0x08 /* Private */,
+      21,    2,  129,    2, 0x08 /* Private */,
+      24,    2,  134,    2, 0x08 /* Private */,
+      27,    0,  139,    2, 0x08 /* Private */,
 
  // slots: parameters
     QMetaType::Void,
@@ -109,6 +122,9 @@ static const uint qt_meta_data_Window[] = {
     QMetaType::Void, QMetaType::QString,   14,
     QMetaType::Void, QMetaType::QString,   14,
     QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::Double, QMetaType::Double,   22,   23,
+    QMetaType::Void, QMetaType::Double, QMetaType::Double,   25,   26,
     QMetaType::Void,
 
        0        // eod
@@ -133,6 +149,9 @@ void Window::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
         case 10: _t->ReadBloodVesselsFromFile((*reinterpret_cast< const QString(*)>(_a[1]))); break;
         case 11: _t->generateMonteCarloConf(); break;
         case 12: _t->runMCSimulation(); break;
+        case 13: _t->onGrowthProgress((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
+        case 14: _t->onSwellingProgress((*reinterpret_cast< double(*)>(_a[1])),(*reinterpret_cast< double(*)>(_a[2]))); break;
+        case 15: _t->onGrowthFinished(); break;
         default: ;
         }
     }
@@ -167,13 +186,13 @@ int Window::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 13)
+        if (_id < 16)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 13;
+        _id -= 16;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 13)
+        if (_id < 16)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 13;
+        _id -= 16;
     }
     return _id;
 }

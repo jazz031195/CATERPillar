@@ -117,29 +117,85 @@ static bool axisIntervalsOverlap(double c1, double r1, double c2, double r2, dou
 
 bool SphereGrid::canSpherebePlaced(const Sphere &sph, bool check_collision_with_branches) const
 {
+    // Deliberately does not go through query(): this is the single most
+    // frequently called function in the whole codebase (every growth
+    // attempt, every push, every shrink-fallback and swelling bisection
+    // iteration, seedAllAxons, checkNoCollisions), and query() would
+    // heap-allocate a fresh std::vector and copy in every candidate before
+    // any of them are even checked. Iterating voxels/entries directly here
+    // instead means the common case -- a real collision found early, or no
+    // entries at all in range -- never touches the heap, and returns the
+    // instant a genuine overlap is confirmed rather than after collecting
+    // every candidate first.
     double tolerance = barrier_tickness;
-    for (const auto &entry : query(sph.center, sph.radius)) {
-        // skip spheres belonging to the same object (self)
-        if (entry.object_id == sph.object_type &&
-            entry.cell_id == sph.object_id &&
-            (!check_collision_with_branches || entry.branch_id == sph.branch_id)) {
-            continue;
-        }
 
-        bool boxes_overlap = true;
-        for (int axis = 0; axis < 3 && boxes_overlap; ++axis) {
-            if (!axisIntervalsOverlap(entry.center[axis], entry.radius, sph.center[axis], sph.radius, tolerance)) {
-                boxes_overlap = false;
+    Eigen::Vector3d radius_vec(sph.radius, sph.radius, sph.radius);
+    Eigen::Vector3i min_idx = clampedVoxelIndex(sph.center - radius_vec);
+    Eigen::Vector3i max_idx = clampedVoxelIndex(sph.center + radius_vec);
+
+    for (int ix = min_idx[0]; ix <= max_idx[0]; ++ix) {
+        for (int iy = min_idx[1]; iy <= max_idx[1]; ++iy) {
+            for (int iz = min_idx[2]; iz <= max_idx[2]; ++iz) {
+                const auto &voxel = voxels[linearIndex(ix, iy, iz)];
+                for (const auto &entry : voxel) {
+                    // skip spheres belonging to the same object (self)
+                    if (entry.object_id == sph.object_type &&
+                        entry.cell_id == sph.object_id &&
+                        (!check_collision_with_branches || entry.branch_id == sph.branch_id)) {
+                        continue;
+                    }
+
+                    bool boxes_overlap = true;
+                    for (int axis = 0; axis < 3 && boxes_overlap; ++axis) {
+                        if (!axisIntervalsOverlap(entry.center[axis], entry.radius, sph.center[axis], sph.radius, tolerance)) {
+                            boxes_overlap = false;
+                        }
+                    }
+                    if (!boxes_overlap) {
+                        continue;
+                    }
+
+                    double dist = (entry.center - sph.center).norm();
+                    if (dist <= entry.radius + sph.radius + tolerance) {
+                        return false;
+                    }
+                }
             }
-        }
-        if (!boxes_overlap) {
-            continue;
-        }
-
-        double dist = (entry.center - sph.center).norm();
-        if (dist <= entry.radius + sph.radius + tolerance) {
-            return false;
         }
     }
     return true;
+}
+
+bool SphereGrid::findWorstOverlap(const Eigen::Vector3d &center, double radius, double search_radius,
+                                   int self_object_type, int self_object_id,
+                                   Eigen::Vector3d &blocker_center, double &blocker_radius) const
+{
+    Eigen::Vector3d search_vec(search_radius, search_radius, search_radius);
+    Eigen::Vector3i min_idx = clampedVoxelIndex(center - search_vec);
+    Eigen::Vector3i max_idx = clampedVoxelIndex(center + search_vec);
+
+    double worst_overlap = 0.0;
+    bool found = false;
+
+    for (int ix = min_idx[0]; ix <= max_idx[0]; ++ix) {
+        for (int iy = min_idx[1]; iy <= max_idx[1]; ++iy) {
+            for (int iz = min_idx[2]; iz <= max_idx[2]; ++iz) {
+                const auto &voxel = voxels[linearIndex(ix, iy, iz)];
+                for (const auto &entry : voxel) {
+                    if (entry.object_id == self_object_type && entry.cell_id == self_object_id) {
+                        continue; // this object's own spheres
+                    }
+                    double d = (entry.center - center).norm();
+                    double overlap = (radius + entry.radius) - d;
+                    if (overlap > worst_overlap) {
+                        worst_overlap = overlap;
+                        blocker_center = entry.center;
+                        blocker_radius = entry.radius;
+                        found = true;
+                    }
+                }
+            }
+        }
+    }
+    return found;
 }

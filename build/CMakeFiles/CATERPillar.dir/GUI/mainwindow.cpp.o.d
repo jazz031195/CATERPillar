@@ -467,6 +467,8 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qlocale.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QPushButton \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qpushbutton.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QProgressBar \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qprogressbar.h \
  /usr/include/x86_64-linux-gnu/qt5/QtDataVisualization/Q3DScatter \
  /usr/include/x86_64-linux-gnu/qt5/QtDataVisualization/q3dscatter.h \
  /usr/include/x86_64-linux-gnu/qt5/QtDataVisualization/qabstract3dgraph.h \
@@ -588,33 +590,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/QColor \
  /home/localadmin/Documents/CATERPillar/GUI/../src/parameters.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/Eigen/Core \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QComboBox \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qcombobox.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractitemdelegate.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstyleoption.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qslider.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstyle.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtabbar.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qrubberband.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qabstractitemmodel.h \
- /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/include/ui_mainwindow.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/QVariant \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qvariant.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QApplication \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qapplication.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qcoreapplication.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qeventloop.h \
- /usr/include/x86_64-linux-gnu/qt5/QtGui/qguiapplication.h \
- /usr/include/x86_64-linux-gnu/qt5/QtGui/qinputmethod.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMainWindow \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMenuBar \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qmenubar.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qmenu.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qaction.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qactiongroup.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QStatusBar \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstatusbar.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QWidget \
  /home/localadmin/Documents/CATERPillar/GUI/../src/core_logic.h \
  /home/localadmin/Documents/CATERPillar/src/parameters.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/../src/Axon.h \
@@ -689,6 +664,35 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /home/localadmin/Documents/CATERPillar/GUI/../src/../src/SphereGrid.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/../src/Blood_Vessel.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/../src/Glial.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QComboBox \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qcombobox.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractitemdelegate.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstyleoption.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qslider.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstyle.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtabbar.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qrubberband.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qabstractitemmodel.h \
+ /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
+ /usr/include/c++/11/bits/this_thread_sleep.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/include/ui_mainwindow.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/QVariant \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qvariant.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QApplication \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qapplication.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qcoreapplication.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qeventloop.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/qguiapplication.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/qinputmethod.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMainWindow \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMenuBar \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qmenubar.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qmenu.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qaction.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qactiongroup.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QStatusBar \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstatusbar.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QWidget \
  /home/localadmin/Documents/CATERPillar/GUI/../src/Axon.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/Blood_Vessel.h \
  /home/localadmin/Documents/CATERPillar/GUI/../src/Glial.h \
@@ -926,7 +930,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qdeadlinetimer.h \
  /usr/include/c++/11/future /usr/include/c++/11/condition_variable \
  /usr/include/c++/11/bits/atomic_futex.h \
- /usr/include/c++/11/bits/std_thread.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qthreadpool.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qthread.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qthreadstorage.h \
@@ -1150,7 +1153,6 @@ CMakeFiles/CATERPillar.dir/GUI/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qplaintextedit.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtextedit.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qabstracttextdocumentlayout.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qprogressbar.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qprogressdialog.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qproxystyle.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QCommonStyle \

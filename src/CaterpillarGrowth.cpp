@@ -17,6 +17,8 @@
 #include <atomic>
 #include <iomanip>
 #include <functional>
+#include <limits>
+#include <cstdlib>
 
 
 
@@ -164,6 +166,11 @@ CaterpillarGrowth::CaterpillarGrowth(const Parameters &params, const Eigen::Vect
         grid_voxel_size = 1.0;
     }
     sphere_grid = SphereGrid(min_limits, max_limits, grid_voxel_size);
+    // Persistent scratch grid for SanityCheck's per-sub-batch reconciliation
+    // (see below): built once here and .clear()'d before each use, rather
+    // than reconstructing (and re-allocating its full nx*ny*nz voxel array)
+    // every single sub-batch/round during growth.
+    batch_scratch_grid = SphereGrid(min_limits, max_limits, grid_voxel_size);
 
     /*
     cdf = {
@@ -397,7 +404,14 @@ void CaterpillarGrowth::generate_radii(std::vector<double> &radii_, std::vector<
         std::vector<bool> sorted_bools(has_myelin.size());
 
         for (size_t i = 0; i < indices.size(); ++i) {
-            sorted_radii_[i] = radii_[indices[i]]*swelling_factor;
+            // True target radii, matching the sampled Gamma(alpha,beta)
+            // distribution -- seedAllAxons applies swelling_factor itself
+            // when actually placing each axon, so this sampling/sorting
+            // pass stays based on real target sizes (right axon count and
+            // shape for the requested ICVF), independent of how much
+            // smaller they're grown before the post-growth swelling pass
+            // brings them back up.
+            sorted_radii_[i] = radii_[indices[i]];
             sorted_bools[i] = has_myelin[indices[i]];
         }
 
@@ -421,22 +435,30 @@ void CaterpillarGrowth::generate_radii(std::vector<double> &radii_, std::vector<
     }
 }
 
-bool CaterpillarGrowth::PlaceAxon(const int &axon_id, const double &radius_for_axon, const Eigen::Vector3d &Q, const Eigen::Vector3d &D, std::vector<Axon> &new_axons, const bool &has_myelin, const double &angle_, const bool &outside_voxel)
+bool CaterpillarGrowth::PlaceAxon(const int &axon_id, const double &seed_radius, const double &growth_radius, const Eigen::Vector3d &Q, const Eigen::Vector3d &D, std::vector<Axon> &new_axons, const bool &has_myelin, const double &angle_, const bool &outside_voxel)
 {
 
-    Axon ax = Axon(axon_id, Q, D, radius_for_axon, beading_amplitude, beading_std, undulation_factor, has_myelin, angle_, outside_voxel); // axons for regrow batch
+    // The axon's own radius field drives every subsequent AddOneSphere call
+    // (step size, beading center) -- growth_radius (swelling_factor * true
+    // target, < seed_radius when swelling_factor < 1) gives real, sustained
+    // lateral room to wander through the whole depth. The seed sphere
+    // itself uses seed_radius (the true, un-shrunk target) so Phase A's
+    // circle packing reserves genuine target-density spacing between
+    // neighbors from the very first cross-section, rather than seeding
+    // (and so starting every axon's depth growth from) an already
+    // under-packed layout.
+    Axon ax = Axon(axon_id, Q, D, growth_radius, beading_amplitude, beading_std, undulation_factor, has_myelin, angle_, outside_voxel); // axons for regrow batch
 
     if (has_myelin) {
-        double inner_radius = findInnerRadius(radius_for_axon);
+        double inner_radius = findInnerRadius(growth_radius);
         ax.inner_radius = inner_radius;
     }
 
-    Sphere sphere = Sphere(0, ax.id, axon_constant, Q, radius_for_axon);
+    Sphere sphere = Sphere(0, ax.id, axon_constant, Q, seed_radius);
 
-    bool no_overlap_axons = sphere_grid.canSpherebePlaced(sphere);
-    bool no_overlap_new_axons = sphere_grid.canSpherebePlaced(sphere);
+    bool no_overlap = sphere_grid.canSpherebePlaced(sphere);
 
-    if (no_overlap_new_axons && no_overlap_axons)
+    if (no_overlap)
     {
         ax.add_sphere(sphere);
         new_axons.push_back(ax);
@@ -522,7 +544,7 @@ void CaterpillarGrowth::ICVF(const std::vector<Axon> &axs, const std::vector<Gli
 
     glial_pop1_soma_icvf = 0.0;
     for (const auto &glial : glial_pop1) {
-        glial_pop1_soma_icvf += glial.volume_soma;
+        glial_pop1_soma_icvf += glial.soma.sphereBoxIntersectionVolume(min_limits, max_limits, /*eps_rel=*/1e-6);
     }
     glial_pop2_processes_icvf = 0.0;
     for (const auto &glial : oligos) {
@@ -531,7 +553,7 @@ void CaterpillarGrowth::ICVF(const std::vector<Axon> &axs, const std::vector<Gli
 
     glial_pop2_soma_icvf = 0.0;
     for (const auto &glial : oligos) {
-        glial_pop2_soma_icvf += glial.volume_soma;
+        glial_pop2_soma_icvf += glial.soma.sphereBoxIntersectionVolume(min_limits, max_limits, /*eps_rel=*/1e-6);
     }
 
     blood_vessels_icvf = 0.0;
@@ -654,41 +676,66 @@ double CaterpillarGrowth::c2toKappa(double c2_target,
     return 0.5 * (lo + hi); // fallback
 }
 
-// Generic clamp: keeps x within [low, high].
-template <typename T>
-constexpr const T& clamp(const T& x, const T& low, const T& high) {
-    return (x < low) ? low : (x > high) ? high : x;
-}
-
-// Sample theta in [0, pi/2] from axial Watson(kappa >= 0)
-double CaterpillarGrowth::draw_angle(double kappa) {
-    std::uniform_real_distribution<double> U(0.0, 1.0);
-    double u = U(gen);
+// Builds a monotonic (mu, CDF) table for the axial Watson(kappa) distribution
+// via ONE cumulative trapezoidal pass over exp(t^2) from 0 to sqrt(kappa),
+// instead of a fresh 1000-point erfi() integration per query. kappa is fixed
+// for an entire axon population, so this only needs to run once per
+// GrowAllAxons() call -- see sample_from_cdf_table, which then inverts it by
+// binary search + linear interpolation for each individual axon, replacing
+// what used to be a 20-iteration Newton solve (each iteration itself paying
+// for a fresh erfi() integral) per axon.
+static void build_watson_cdf_table(double kappa, int n_points,
+                                    std::vector<double> &mu_grid,
+                                    std::vector<double> &cdf_grid) {
+    mu_grid.assign(n_points + 1, 0.0);
+    cdf_grid.assign(n_points + 1, 0.0);
 
     if (kappa <= 0.0) {
-        // isotropic axial => mu ~ U(0,1)
-        double mu = u;
-        return std::acos(mu);
+        // isotropic axial: F(mu) = mu
+        for (int j = 0; j <= n_points; ++j) {
+            double mu = double(j) / n_points;
+            mu_grid[j] = mu;
+            cdf_grid[j] = mu;
+        }
+        return;
     }
 
     const double rt = std::sqrt(kappa);
-    const double erfi_rt = erfi(rt);                   // same erfi you used before
-    const double norm_c = 2.0*rt / (std::sqrt(M_PI)*erfi_rt); // F'(mu) coefficient
-
-    // Initial guess: use small/large-kappa heuristics
-    double mu = (kappa < 1.0)
-              ? u                       // near-uniform
-              : std::min(1.0, std::sqrt(std::max(0.0, std::log1p((erfi_rt*u)/(erfi_rt*(1.0-u))) / kappa))); // crude
-
-    // Newton solve F(mu)=u, clamp mu to [0,1]
-    for (int it = 0; it < 20; ++it) {
-        double Fmu = erfi(rt*mu) / erfi_rt;
-        double fmu = norm_c * std::exp(kappa*mu*mu);
-        double step = (Fmu - u) / std::max(1e-16, fmu);
-        mu = clamp(mu - step, 0.0, 1.0);
-        if (std::abs(step) < 1e-12) break;
+    // Cumulative trapezoidal integral of exp(t^2) from 0 to rt, sampled at
+    // the same grid used for mu (t = rt*mu): one pass yields I(rt*mu_j) for
+    // every grid point at once (the (2/sqrt(pi)) erfi prefactor cancels in
+    // the CDF ratio below, so it's never needed).
+    std::vector<double> I(n_points + 1, 0.0);
+    double h = rt / n_points;
+    double prev_f = 1.0; // exp(0^2)
+    for (int j = 1; j <= n_points; ++j) {
+        double t = j * h;
+        double f = std::exp(t * t);
+        I[j] = I[j - 1] + 0.5 * (prev_f + f) * h;
+        prev_f = f;
     }
-    return std::acos(mu);
+
+    double total = I[n_points];
+    for (int j = 0; j <= n_points; ++j) {
+        mu_grid[j] = double(j) / n_points;
+        cdf_grid[j] = (total > 0.0) ? (I[j] / total) : mu_grid[j];
+    }
+}
+
+// Inverts a monotonic CDF table (see build_watson_cdf_table) for a single
+// uniform draw u via binary search + linear interpolation -- O(log
+// n_points), no exp()/erfi() calls at sampling time.
+static double sample_from_cdf_table(const std::vector<double> &mu_grid,
+                                     const std::vector<double> &cdf_grid,
+                                     double u) {
+    auto it = std::lower_bound(cdf_grid.begin(), cdf_grid.end(), u);
+    if (it == cdf_grid.begin()) return mu_grid.front();
+    if (it == cdf_grid.end()) return mu_grid.back();
+    size_t idx = static_cast<size_t>(it - cdf_grid.begin());
+    double c0 = cdf_grid[idx - 1], c1 = cdf_grid[idx];
+    double m0 = mu_grid[idx - 1], m1 = mu_grid[idx];
+    double t = (c1 > c0) ? (u - c0) / (c1 - c0) : 0.0;
+    return m0 + t * (m1 - m0);
 }
 
 
@@ -699,9 +746,12 @@ Eigen::Vector3d CaterpillarGrowth::randomPointOnPlane(const Eigen::Vector3d &beg
     double phi = angle;
     outside_voxel = false;
 
-    // Seed the random number generator with a random device
-    std::random_device rd;
-    std::mt19937 rng(rd());
+    // Reuse the shared, seedable generator (this function is only ever
+    // called from seedAllAxons's sequential per-axon loop, never in
+    // parallel) instead of a fresh std::random_device-seeded engine per
+    // call: that broke run-to-run reproducibility under a fixed seed (every
+    // other random decision in a run goes through gen) and paid for a full
+    // Mersenne Twister reseed on every single axon for no benefit.
     std::uniform_real_distribution<double> dist(0, 2*M_PI);
 
     double d = L * std::tan(phi);
@@ -713,14 +763,14 @@ Eigen::Vector3d CaterpillarGrowth::randomPointOnPlane(const Eigen::Vector3d &beg
         center_plane[axis2] = (max_limits[axis2]/2+3*min_limits[axis2]/2);
         Eigen::Vector3d vector_to_center = center_plane - begin;
         vector_to_center.normalize();
-        double theta = dist(rng);
+        double theta = dist(gen);
         new_end[axis1] = end[axis1] + d * std::cos(theta);
         new_end[axis2] = end[axis2] + d * std::sin(theta);
         double cos = (new_end-begin).dot(vector_to_center)/(new_end-begin).norm();
         int tries = 0;
         // try to make direction towards center of the voxel
         while (cos < 0) {
-            theta = dist(rng);
+            theta = dist(gen);
             new_end[axis1] = end[axis1] + d * std::cos(theta);
             new_end[axis2] = end[axis2] + d * std::sin(theta);
             cos = (new_end-begin).dot(vector_to_center)/(new_end-begin).norm();
@@ -736,12 +786,12 @@ Eigen::Vector3d CaterpillarGrowth::randomPointOnPlane(const Eigen::Vector3d &beg
     }
     else{
         // Generate a random angle theta in the plane
-        double theta = dist(rng);
+        double theta = dist(gen);
         new_end[axis1] = end[axis1] + d * std::cos(theta);
         new_end[axis2] = end[axis2] + d * std::sin(theta);
         int tries = 0;
         while(new_end[axis1] < min_limits[axis1] || new_end[axis1] > max_limits[axis1] || new_end[axis2] < min_limits[axis2] || new_end[axis2] > max_limits[axis2]) {
-            theta = dist(rng);
+            theta = dist(gen);
             new_end[axis1] = end[axis1] + d * std::cos(theta);
             new_end[axis2] = end[axis2] + d * std::sin(theta);
             tries += 1;
@@ -767,84 +817,152 @@ void calculate_c2(std::vector<double> &angles) {
 
 
 
-void CaterpillarGrowth::createBatches(std::vector<double> &radii_, std::vector<Axon> &new_axons, std::vector<bool> &has_myelin, std::vector<double> &angles)
+void CaterpillarGrowth::seedAllAxons(std::vector<double> &radii_, std::vector<Axon> &new_axons, std::vector<bool> &has_myelin, std::vector<double> &angles)
 {
-    const long int tries_threshold = static_cast<long int>((max_limits[0] - min_limits[0]) * (max_limits[1] - min_limits[1]) * 10);
+    // Place every axon's seed directly at its full target radius, one at a
+    // time, largest-first (generate_radii's existing sort order). Each
+    // axon's search budget scales with (mean_radius/target_radius)^2 -- a
+    // fixed budget (the old plane_area*10 for every axon regardless of size)
+    // under-searches for a mid-size axon squeezing into an already-crowded
+    // plane late in the sequence, so smaller-than-average axons get
+    // proportionally more tries, larger ones fewer.
+    //
+    // If an axon still can't find a valid spot after that budget, we do NOT
+    // discard it outright (discarding preferentially loses whichever sizes
+    // are hardest to place late in a crowded pass -- almost always the
+    // smaller ones, since we go largest-first -- which would systematically
+    // skew the realized population away from the sampled Gamma(alpha,beta)
+    // shape) and we do NOT scrap the whole pass and restart everything
+    // either (restarting the full batch on any single late failure scales
+    // exponentially badly with axon count, since the odds every single axon
+    // succeeds in one pass shrinks like p^N). Instead we redraw a fresh
+    // radius from the same Gamma(alpha,beta) distribution for that slot and
+    // retry -- the realized population stays an honest i.i.d. sample from
+    // the intended distribution (just resampled when a given draw didn't
+    // fit), and only a slot that fails even after max_resamples redraws is
+    // finally discarded.
+    const double plane_area = (max_limits[0] - min_limits[0]) * (max_limits[1] - min_limits[1]);
+    const double mean_radius = alpha * beta;
+    const int max_resamples = 50;
+
+    std::gamma_distribution<double> gamma_dist(alpha, beta);
+
     new_axons.clear();
     new_axons.reserve(radii_.size());
 
     std::vector<int> indices_to_erase;
     int axon_index = 0;
+    int axons_resampled = 0; // how many axons needed >=1 resample (diagnostic only)
+    long long total_resamples = 0;
 
     for (size_t i = 0; i < radii_.size(); ++i) {
-        bool placed = false;
-        int tries = 0;
-
-        const double radius = radii_[i];
+        // target_radius (true target, un-shrunk) sizes the seed sphere and
+        // Phase A's placement/overlap check, so the cross-section is seeded
+        // at genuine target density -- growth_radius (swelling_factor *
+        // target_radius; 1.0 = no change, backward compatible) is what the
+        // Axon actually grows at from then on, giving a tortuous,
+        // undulating path real, sustained lateral room for its *entire*
+        // depth. The final swelling pass (SwellAxons) then expands every
+        // grown sphere back toward its own true target size afterward,
+        // non-uniformly -- each sphere grows as far as its own local room
+        // allows, rather than every sphere being offered the same
+        // percentage and failing outright if that doesn't fit. See
+        // PlaceAxon.
+        double target_radius = radii_[i];
+        double growth_radius = target_radius * swelling_factor;
         const bool has_myelin_ = has_myelin[i];
         double angle = angles[i];
 
-        while (!placed && tries < tries_threshold) {
-            Vector3d Q, D;
-            bool outside_voxel = !get_begin_end_point(Q, D, angle);
+        bool placed = false;
+        bool this_axon_resampled = false;
+        for (int resample = 0; resample <= max_resamples && !placed; ++resample) {
+            const long int tries_threshold = std::max<long int>(
+                100,
+                static_cast<long int>(plane_area * 10.0 * (mean_radius * mean_radius) / (target_radius * target_radius)));
 
-            placed = PlaceAxon(axon_index, radius, Q, D, new_axons, has_myelin_, angle, outside_voxel);
+            int tries = 0;
+            while (!placed && tries < tries_threshold) {
+                Vector3d Q, D;
+                bool outside_voxel = !get_begin_end_point(Q, D, angle);
+                placed = PlaceAxon(axon_index, target_radius, growth_radius, Q, D, new_axons, has_myelin_, angle, outside_voxel);
+                if (!placed) {
+                    ++tries;
+                }
+            }
 
-            if (!placed) {
-                ++tries;
+            if (!placed && resample < max_resamples) {
+                double resampled;
+                int reject_tries = 0;
+                do {
+                    resampled = gamma_dist(gen);
+                    ++reject_tries;
+                } while (resampled <= min_radius && reject_tries < 1000);
+                if (resampled <= min_radius) {
+                    resampled = min_radius * 1.01;
+                }
+                if (has_myelin_) {
+                    resampled += myelin_thickness(resampled);
+                }
+                target_radius = resampled;
+                growth_radius = target_radius * swelling_factor;
+                this_axon_resampled = true;
+                ++total_resamples;
             }
         }
 
-        if (tries >= tries_threshold) {
-            std::cout << "Could not place an initial sphere on plane, axon discarded" << std::endl;
-            indices_to_erase.push_back(static_cast<int>(i));
-        } else {
-            ++axon_index;
+        if (this_axon_resampled) {
+            ++axons_resampled;
         }
+
+        if (!placed) {
+            std::cout << "Could not place axon after " << max_resamples
+                       << " resamples, discarding" << std::endl;
+            indices_to_erase.push_back(static_cast<int>(i));
+            continue;
+        }
+
+        // Keep whatever radius was actually placed (may be a resampled
+        // replacement, not the original draw) so downstream bookkeeping
+        // (ICVF target tracking, myelin thickness) matches reality.
+        radii_[i] = target_radius;
+
+        // Register the seed in sphere_grid immediately so later seeds in
+        // this same pass actually see it.
+        sphere_grid.insert(new_axons.back().outer_spheres[0]);
+        ++axon_index;
     }
 
-    // Erase in reverse order to avoid index shifting
     for (auto it = indices_to_erase.rbegin(); it != indices_to_erase.rend(); ++it) {
         radii_.erase(radii_.begin() + *it);
         has_myelin.erase(has_myelin.begin() + *it);
         angles.erase(angles.begin() + *it);
     }
-}
 
-
-
-void CaterpillarGrowth::setBatches(const int &num_axons, std::vector<int> &subsets)
-{
-
-    if (num_axons <= nbr_threads)
-    {
-        num_batches = 1;
-        subsets = std::vector<int>(1, num_axons);
-    }
-    else
-    {
-        if (num_axons % nbr_threads == 0)
-        {
-            num_batches = num_axons / nbr_threads;
-            subsets = std::vector<int>(num_batches, nbr_threads);
-        }
-        else
-        {
-            int left = num_axons % nbr_threads;
-            subsets = std::vector<int>(int(num_axons / nbr_threads), nbr_threads); // max capacity axons in all batches except last
-            subsets.push_back(left);                                                   // last batch has the extra axons left
-            num_batches = subsets.size();                                              // number of batches
-        }
+    if (std::getenv("VERIFY_RADII_DIST") != nullptr) {
+        cout << "DEBUG seedAllAxons: axons_resampled=" << axons_resampled
+             << " / " << (radii_.size() + indices_to_erase.size())
+             << " total_resample_events=" << total_resamples
+             << " discarded=" << indices_to_erase.size() << endl;
     }
 }
+
+
 
 std::vector<double> CaterpillarGrowth::generate_angles(const int &num_samples){
 
     std::vector<double> angles;
+    angles.reserve(num_samples);
+
+    // kappa is fixed for the whole population, so the inverse-CDF table
+    // (see build_watson_cdf_table) is built once here rather than per axon.
+    std::vector<double> mu_grid, cdf_grid;
+    build_watson_cdf_table(kappa, 2000, mu_grid, cdf_grid);
+
+    std::uniform_real_distribution<double> U(0.0, 1.0);
     for (int i = 0; i < num_samples; i++)
     {
-        double phi = draw_angle(kappa);
-        angles.push_back(phi);
+        double mu = sample_from_cdf_table(mu_grid, cdf_grid, U(gen));
+        angles.push_back(std::acos(mu));
     }
     return angles;
 }
@@ -871,139 +989,541 @@ void CaterpillarGrowth::GrowAllAxons(){
     calculate_c2(angles);
 
     if (radii.size() != 0){
-        // std::cout << "Parallel growth simulation" << endl;
+        double pre_seed_mean = 0.0, pre_seed_std = 0.0;
+        if (std::getenv("VERIFY_RADII_DIST") != nullptr) {
+            for (double r : radii) pre_seed_mean += r;
+            pre_seed_mean /= radii.size();
+            for (double r : radii) pre_seed_std += (r - pre_seed_mean) * (r - pre_seed_mean);
+            pre_seed_std = std::sqrt(pre_seed_std / radii.size());
+            cout << "DEBUG pre-seed radii: n=" << radii.size()
+                 << " mean=" << pre_seed_mean << " std=" << pre_seed_std
+                 << " (target gamma mean=" << (alpha * beta)
+                 << " std=" << (std::sqrt(alpha) * beta) << ")" << endl;
+        }
 
-        bool stop = false;
+        // Phase A: place every axon's seed directly at its (possibly
+        // swelling_factor-shrunk) radius via 2D circle packing, fully
+        // resolved before any 3D threaded growth starts.
+        seedAllAxons(radii, axons, has_myelin, angles);
 
-        while (!stop)
+        if (std::getenv("VERIFY_RADII_DIST") != nullptr) {
+            double post_mean = 0.0, post_std = 0.0;
+            for (double r : radii) post_mean += r;
+            post_mean /= radii.size();
+            for (double r : radii) post_std += (r - post_mean) * (r - post_mean);
+            post_std = std::sqrt(post_std / radii.size());
+            cout << "DEBUG post-seed radii: n=" << radii.size()
+                 << " mean=" << post_mean << " std=" << post_std << endl;
+        }
+
         {
-
-            if (radii.size() == 0)
-            {
-                stop = true;
-                break;
+            double seed_area = 0.0;
+            for (const auto &ax : axons) {
+                if (ax.outer_spheres.empty()) continue;
+                seed_area += M_PI * ax.outer_spheres[0].radius * ax.outer_spheres[0].radius;
             }
-            std::vector<int> subsets; // depending on which batch
+            int ga = axons.empty() ? 2 : axons[0].growth_axis;
+            int d1 = (ga + 1) % 3, d2 = (ga + 2) % 3;
+            double plane_area = (max_limits[d1] - min_limits[d1]) * (max_limits[d2] - min_limits[d2]);
+            cout << "DEBUG Phase A seed area fraction: " << (seed_area / plane_area)
+                 << " (target icvf " << target_axons_icvf << ")" << endl;
+        }
 
-            createBatches(radii, axons, has_myelin, angles);
-            int num_obstacles = radii.size();
+        if (std::getenv("PHASE_A_ONLY") != nullptr) {
+            std::exit(0);
+        }
 
-            //  divides obstacles into subsets
-            setBatches(num_obstacles, subsets);
+        // Phase B: thread-pool growth of the pre-seeded axons, in shallow
+        // depth-layers so no axon's tortuous wandering can claim uncontested
+        // territory far ahead of axons that haven't started growing yet. No
+        // relocate-and-retry of stuck axons -- growAxonsLayered discards any
+        // axon that never manages to grow beyond its seed instead.
+        growAxonsLayered(radii, has_myelin, angles);
 
+        ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
 
-            // cout << " length of subsets :" << subsets.size() << endl;
-            growBatches(radii, subsets, has_myelin, angles); // grows all axons, fills list of stuck radii, deletes empty axons
-            std::vector<double> radii_to_regrow = stuck_radii;
-            std::vector<int> indices_to_regrow = stuck_indices;
+        if (beading_amplitude == 0 || beading_std == 0){
+            return;
+        }
 
+        cout << "ICVF axons :" << axons_icvf << endl;
+
+        // Non-uniform final swelling: each sphere grows to its own local
+        // maximum (via bisection, bounded by its true target radius) in
+        // one shot per round, instead of every sphere being offered the
+        // same percentage and failing outright if that doesn't fit -- a
+        // tightly-pinched sphere no longer has to wait for the whole
+        // population's growth rate to shrink down to its own limit before
+        // it gets any growth at all.
+        SwellAxons();
+        cout << "new ICVF " << axons_icvf << endl;
+
+        // Post-swelling cleanup: independent per-sphere growth (especially
+        // the uncapped/push-assisted paths) can leave a sphere entirely
+        // inside a neighbor along the same axon's own chain. checkNoCollisions
+        // never catches this -- it deliberately skips same-object comparisons,
+        // since a branch is supposed to touch its own trunk -- but such a
+        // sphere presents no obstacle surface of its own (anything that could
+        // touch it would already have touched the bigger neighbor containing
+        // it first), so it's just dead weight in the output. Drop it and
+        // recompute volume/ICVF for any axon that changed.
+        int total_engulfed = 0;
+        bool any_axon_changed = false;
+        for (auto &ax : axons) {
+            std::vector<Sphere> removed;
+            ax.removeEngulfedSpheres(removed);
+            if (!removed.empty()) {
+                for (const auto &sph : removed) {
+                    sphere_grid.remove(sph);
+                }
+                ax.update_Volume(spheres_overlap_factor, min_limits, max_limits);
+                total_engulfed += static_cast<int>(removed.size());
+                any_axon_changed = true;
+            }
+        }
+        if (any_axon_changed) {
             ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
-            
+        }
+        cout << "Removed " << total_engulfed << " fully-engulfed sphere(s) after swelling; ICVF now " << axons_icvf << endl;
+    }
 
-            if (beading_amplitude == 0 || beading_std == 0){
-                stop = true;
-                break;
-            }
+}
 
-            
-            int nbr_attempts = 0;
-            double percentage_swelling = 0.1;
-            double minimum_percentage_swelling = 1e-6;
 
-            if (swelling_factor != 1.0){
-                SwellAxons((1.0 - swelling_factor) / swelling_factor);
-            } 
+// Read-only: finds the largest radius, up to cap_radius, that sph could
+// grow to this round (offered up to `percentage` of its current radius,
+// clipped to whatever actually fits via a short bisection) -- doesn't
+// mutate sph or sphere_grid, only queries it, so it's safe to call from
+// multiple threads at once as long as none of those spheres collide-check
+// against each other (SphereGrid::canSpherebePlaced already excludes a
+// sphere's own axon from collision, so spheres belonging to the same axon
+// satisfy this -- see SwellAxon, the only caller). Returns sph.radius
+// unchanged if it can't grow at all this round.
+double CaterpillarGrowth::ComputeSwollenRadius(const Sphere &sph, const double &percentage, const double &cap_radius) const {
 
-            cout << "ICVF axons :" << axons_icvf << endl;
+    if (cap_radius <= sph.radius) {
+        return sph.radius;
+    }
 
-            while (axons_icvf < target_axons_icvf && nbr_attempts < 1000)
-            {
-                double old_icvf = axons_icvf;
-                SwellAxons(percentage_swelling);
-                cout << "new ICVF " << axons_icvf  << " old icvf : "<< old_icvf <<" percentage swelling :"<< percentage_swelling<< endl;
-                if ((axons_icvf - old_icvf) < 1e-5 && percentage_swelling >= minimum_percentage_swelling)
-                {
-                    percentage_swelling = percentage_swelling/3;
-                }
-                else if (percentage_swelling < minimum_percentage_swelling)
-                {
-                    break;
-                }
-                nbr_attempts += 1;
-            }
-            
-            
-            stop = true;
-            
+    double target = std::min(sph.radius + percentage * sph.radius, cap_radius);
+    Sphere target_candidate(sph.id, sph.object_id, sph.object_type, sph.center, target);
+    if (sphere_grid.canSpherebePlaced(target_candidate)) {
+        return target;
+    }
+
+    double lo = sph.radius, hi = target;
+    for (int iter = 0; iter < 10; ++iter) {
+        double mid = (lo + hi) / 2.0;
+        Sphere trial(sph.id, sph.object_id, sph.object_type, sph.center, mid);
+        if (sphere_grid.canSpherebePlaced(trial)) {
+            lo = mid;
+        } else {
+            hi = mid;
         }
     }
-
+    return lo;
 }
 
+bool CaterpillarGrowth::SwellAxon(Axon &ax, const double &percentage, const std::vector<double> &caps, ThreadPool &pool) {
 
-bool CaterpillarGrowth::SwellSphere(Sphere &sph, const double &percentage){
-    
-    double R = sph.radius;
-    double R_ = R + percentage*R;
-    Sphere swollen_sph = Sphere(sph.id, sph.object_id, sph.object_type, sph.center, R_);
-    // if can be placed in the substrate
-    if (sphere_grid.canSpherebePlaced(swollen_sph))
-    {
-        sph = swollen_sph;
-        return true;
+    size_t n = ax.outer_spheres.size();
+
+    // Compute every sphere's achievable new radius in parallel -- spheres
+    // within this one axon never collide-check against each other (see
+    // ComputeSwollenRadius), and no other axon is being modified while
+    // this axon is being processed, so the read-only queries below don't
+    // race against each other. sphere_grid itself is only ever mutated
+    // afterward, sequentially.
+    std::vector<std::future<double>> futures;
+    futures.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        futures.emplace_back(pool.enqueueTask(
+            [this, &ax, &percentage, &caps, i]() {
+                return ComputeSwollenRadius(ax.outer_spheres[i], percentage, caps[i]);
+            }
+        ));
     }
-    else{
-        return false;
+
+    // Join every future BEFORE touching sphere_grid below: .get() only
+    // blocks for its own future, so mutating the grid for sphere i inside
+    // the same loop that's still waiting on sphere i+1's future would let
+    // that mutation race against a still-in-flight query on another
+    // thread. Collecting all results first, then mutating only once
+    // everything has finished, avoids that entirely.
+    std::vector<double> new_radii(n);
+    for (size_t i = 0; i < n; ++i) {
+        new_radii[i] = futures[i].get();
     }
-}
 
-void CaterpillarGrowth::SwellAxon(Axon &ax, const double &percentage) {
-
-    // Enqueue tasks for each sphere
     std::vector<Sphere> new_spheres;
-    for (size_t i = 0; i < ax.outer_spheres.size(); i++) {
-
-         //cout << "swelling axon:" << ax.id << endl;
-        
-        Sphere sph = ax.outer_spheres[i];
-        bool can_swell = SwellSphere(sph, percentage);
-        if (can_swell){
-            // sph now holds the swollen geometry: swap the grid entry for this sphere
+    new_spheres.reserve(n);
+    bool any_changed = false;
+    for (size_t i = 0; i < n; ++i) {
+        double new_radius = new_radii[i];
+        if (new_radius > ax.outer_spheres[i].radius) {
+            Sphere sph = ax.outer_spheres[i];
+            sph.radius = new_radius;
+            // swap the grid entry for this sphere
             sphere_grid.remove(ax.outer_spheres[i]);
             sphere_grid.insert(sph);
             new_spheres.push_back(sph);
-        }
-        else{
-            // if cannot swell, push the sphere back to the axon (grid entry unchanged)
+            any_changed = true;
+        } else {
+            // if it couldn't grow, push the sphere back unchanged (grid entry unchanged)
             new_spheres.push_back(ax.outer_spheres[i]);
         }
     }
     ax.outer_spheres = new_spheres;
+    return any_changed;
 }
 
 
-void CaterpillarGrowth::SwellAxons(const double &percentage){
+// Read-only: finds the neighbor causing the deepest overlap with sph at
+// trial_radius (own axon's spheres excluded, matching canSpherebePlaced's
+// same-object exclusion), and returns a push vector -- perpendicular to
+// growth_axis, so it never changes how far along the axon this sphere sits
+// -- that moves sph away from that neighbor. Mirrors AddOneSphere's
+// findPush (grow_axons.cpp), applied here during the final swelling pass
+// instead of initial growth. Returns false (push/blocker_radius untouched)
+// if nothing overlaps at trial_radius, or the only overlap has no lateral
+// escape direction.
+bool CaterpillarGrowth::FindSwellPush(const Sphere &sph, const double &trial_radius, int growth_axis, Eigen::Vector3d &push, double &blocker_radius) const {
 
-    if (percentage == 0.0){
-        return;
-    } 
-    
-    int nbr_axons_without_spheres = 0;
-    for (auto &axon : axons)
-    {
-        if (axon.outer_spheres.size()== 0)
-        {
-            nbr_axons_without_spheres += 1;
-            continue;
-        }
-
-        SwellAxon(axon, percentage);
-        axon.update_Volume(spheres_overlap_factor, min_limits, max_limits);
-
+    // Deliberately avoids sphere_grid.query() -- same reasoning as
+    // canSpherebePlaced (SphereGrid.cpp): iterating voxels/entries directly
+    // via findWorstOverlap skips the heap-allocated intermediate vector.
+    // Unlike canSpherebePlaced this can't early-exit (every candidate must
+    // be compared to find the *worst* overlap), but this is still called
+    // often enough during the push-assisted swelling fallback that
+    // avoiding the allocation matters.
+    Eigen::Vector3d blocker_center;
+    bool found = sphere_grid.findWorstOverlap(sph.center, trial_radius, trial_radius * 2.0,
+                                               sph.object_type, sph.object_id,
+                                               blocker_center, blocker_radius);
+    if (!found) {
+        return false;
     }
-    // check ICVF 
-    ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
+    double worst_overlap = (trial_radius + blocker_radius) - (blocker_center - sph.center).norm();
 
+    Eigen::Vector3d away = sph.center - blocker_center;
+    away[growth_axis] = 0.0;
+    double away_norm = away.norm();
+    if (away_norm < 1e-9) {
+        return false;
+    }
+    away /= away_norm;
+    const double push_margin = 1e-3 * trial_radius;
+    push = away * (worst_overlap + push_margin);
+    return true;
+}
+
+// Read-only: like ComputeSwollenRadius, but if growing in place at the
+// current center can't reach this round's target (something specific is
+// blocking it), also tries pushing sph away from whichever neighbor is the
+// worst blocker at that target radius -- capped so the resulting
+// center-to-center distance to that neighbor never exceeds
+// max(sph.radius, blocker_radius)/swelling_factor, keeping the push
+// bounded to roughly one true-target-diameter's worth of clearance rather
+// than an unbounded displacement. Only used as a fallback phase (see
+// SwellAxons) once the plain in-place pass has already converged without
+// reaching target_axons_icvf. Never mutates sph or sphere_grid -- safe to
+// call concurrently across spheres of the same axon (see SwellAxonWithPush).
+Sphere CaterpillarGrowth::ComputeSwollenSphere(const Sphere &sph, const double &percentage, const double &cap_radius, int growth_axis,
+                                                const Sphere *prev_sphere, const Sphere *next_sphere) const {
+
+    double target = std::min(sph.radius + percentage * sph.radius, cap_radius);
+    if (target <= sph.radius) {
+        return sph;
+    }
+
+    Sphere target_candidate(sph.id, sph.object_id, sph.object_type, sph.center, target);
+    if (sphere_grid.canSpherebePlaced(target_candidate)) {
+        return Sphere(sph.id, sph.object_id, sph.object_type, sph.center, target);
+    }
+
+    double lo = sph.radius, hi = target;
+    for (int iter = 0; iter < 10; ++iter) {
+        double mid = (lo + hi) / 2.0;
+        Sphere trial(sph.id, sph.object_id, sph.object_type, sph.center, mid);
+        if (sphere_grid.canSpherebePlaced(trial)) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    double best_radius = lo;
+    if (best_radius >= target - 1e-9) {
+        return Sphere(sph.id, sph.object_id, sph.object_type, sph.center, best_radius);
+    }
+
+    // In-place growth was capped short of this round's target -- try
+    // pushing away from whichever neighbor is blocking it at that target.
+    Eigen::Vector3d push;
+    double blocker_radius = 0.0;
+    if (!FindSwellPush(sph, target, growth_axis, push, blocker_radius)) {
+        return Sphere(sph.id, sph.object_id, sph.object_type, sph.center, best_radius);
+    }
+
+    double max_gap = std::max(sph.radius, blocker_radius) / std::max(swelling_factor, 1e-6);
+    if (push.norm() > max_gap) {
+        push = push.normalized() * max_gap;
+    }
+    Eigen::Vector3d pushed_center = sph.center + push;
+
+    double lo2 = sph.radius, hi2 = target;
+    Sphere pushed_target(sph.id, sph.object_id, sph.object_type, pushed_center, target);
+    bool full_target_fits = sphere_grid.canSpherebePlaced(pushed_target);
+    if (!full_target_fits) {
+        for (int iter = 0; iter < 10; ++iter) {
+            double mid = (lo2 + hi2) / 2.0;
+            Sphere trial(sph.id, sph.object_id, sph.object_type, pushed_center, mid);
+            if (sphere_grid.canSpherebePlaced(trial)) {
+                lo2 = mid;
+            } else {
+                hi2 = mid;
+            }
+        }
+    } else {
+        lo2 = target;
+    }
+
+    // A push chases external density, not at the cost of separating this
+    // sphere from its own immediate chain neighbors -- canSpherebePlaced
+    // only ever checks against *other* objects (self is deliberately
+    // excluded), so nothing above would catch that on its own. Reject the
+    // push outright (fall back to staying in place) rather than accepting a
+    // radius that collision-avoids everyone else but opens a hole in this
+    // axon's own continuity; checked against each neighbor's current,
+    // pre-round state, since every sphere in the axon is being computed
+    // concurrently this round (see SwellAxonWithPush).
+    auto still_touches_neighbor = [](const Eigen::Vector3d &c, double r, const Sphere *nb) {
+        if (!nb) return true;
+        return (c - nb->center).norm() <= r + nb->radius;
+    };
+    bool keeps_continuity = still_touches_neighbor(pushed_center, lo2, prev_sphere) &&
+                            still_touches_neighbor(pushed_center, lo2, next_sphere);
+
+    // Only actually move the sphere if the pushed position beat staying put
+    // and didn't break continuity with either neighbor.
+    if (lo2 > best_radius && keeps_continuity) {
+        return Sphere(sph.id, sph.object_id, sph.object_type, pushed_center, lo2);
+    }
+    return Sphere(sph.id, sph.object_id, sph.object_type, sph.center, best_radius);
+}
+
+bool CaterpillarGrowth::SwellAxonWithPush(Axon &ax, const double &percentage, const std::vector<double> &caps, ThreadPool &pool) {
+
+    size_t n = ax.outer_spheres.size();
+    int growth_axis = ax.growth_axis;
+
+    std::vector<std::future<Sphere>> futures;
+    futures.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        futures.emplace_back(pool.enqueueTask(
+            [this, &ax, &percentage, &caps, growth_axis, i, n]() {
+                // Read-only neighbor lookups against ax.outer_spheres are
+                // safe here: nothing mutates that vector until every future
+                // in this round has been joined (see below).
+                const Sphere *prev = (i > 0) ? &ax.outer_spheres[i - 1] : nullptr;
+                const Sphere *next = (i + 1 < n) ? &ax.outer_spheres[i + 1] : nullptr;
+                return ComputeSwollenSphere(ax.outer_spheres[i], percentage, caps[i], growth_axis, prev, next);
+            }
+        ));
+    }
+
+    // Join every future BEFORE touching sphere_grid, same reasoning as
+    // SwellAxon: mutating the grid for an earlier sphere while a later
+    // one's query is still in flight on another thread would race.
+    std::vector<Sphere> computed(n);
+    for (size_t i = 0; i < n; ++i) {
+        computed[i] = futures[i].get();
+    }
+
+    // Post-hoc consistency repair: ComputeSwollenSphere's own continuity
+    // check (see its prev_sphere/next_sphere parameters) only ever compares
+    // against a neighbor's *pre-round* state, because every sphere in this
+    // axon was computed independently and concurrently above -- it has no
+    // way to know whether that neighbor ALSO moved this round. Two adjacent
+    // pushes can therefore each individually look fine against the other's
+    // stale position and still end up not touching once both are applied.
+    // Repair that here: walk the chain and, for any consecutive pair that
+    // ends up separated, revert whichever of the two actually changed this
+    // round (both, if both did) back to its safe, definitely-touching
+    // pre-round state -- iterated to a fixed point since a revert can
+    // occasionally reopen an already-checked neighboring pair.
+    auto changed_this_round = [&](size_t idx) {
+        return (computed[idx].center - ax.outer_spheres[idx].center).norm() > 1e-9 ||
+               computed[idx].radius > ax.outer_spheres[idx].radius;
+    };
+    for (int pass = 0; pass < 5 && n > 1; ++pass) {
+        bool any_reverted = false;
+        for (size_t i = 1; i < n; ++i) {
+            double d = (computed[i].center - computed[i - 1].center).norm();
+            if (d > computed[i].radius + computed[i - 1].radius) {
+                if (changed_this_round(i)) {
+                    computed[i] = ax.outer_spheres[i];
+                    any_reverted = true;
+                }
+                if (changed_this_round(i - 1)) {
+                    computed[i - 1] = ax.outer_spheres[i - 1];
+                    any_reverted = true;
+                }
+            }
+        }
+        if (!any_reverted) break;
+    }
+
+    std::vector<Sphere> new_spheres;
+    new_spheres.reserve(n);
+    bool any_changed = false;
+    for (size_t i = 0; i < n; ++i) {
+        const Sphere &result = computed[i];
+        bool changed = (result.radius > ax.outer_spheres[i].radius) ||
+                        ((result.center - ax.outer_spheres[i].center).norm() > 1e-9);
+        if (changed) {
+            sphere_grid.remove(ax.outer_spheres[i]);
+            sphere_grid.insert(result);
+            new_spheres.push_back(result);
+            any_changed = true;
+        } else {
+            new_spheres.push_back(ax.outer_spheres[i]);
+        }
+    }
+    ax.outer_spheres = new_spheres;
+    return any_changed;
+}
+
+
+void CaterpillarGrowth::SwellAxons(){
+
+    // Uncapped for every swelling_factor value: whatever room a sphere has
+    // locally, it swells into, chasing the global target_axons_icvf with no
+    // per-sphere ceiling -- including for swelling_factor < 1.0, where the
+    // sphere had been deliberately grown thin (see seedAllAxons/PlaceAxon)
+    // and could in principle be capped back at its own true un-shrunk
+    // target. Uncapping that case too trades the shrink-then-regrow
+    // approach's tighter radius-distribution guarantee for extra reachable
+    // ICVF, at the cost of potentially more push-driven path distortion.
+    const bool uncapped = true;
+
+    // Fix every sphere's true target cap ONCE, from its as-grown (i.e.
+    // pre-swell) radius: recomputing radius/swelling_factor from an
+    // already-partially-swollen radius on a later round would overshoot
+    // the true target. The seed sphere (index 0 of every axon) is already
+    // at its true, un-shrunk size (see PlaceAxon/seedAllAxons), so its cap
+    // is itself -- every later sphere's cap is radius/swelling_factor.
+    std::vector<std::vector<double>> caps(axons.size());
+    for (size_t a = 0; a < axons.size(); ++a) {
+        const auto &spheres = axons[a].outer_spheres;
+        caps[a].resize(spheres.size());
+        for (size_t i = 0; i < spheres.size(); ++i) {
+            caps[a][i] = uncapped
+                ? std::numeric_limits<double>::infinity()
+                : ((i == 0) ? spheres[i].radius : (spheres[i].radius / swelling_factor));
+        }
+    }
+
+    // One pool, reused for every axon and every round (spinning up
+    // nbr_threads OS threads per axon per round would dwarf the actual
+    // work for axons with few spheres). Axons themselves are still
+    // processed sequentially -- only the spheres within a single axon are
+    // computed in parallel, see SwellAxon.
+    ThreadPool pool(nbr_threads);
+
+    // Same gradual, many-round structure as the original uniform scheme
+    // (start at a generous percentage, shrink it whenever a round makes
+    // negligible progress, stop once it's negligibly small or after 1000
+    // rounds): letting every axon grow a little each round, rather than
+    // greedily jumping straight to each sphere's own local maximum in
+    // whatever order axons happen to be processed, is what keeps this fair
+    // across the whole population instead of letting the first-processed
+    // axons claim shared space before later ones get a turn. What's new
+    // here is that each sphere is also capped at its own true target (via
+    // ComputeSwollenRadius/SwellAxon above) and a round's growth step is
+    // clipped to whatever actually fits rather than being all-or-nothing,
+    // so a tightly-pinched sphere gets partial credit instead of zero
+    // progress every round until the population-wide percentage happens to
+    // shrink below its own limit.
+    int nbr_attempts = 0;
+    double percentage_swelling = 0.1;
+    const double minimum_percentage_swelling = 1e-6;
+
+    while (axons_icvf < target_axons_icvf && nbr_attempts < 1000) {
+        double old_icvf = axons_icvf;
+        // Only recompute an axon's volume (O(its sphere count), often
+        // hundreds to 1000+) if this round actually changed one of its
+        // spheres, and only re-sum the global ICVF if at least one axon
+        // anywhere changed -- most axons stop changing well before the
+        // loop as a whole converges, so in the later rounds this skips the
+        // large majority of otherwise-guaranteed-no-op recomputation.
+        bool any_axon_changed = false;
+        for (size_t a = 0; a < axons.size(); ++a) {
+            if (axons[a].outer_spheres.empty()) {
+                continue;
+            }
+            if (SwellAxon(axons[a], percentage_swelling, caps[a], pool)) {
+                axons[a].update_Volume(spheres_overlap_factor, min_limits, max_limits);
+                any_axon_changed = true;
+            }
+        }
+        if (any_axon_changed) {
+            ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
+        }
+        cout << "new ICVF " << axons_icvf << " old icvf : " << old_icvf
+             << " percentage swelling :" << percentage_swelling << endl;
+        if (on_swelling_progress) {
+            on_swelling_progress(axons_icvf, target_axons_icvf);
+        }
+        if ((axons_icvf - old_icvf) < 1e-5 && percentage_swelling >= minimum_percentage_swelling) {
+            percentage_swelling = percentage_swelling / 3;
+        } else if (percentage_swelling < minimum_percentage_swelling) {
+            break;
+        }
+        ++nbr_attempts;
+    }
+
+    // Fallback: only reached if the plain in-place pass above has already
+    // converged (percentage shrunk below minimum, or 1000 rounds) without
+    // reaching target_axons_icvf. Re-run the same gradual, many-round
+    // structure, but now each sphere that's locally blocked may also push
+    // itself away from whichever neighbor is causing the tightest pinch
+    // (see ComputeSwollenSphere/FindSwellPush) before settling for a
+    // smaller radius -- since that's a real repositioning, not just a
+    // radius search, it's worth the extra cost only once simple growth in
+    // place has already been exhausted.
+    if (axons_icvf < target_axons_icvf) {
+        cout << "In-place swelling converged short of target (" << axons_icvf
+             << " < " << target_axons_icvf << ") -- trying push-assisted swelling" << endl;
+        nbr_attempts = 0;
+        percentage_swelling = 0.1;
+        while (axons_icvf < target_axons_icvf && nbr_attempts < 1000) {
+            double old_icvf = axons_icvf;
+            bool any_axon_changed = false;
+            for (size_t a = 0; a < axons.size(); ++a) {
+                if (axons[a].outer_spheres.empty()) {
+                    continue;
+                }
+                if (SwellAxonWithPush(axons[a], percentage_swelling, caps[a], pool)) {
+                    axons[a].update_Volume(spheres_overlap_factor, min_limits, max_limits);
+                    any_axon_changed = true;
+                }
+            }
+            if (any_axon_changed) {
+                ICVF(axons, glial_pop1, glial_pop2, blood_vessels);
+            }
+            cout << "new ICVF (push) " << axons_icvf << " old icvf : " << old_icvf
+                 << " percentage swelling :" << percentage_swelling << endl;
+            if (on_swelling_progress) {
+                on_swelling_progress(axons_icvf, target_axons_icvf);
+            }
+            if ((axons_icvf - old_icvf) < 1e-5 && percentage_swelling >= minimum_percentage_swelling) {
+                percentage_swelling = percentage_swelling / 3;
+            } else if (percentage_swelling < minimum_percentage_swelling) {
+                break;
+            }
+            ++nbr_attempts;
+        }
+    }
 }
 
 // Growing substrate
@@ -1297,33 +1817,129 @@ void CaterpillarGrowth::growBranches(const int &population_nbr) {
     std::vector<int> nbr_spheres(pop.size(), 0);
 
 
-    for (size_t i = 0; i < growths.size(); ++i) {
-        // Grow each primary branch one at a time (instead of via
-        // growFirstPrimaryBranches, which grows all of them internally without
-        // ever touching sphere_grid) so every new branch is registered in the
-        // grid immediately -- otherwise this same cell's own later primary
-        // branches, and every other cell in this loop, grow blind to branches
-        // already placed and can end up overlapping them.
-        int primary_tries = 0;
-        const int max_primary_tries = 1000;
-        for (int j = 0; j < nbr_primary_processes; ++j) {
-            bool has_grown = growths[i].growPrimaryBranch(nbr_spheres[i], mean_len, std_len, spheres_overlap_factor);
-            if (has_grown) {
-                for (const auto &sph : growths[i].glial_cell_to_grow.ramification_spheres.back()) {
-                    sphere_grid.insert(sph);
+    // Grow primary branches round-by-round: every cell attempts its j-th
+    // primary branch in the same round, in nbr_threads-sized sub-batches of
+    // mutually-blind private copies (mirroring growAxonsLayered's
+    // layer/sub-batch structure for axons), then reconciled against both
+    // the shared sphere_grid and this sub-batch's own siblings before
+    // committing -- rather than growing one cell's entire set of primary
+    // branches sequentially before moving to the next. Different cells'
+    // primary branches emerge from different somas and radiate outward,
+    // so collisions between them are the exception rather than the rule;
+    // when one does happen, the offending attempt is simply retried (fresh
+    // random direction) rather than the whole batch being penalized.
+    for (int j = 0; j < nbr_primary_processes; ++j) {
+        for (size_t batch_start = 0; batch_start < pop.size(); batch_start += static_cast<size_t>(nbr_threads)) {
+            size_t batch_end = std::min(pop.size(), batch_start + static_cast<size_t>(nbr_threads));
+            size_t batch_size = batch_end - batch_start;
+
+            const int max_primary_tries = 1000;
+            std::vector<bool> done(batch_size, false);
+            std::vector<int> tries(batch_size, 0);
+
+            bool any_pending = true;
+            while (any_pending) {
+                std::vector<Glial> attempt_copies;
+                std::vector<int> attempt_nbr_spheres;
+                std::vector<size_t> attempt_k; // index within [0, batch_size)
+                attempt_copies.reserve(batch_size);
+                attempt_nbr_spheres.reserve(batch_size);
+                attempt_k.reserve(batch_size);
+                for (size_t k = 0; k < batch_size; ++k) {
+                    if (done[k]) continue;
+                    size_t i = batch_start + k;
+                    attempt_copies.push_back(pop[i]);
+                    attempt_nbr_spheres.push_back(nbr_spheres[i]);
+                    attempt_k.push_back(k);
                 }
-                primary_tries = 0;
-            } else if (primary_tries < max_primary_tries) {
-                --j;
-                ++primary_tries;
-            } else {
-                cout << "Failed to grow glial cell" << endl;
+
+                std::vector<GlialCellGrowth> temp_growths;
+                temp_growths.reserve(attempt_copies.size());
+                for (size_t a = 0; a < attempt_copies.size(); ++a) {
+                    temp_growths.emplace_back(attempt_copies[a], &sphere_grid, extended_min_limits,
+                                              extended_max_limits, min_limits, max_limits, min_radius);
+                }
+
+                ThreadPool pool(nbr_threads);
+                std::vector<std::future<bool>> futures;
+                futures.reserve(temp_growths.size());
+                for (size_t a = 0; a < temp_growths.size(); ++a) {
+                    futures.emplace_back(pool.enqueueTask(
+                        [this, &temp_growths, &attempt_nbr_spheres, a, mean_len, std_len]() {
+                            return temp_growths[a].growPrimaryBranch(attempt_nbr_spheres[a], mean_len, std_len, spheres_overlap_factor);
+                        }
+                    ));
+                }
+                std::vector<bool> grew(temp_growths.size());
+                for (size_t a = 0; a < futures.size(); ++a) {
+                    grew[a] = futures[a].get();
+                }
+
+                // Reconcile: this round's new branches were grown as private
+                // copies invisible to each other, so check every one of them
+                // against both the already-committed sphere_grid and a
+                // scratch grid of this round's own siblings before
+                // committing any of them.
+                batch_scratch_grid.clear();
+                for (size_t a = 0; a < attempt_copies.size(); ++a) {
+                    if (!grew[a]) continue;
+                    for (const auto &sph : attempt_copies[a].ramification_spheres.back()) {
+                        batch_scratch_grid.insert(sph);
+                    }
+                }
+                for (size_t a = 0; a < attempt_copies.size(); ++a) {
+                    size_t k = attempt_k[a];
+                    if (!grew[a]) {
+                        if (++tries[k] >= max_primary_tries) {
+                            cout << "Failed to grow glial cell" << endl;
+                            done[k] = true;
+                        }
+                        continue;
+                    }
+                    // check_collision_with_branches=false: exclude ANY of
+                    // this cell's own spheres (any branch), not just this
+                    // exact branch. growPrimaryBranch's own internal
+                    // AddOneSphere calls already correctly handled
+                    // branch-vs-branch collision for this cell (including
+                    // deliberately allowing a new branch's first several
+                    // spheres to sit close to sibling branches near the
+                    // soma) -- reconciliation here only needs to catch
+                    // genuinely new risk from parallel growth: collisions
+                    // against a *different* cell's branch grown blind to
+                    // this one in the same round.
+                    bool collided = false;
+                    for (const auto &sph : attempt_copies[a].ramification_spheres.back()) {
+                        if (!sphere_grid.canSpherebePlaced(sph, false) || !batch_scratch_grid.canSpherebePlaced(sph, false)) {
+                            collided = true;
+                            break;
+                        }
+                    }
+                    if (collided) {
+                        if (++tries[k] >= max_primary_tries) {
+                            cout << "Failed to grow glial cell" << endl;
+                            done[k] = true;
+                        }
+                        continue;
+                    }
+                    size_t i = batch_start + k;
+                    pop[i] = attempt_copies[a];
+                    nbr_spheres[i] = attempt_nbr_spheres[a];
+                    for (const auto &sph : pop[i].ramification_spheres.back()) {
+                        sphere_grid.insert(sph);
+                    }
+                    done[k] = true;
+                }
+
+                any_pending = false;
+                for (size_t k = 0; k < batch_size; ++k) {
+                    if (!done[k]) { any_pending = true; break; }
+                }
             }
         }
+    }
 
-        pop[i] = growths[i].glial_cell_to_grow;
+    for (size_t i = 0; i < pop.size(); ++i) {
         pop[i].compute_processes_icvf(spheres_overlap_factor, min_limits, max_limits);
-
     }
 
     ICVF(axons, glial_pop1, glial_pop2, blood_vessels); // updates glial_pop1_processes_icvf and glial_pop2_processes_icvf
@@ -1699,37 +2315,45 @@ bool CaterpillarGrowth::checkNoCollisions()
 
 bool CaterpillarGrowth::SanityCheck(std::vector<Axon>& growing_axons,
                                         std::vector<double>& stuck_radii_,
-                                        std::vector<int>& stuck_indices_) {
+                                        std::vector<int>& stuck_indices_,
+                                        const std::vector<std::size_t> &layer_start_spheres) {
 
     if (growing_axons.size() <= 1) {
         return true;  // No axons to check against each other
     }
 
-    int nbr_empty_spheres = 0;
-    for (auto& axon : growing_axons) {
-        if (axon.outer_spheres.empty()) {
-            nbr_empty_spheres++;
+    bool any_new_spheres = false;
+    for (size_t i = 0; i < growing_axons.size(); ++i) {
+        if (growing_axons[i].outer_spheres.size() > layer_start_spheres[i]) {
+            any_new_spheres = true;
+            break;
         }
     }
-    if (nbr_empty_spheres == growing_axons.size()) {
-        return true;  // No axons to check
+    if (!any_new_spheres) {
+        return true;  // No new growth this layer to check
     }
 
     // growing_axons are private copies grown in parallel by processBatchWithThreadPool:
-    // none of them are in sphere_grid yet, so batch-mates are invisible to each other
-    // during growth. Build a scratch grid over just this batch to catch collisions
-    // between them, on top of the usual check against the already-committed environment.
-    SphereGrid batch_grid(min_limits, max_limits, grid_voxel_size);
-    for (auto& axon : growing_axons) {
-        axon.addToGrid(batch_grid);
+    // none of this layer's new spheres are in sphere_grid yet, so batch-mates growing
+    // in the same layer are invisible to each other during growth. Reuse the persistent
+    // batch_scratch_grid (cleared, not reconstructed -- this runs every sub-batch/round)
+    // over just this layer's new segments -- everything before layer_start_spheres[i]
+    // was already checked and committed in an earlier layer, so re-inserting/re-checking
+    // it here would be pure waste.
+    batch_scratch_grid.clear();
+    for (size_t i = 0; i < growing_axons.size(); ++i) {
+        auto &spheres = growing_axons[i].outer_spheres;
+        for (size_t k = layer_start_spheres[i]; k < spheres.size(); ++k) {
+            batch_scratch_grid.insert(spheres[k]);
+        }
     }
 
     std::unordered_set<int> collided_ids;
-    for (const auto& axon : growing_axons) {
-        if (axon.outer_spheres.empty()) continue;
-
-        for (const auto& sphere : axon.outer_spheres) {
-            if (!sphere_grid.canSpherebePlaced(sphere) || !batch_grid.canSpherebePlaced(sphere)) {
+    for (size_t i = 0; i < growing_axons.size(); ++i) {
+        const auto &axon = growing_axons[i];
+        const auto &spheres = axon.outer_spheres;
+        for (size_t k = layer_start_spheres[i]; k < spheres.size(); ++k) {
+            if (!sphere_grid.canSpherebePlaced(spheres[k]) || !batch_scratch_grid.canSpherebePlaced(spheres[k])) {
                 collided_ids.insert(axon.id);
                 break;
             }
@@ -1738,11 +2362,14 @@ bool CaterpillarGrowth::SanityCheck(std::vector<Axon>& growing_axons,
 
     bool all_clear = collided_ids.empty();
 
-    for (auto& axon : growing_axons) {
+    for (size_t i = 0; i < growing_axons.size(); ++i) {
+        Axon &axon = growing_axons[i];
         if (collided_ids.count(axon.id)) {
             stuck_radii_.push_back(axon.radius);
             stuck_indices_.push_back(axon.id);
-            axon.destroy();
+            // Roll back only this layer's new (colliding) segment, not
+            // previously-committed layers already merged into sphere_grid.
+            axon.truncate_to(layer_start_spheres[i]);
             axon.update_Volume(spheres_overlap_factor, min_limits, max_limits);
         }
     }
@@ -1752,13 +2379,27 @@ bool CaterpillarGrowth::SanityCheck(std::vector<Axon>& growing_axons,
 
 
 
-void CaterpillarGrowth::growAxon(Axon& axon_to_grow, int &index, double& stuck_radius, int& stuck_index) {
+bool CaterpillarGrowth::hasReachedTrueWall(const Axon& ax) const {
+    if (ax.outer_spheres.empty()) return false;
+    const Sphere &last = ax.outer_spheres.back();
+    // Mirrors AddOneSphere's own "reached the wall" check (grow_axons.cpp),
+    // but always against the true max_limits, never a layer-capped
+    // extended_max_limits, so the caller can tell "reached this layer's cap
+    // only" apart from "actually reached the box's real wall."
+    return last.center[ax.growth_axis] + last.radius > max_limits[ax.growth_axis];
+}
 
+void CaterpillarGrowth::growAxon(Axon& axon_to_grow, int &index, double& stuck_radius, int& stuck_index, double layer_depth_cap, std::size_t layer_start_spheres, bool can_shrink_this_round) {
 
-    // Initialize a Growth object for this axon
-    AxonGrowth growth(axon_to_grow, &sphere_grid, min_limits, max_limits, min_limits, max_limits, epsilon, min_radius);
+    // Cap only this axon's own growth_axis component of extended_max_limits
+    // at this layer's depth (or its true wall, whichever is nearer); true
+    // min_limits/max_limits (used for all other border checks) are untouched.
+    Eigen::Vector3d capped_max_limits = max_limits;
+    capped_max_limits[axon_to_grow.growth_axis] = std::min(max_limits[axon_to_grow.growth_axis], layer_depth_cap);
 
-    growth.growthThread(stuck_radius, stuck_index, spheres_overlap_factor, axon_can_shrink);
+    AxonGrowth growth(axon_to_grow, &sphere_grid, min_limits, capped_max_limits, min_limits, max_limits, epsilon, min_radius);
+
+    growth.growthThread(stuck_radius, stuck_index, spheres_overlap_factor, can_shrink_this_round, layer_start_spheres);
 
 }
 
@@ -1766,7 +2407,10 @@ void CaterpillarGrowth::processBatchWithThreadPool(
     std::vector<Axon>& axons_to_grow,
     std::vector<int>& indices,
     std::vector<double>& stuck_radii,
-    std::vector<int>& stuck_indices) 
+    std::vector<int>& stuck_indices,
+    double layer_depth_cap,
+    const std::vector<std::size_t> &layer_start_spheres,
+    bool can_shrink_this_round)
 {
     ThreadPool pool(nbr_threads);
 
@@ -1774,8 +2418,8 @@ void CaterpillarGrowth::processBatchWithThreadPool(
 
     for (size_t i = 0; i < axons_to_grow.size(); ++i) {
         futures.emplace_back(pool.enqueueTask(
-            [this, &axons_to_grow, &stuck_radii, &stuck_indices, &indices, i]() {
-                growAxon(axons_to_grow[i], indices[i], stuck_radii[i], stuck_indices[i]);
+            [this, &axons_to_grow, &stuck_radii, &stuck_indices, &indices, &layer_start_spheres, layer_depth_cap, can_shrink_this_round, i]() {
+                growAxon(axons_to_grow[i], indices[i], stuck_radii[i], stuck_indices[i], layer_depth_cap, layer_start_spheres[i], can_shrink_this_round);
             }
         ));
     }
@@ -1824,243 +2468,254 @@ std::vector<int> removeOverlappingVectors(
     return toErase;
 }
 
-void CaterpillarGrowth::ModifyAxonsStartingPoint(std::vector<int> &stuck_indices){
-
-    std::vector<int> new_stuck_indices = {};
-    for (int i = 0; i < axons.size(); i++) {
-
-        if (std::find(stuck_indices.begin(), stuck_indices.end(), axons[i].id) != stuck_indices.end()) {
-            //cout <<"Place axon in new position" << endl;
-            Vector3d Q, D;
-            double angle_ = axons[i].angle;
-            Eigen::Vector3d initial_begin = axons[i].begin;
-            bool outside_voxel = !get_begin_end_point(Q, D, angle_);
-            Sphere sphere = Sphere(0, axons[i].id, axon_constant, Q, axons[i].radius);
-            bool no_overlap_axons = sphere_grid.canSpherebePlaced(sphere);
-            int nbr_tries = 0;
-            while(!no_overlap_axons && nbr_tries < 1000){
-                outside_voxel = !get_begin_end_point(Q, D, angle_);
-                sphere = Sphere(0, axons[i].id, axon_constant, Q, axons[i].radius);
-                no_overlap_axons = sphere_grid.canSpherebePlaced(sphere);
-                nbr_tries += 1;
-            }
-            if (no_overlap_axons) {
-                axons[i].outer_spheres.clear();
-                axons[i].outer_spheres.push_back(sphere);
-                axons[i].update_Volume(spheres_overlap_factor, min_limits, max_limits);
-                axons[i].end = D;
-                axons[i].outside_voxel = outside_voxel;
-                axons[i].angle = angle_;
-                axons[i].begin = Q;
-                new_stuck_indices.push_back(axons[i].id);
-                //cout <<"Placed axon in new position" << endl;
-            }
-            else{
-                new_stuck_indices.push_back(axons[i].id);
-                //cout <<"Couldnt place axon in new position" << endl;
-            }
-        }
-    }
-    stuck_indices = new_stuck_indices;
-}
-
-void CaterpillarGrowth::createBatch(const std::vector<double> &radii_, const std::vector<int> &indices, const int &num_subset, const int &first_index_batch, std::vector<Axon> &new_axons, const std::vector<bool> &has_myelin, std::vector<double> &angles)
+void CaterpillarGrowth::growAxonsLayered(std::vector<double> &radii_, std::vector<bool> &has_myelin, std::vector<double> &angles)
 {
-    long int tries_threshold = (max_limits[0]- min_limits[0]) * (max_limits[1]-min_limits[1]) * 5;
-    new_axons.clear();
+    stuck_radii.clear();
+    stuck_indices.clear();
 
-    std::vector<double>::const_iterator startIterator = radii_.begin() + first_index_batch;             // Start from index
-    std::vector<double>::const_iterator stopIterator = radii_.begin() + first_index_batch + num_subset; // Stop when batch is finished
-    // radii in batch
-    std::vector<double> batch_radii(startIterator, stopIterator);
-    double angle_;
-    bool outside_voxel = false;
+    if (axons.empty()) {
+        return;
+    }
 
-    cout <<"Placing axon" << endl;
+    // Layer thickness scales with the already-computed grid_voxel_size
+    // (itself sized off the active populations' characteristic radius)
+    // rather than a fixed absolute constant, which would be meaningless
+    // across configs at very different scales. Swept empirically across
+    // 1/2/4/6/10/16x grid_voxel_size on the 70% packing benchmark: 1x won on
+    // every axis simultaneously (0 abandoned, highest final ICVF, fastest
+    // runtime) -- thinner layers mean more, smaller depth-fairness
+    // checkpoints, so no axon races far ahead of its neighbors before they
+    // get a turn, which also means fewer sub-batch collisions and fewer
+    // costly retry rounds overall. TEMP: still overridable via
+    // LAYER_THICKNESS_FACTOR for further A/B testing.
+    double layer_thickness_factor = 1.0;
+    if (const char *env_val = std::getenv("LAYER_THICKNESS_FACTOR")) {
+        layer_thickness_factor = std::atof(env_val);
+    }
+    const double layer_thickness = std::max(1.0, layer_thickness_factor * grid_voxel_size);
 
-    // cout << "batch_radii.size :" << batch_radii.size() << endl;
-    for (long unsigned int i = 0; i < batch_radii.size(); ++i) // create axon for each radius
-    {
-        // std::cout << "radii created :" << i << "/" << batch_radii.size() << endl;
-        bool next = false;
-        int tries = 0;
+    // How many push-only (no shrink) rounds a sub-batch gets per layer
+    // before falling back to a shrink-enabled round -- see the sub-batch
+    // retry loop below. TEMP: overridable via MAX_NO_SHRINK_ROUNDS for A/B
+    // testing; defaults to 3.
+    int max_no_shrink_rounds = 3;
+    if (const char *env_val = std::getenv("MAX_NO_SHRINK_ROUNDS")) {
+        max_no_shrink_rounds = std::atoi(env_val);
+    }
 
-        while (!next && tries < tries_threshold)
-        {
-            
-            Vector3d Q, D;
-            
-            int index_of_axon = indices[i + first_index_batch];
-            angle_ = angles[indices[i + first_index_batch]];
-            outside_voxel = !get_begin_end_point(Q, D, angle_);
-            bool has_myelin_ = has_myelin[indices[i + first_index_batch]];
-            if (tries> tries_threshold/2) {
-                next = PlaceAxon(index_of_axon, batch_radii[i], Q, D, new_axons, has_myelin_, angle_, outside_voxel);
+    // active[k] = index into axons (and, in parallel, radii_/has_myelin/angles,
+    // which stay index-aligned with axons throughout seeding).
+    std::vector<int> active(axons.size());
+    std::iota(active.begin(), active.end(), 0);
 
-            }
-            else{
-                next = PlaceAxon(index_of_axon, batch_radii[i], Q, D, new_axons, has_myelin_, angle_, outside_voxel);
-            }
-            //cout << "Q : " << Q << endl;
-            if (!next)
-            {
-                tries += 1;
-                
-            }
+    int layer = 0;
+    const int max_layers = 100000; // defensive backstop against runaway iteration
+    // All boxes in this codebase are cubes with min_limits = {0,0,0}, so one
+    // absolute depth cap works regardless of which axis a given axon's own
+    // growth_axis happens to be.
+    const double box_depth = max_limits[2] - min_limits[2];
+
+    while (!active.empty() && layer < max_layers) {
+        std::cout << "---   Depth layer " << layer << " (" << active.size() << " active axons)   --- " << endl;
+        double layer_depth_cap = (layer + 1) * layer_thickness;
+        display_progress(std::min(layer_depth_cap, box_depth), box_depth);
+        if (on_growth_progress) {
+            on_growth_progress(std::min(layer_depth_cap, box_depth), box_depth);
         }
 
-    }
-    // cout << "new_axons.size :" << new_axons.size() << endl;
-}
+        // Within this layer, still process active axons in nbr_threads-sized
+        // sub-batches, sequentially -- not all of them in one ThreadPool pass.
+        // Growing hundreds of axons at once as mutually-blind private copies
+        // makes SanityCheck's cross-axon collisions far more frequent than
+        // before (many more axons invisible to each other simultaneously),
+        // and a SanityCheck collision gets zero retries (unlike a
+        // growth_attempts exhaustion, which gets 10) -- so at that scale it
+        // was permanently killing a large fraction of axons every layer.
+        // Sub-batching restores the original nbr_threads-scale blindness
+        // (each sub-batch's new spheres are committed to sphere_grid before
+        // the next sub-batch in the SAME layer starts), while still bounding
+        // how far ahead any axon can get to just this one layer's thickness.
+        std::vector<int> next_active;
+        next_active.reserve(active.size());
 
-void CaterpillarGrowth::growBatch(int &number_axons_to_grow, std::vector<double> &radii_,std::vector<int> &indices, std::vector<double> &stuck_radii_, std::vector<int> &stuck_indices_, const int &first_index_batch, std::vector<Axon> &growing_axons, std::vector <bool> &has_myelin, std::vector<double> &angles)
-{
+        for (size_t batch_start = 0; batch_start < active.size(); batch_start += static_cast<size_t>(nbr_threads)) {
+            size_t batch_end = std::min(active.size(), batch_start + static_cast<size_t>(nbr_threads));
 
-    if (first_index_batch+number_axons_to_grow > radii_.size()){
-        number_axons_to_grow = radii_.size() - first_index_batch;
-    }
-
-    std::vector<Axon> batch_growing_axons(growing_axons.begin() + first_index_batch,
-                                      growing_axons.begin() + first_index_batch + number_axons_to_grow);
-                                    
-
-    //vector full of -1 with size of number of axons
-    std::vector<double> all_stuck_radii(number_axons_to_grow, -1);  
-
-    std::vector<int> all_stuck_indices(number_axons_to_grow, -1);   
-
-    processBatchWithThreadPool(batch_growing_axons, indices, all_stuck_radii, all_stuck_indices);
-
-
-    for (int i = 0; i < number_axons_to_grow; i++) // for each axon
-    {
-        
-        if (all_stuck_radii[i] > 0)
-        {
-            stuck_radii_.push_back(all_stuck_radii[i]);
-            stuck_indices_.push_back(all_stuck_indices[i]);
-        }
-    }
-
-    SanityCheck(batch_growing_axons, stuck_radii_, stuck_indices_);
-        
-    // add axons in batch that worked in axons
-    for (int i = 0; i < batch_growing_axons.size(); i++)
-    {
-        
-        int index = batch_growing_axons[i].id;
-        // if index not in stuck indices
-        if (std::find(stuck_indices_.begin(), stuck_indices_.end(), index) == stuck_indices_.end())
-        {
-            if (batch_growing_axons[i].outer_spheres.size() == 0)
-            {
-                //cout << "batch_growing_axons[i].id :"<< batch_growing_axons[i].id<< " has 0 spheres but is not in stuck_indices_" << endl;
-                continue;
+            std::vector<int> layer_indices;
+            std::vector<std::size_t> layer_start_spheres;
+            std::vector<Eigen::Vector3d> layer_start_end;
+            std::vector<int> layer_start_grow_straight;
+            std::vector<int> layer_start_straight_growths;
+            layer_indices.reserve(batch_end - batch_start);
+            layer_start_spheres.reserve(batch_end - batch_start);
+            layer_start_end.reserve(batch_end - batch_start);
+            layer_start_grow_straight.reserve(batch_end - batch_start);
+            layer_start_straight_growths.reserve(batch_end - batch_start);
+            for (size_t b = batch_start; b < batch_end; ++b) {
+                int idx = active[b];
+                layer_start_spheres.push_back(axons[idx].outer_spheres.size());
+                layer_indices.push_back(axons[idx].id);
+                // Captured here (axons[idx] itself is never mutated during
+                // the retry rounds below) so a failed round's jostle
+                // (which nudges .end) or straight/random state can be
+                // reset back to this layer's true starting point on the
+                // next retry, without needing a full re-copy from
+                // axons[idx] -- see the round > 0 branch below.
+                layer_start_end.push_back(axons[idx].end);
+                layer_start_grow_straight.push_back(axons[idx].grow_straight);
+                layer_start_straight_growths.push_back(axons[idx].straight_growths);
             }
-            for (int j = 0; j < axons.size(); j++)
-            {
-                if (axons[j].id == index)
-                {
-                    axons[j] = std::move(batch_growing_axons[i]);
-                    axons[j].addToGrid(sphere_grid);
+
+            // Retry the whole sub-batch (push-based placement only, no
+            // shrinking -- see AddOneSphere) for up to max_no_shrink_rounds
+            // rounds before allowing any axon to shrink at all. Each round
+            // re-grows every axon in the sub-batch fresh from the
+            // already-committed state (undoing any partial progress from a
+            // previous failed round), and SanityCheck reconciles collisions
+            // among this sub-batch's mutually-blind private copies exactly
+            // as before. Only once that budget is exhausted does one final
+            // round enable shrinking (and, built into AddOneSphere, its
+            // "remember the least-shrunk position seen so far" fallback) --
+            // giving the cheap, non-destructive push-only strategy several
+            // honest chances first, since a sub-batch-mate that only
+            // recently collided may free up room again once others finish
+            // moving.
+            std::vector<Axon> layer_axons;
+            std::vector<double> stuck_radii_;
+            std::vector<int> stuck_indices_;
+
+            for (int round = 0; ; ++round) {
+                bool can_shrink_this_round = axon_can_shrink && (round >= max_no_shrink_rounds);
+
+                if (round == 0) {
+                    layer_axons.clear();
+                    layer_axons.reserve(batch_end - batch_start);
+                    for (size_t b = batch_start; b < batch_end; ++b) {
+                        int idx = active[b];
+                        axons[idx].growth_attempts = 0; // reset-per-round retry budget
+                        layer_axons.push_back(axons[idx]); // private copy, grown invisibly to its sub-batch-mates until reconciled below
+                    }
+                } else {
+                    // axons[idx] itself is never touched during these retry
+                    // rounds (only merged back after the loop exits), so
+                    // re-copying its entire growth history -- every sphere
+                    // from every previously-committed layer, hundreds to
+                    // 1000+ for a deep axon -- would just reproduce
+                    // byte-for-byte what's already sitting in layer_axons[i]
+                    // up to layer_start_spheres[i]. Truncating the existing
+                    // private copy back to that point (a plain vector
+                    // resize-down, no reallocation) undoes the failed
+                    // round's partial growth for free instead. .end and the
+                    // straight/random state must also be reset explicitly,
+                    // not just outer_spheres -- a failed round's jostling
+                    // (growthThread) mutates .end, and grow_straight/
+                    // straight_growths persist across calls by design (see
+                    // AxonGrowth::growthThread), so without this a failed
+                    // round's leftover jostle/straight-state would carry
+                    // into the next retry instead of starting fresh, unlike
+                    // a real re-copy from the untouched axons[idx].
+                    for (size_t i = 0; i < layer_axons.size(); ++i) {
+                        layer_axons[i].truncate_to(layer_start_spheres[i]);
+                        layer_axons[i].growth_attempts = 0;
+                        layer_axons[i].end = layer_start_end[i];
+                        layer_axons[i].grow_straight = layer_start_grow_straight[i];
+                        layer_axons[i].straight_growths = layer_start_straight_growths[i];
+                    }
+                }
+
+                std::vector<double> raw_stuck_radii(layer_axons.size(), -1);
+                std::vector<int> raw_stuck_indices(layer_axons.size(), -1);
+                processBatchWithThreadPool(layer_axons, layer_indices, raw_stuck_radii, raw_stuck_indices, layer_depth_cap, layer_start_spheres, can_shrink_this_round);
+
+                stuck_radii_.clear();
+                stuck_indices_.clear();
+                for (size_t i = 0; i < layer_axons.size(); ++i) {
+                    if (raw_stuck_radii[i] > 0) {
+                        stuck_radii_.push_back(raw_stuck_radii[i]);
+                        stuck_indices_.push_back(raw_stuck_indices[i]);
+                    }
+                }
+
+                // layer_axons grew as private copies, invisible to each other
+                // during the ThreadPool pass; reconcile collisions among this
+                // sub-batch's new segments (and against the already-committed
+                // environment) here.
+                SanityCheck(layer_axons, stuck_radii_, stuck_indices_, layer_start_spheres);
+
+                if (stuck_indices_.empty() || can_shrink_this_round) {
+                    // Either the whole sub-batch succeeded cleanly this
+                    // round, or this was already the final (shrink-enabled)
+                    // round -- nothing further to try either way.
+                    break;
                 }
             }
-        }  
+
+            // Merge this sub-batch's results back into the main axons list
+            // and sphere_grid immediately (so the NEXT sub-batch in this same
+            // layer sees them), inserting only the spheres actually added
+            // this layer, and decide which axons are still active for the
+            // next layer.
+            for (size_t i = 0; i < layer_axons.size(); ++i) {
+                int idx = active[batch_start + i];
+                Axon &grown = layer_axons[i];
+
+                for (size_t k = layer_start_spheres[i]; k < grown.outer_spheres.size(); ++k) {
+                    sphere_grid.insert(grown.outer_spheres[k]);
+                }
+                axons[idx] = std::move(grown);
+
+                bool is_stuck = std::find(stuck_indices_.begin(), stuck_indices_.end(), axons[idx].id) != stuck_indices_.end();
+                if (is_stuck) {
+                    // Stuck within this layer (retries exhausted, or a
+                    // collision SanityCheck couldn't resolve): keep whatever
+                    // was committed through the previous layer (already
+                    // truncated back to that point by growthThread/
+                    // SanityCheck), and exclude from future layers. Not
+                    // relocated/retried at a different position --
+                    // seedAllAxons already chose this axon's position
+                    // carefully, so there's no reason to expect an
+                    // arbitrary new spot would do better.
+                    stuck_radii.push_back(axons[idx].radius);
+                    stuck_indices.push_back(axons[idx].id);
+                    continue;
+                }
+
+                if (hasReachedTrueWall(axons[idx])) {
+                    continue; // done, exclude from future layers
+                }
+
+                next_active.push_back(idx); // still short of its true wall, keep going next layer
+            }
+        }
+
+        active = std::move(next_active);
+        ++layer;
     }
 
-}
+    if (layer >= max_layers) {
+        std::cerr << "Warning: depth-layered axon growth hit the max layer count safety backstop\n";
+    }
 
-void CaterpillarGrowth::growBatches(std::vector<double> &radii_, std::vector<int> &subsets_, std::vector<bool> &has_myelin, std::vector<double> &angles)
-{
-
-    // indices for axons
-    std::vector<int> indices(radii_.size());
-    std::iota(indices.begin(), indices.end(), 0);
-    
-    stuck_radii.clear();
-
-    int nbr_tries = 0;
-
-    for (int j = 0; j < num_batches; j++) // batches of axon growth
-    {
-        auto startTime = std::chrono::high_resolution_clock::now();
-        std::cout << "---   Batch " << j << "   --- " << endl;
-
-        display_progress(j, num_batches);
-        // index of first axon in batch
-        int first_index_batch = j * nbr_threads;
-
-        vector<int> finished(subsets_[j], 0);         // 0 for false
-        vector<int> grow_straight(subsets_[j], 1);    // 1 for true
-        vector<int> straight_growths(subsets_[j], 0); // for each axon
-        vector<int> shrink_tries(subsets_[j], 0);     // for each axon
-        vector<int> restart_tries(subsets_[j], 0);    // for each axon
-
-        std::vector<double> stuck_radii_;
-        std::vector<int> stuck_indices_;
-        growBatch(subsets_[j], radii_, indices, stuck_radii_, stuck_indices_, first_index_batch, axons, has_myelin, angles);
-        int tries_threshold = regrow_thr;
-        // tries in 10 times to regrow the stuck axons
-        std::vector<double> new_stuck_radii_;
-        std::vector<int> new_stuck_indices_;
-        double old_stuck_radii_size =  0;
-        std::vector<Axon> stuck_axons;
-   
-        while (stuck_radii_.size() > 0 && nbr_tries < tries_threshold)
-        {
-            if (nbr_tries > tries_threshold/2) {
-                axon_can_shrink = true;
-            }
-            new_stuck_radii_.clear();
-            new_stuck_indices_.clear();
-            //cout << " Regrow " << stuck_radii_.size() << " axons" << endl;
-            int number_axons_to_grow = stuck_radii_.size();
-            ModifyAxonsStartingPoint(stuck_indices_); 
-
-            if (stuck_indices_.size() == 0){
-                stuck_radii_.clear();
-                break;
-            }
-
-            stuck_axons.reserve(stuck_indices_.size());
-            for (unsigned i = 0; i < stuck_indices_.size(); i++)
-            {
-                stuck_axons.push_back(axons[stuck_indices_[i]]);
-            }
-            growBatch(number_axons_to_grow, stuck_radii_, stuck_indices_, new_stuck_radii_, new_stuck_indices_, 0, stuck_axons, has_myelin, angles);
-            stuck_radii_ = new_stuck_radii_;
-            stuck_indices_ = new_stuck_indices_;
-            if(stuck_radii_.size() == old_stuck_radii_size){
-                nbr_tries += 1;
-            }
-            else{
-                nbr_tries = 0;
-            }
-            old_stuck_radii_size = stuck_radii_.size();
-            stuck_axons.clear();
-        }
-
-        stuck_radii.clear();
-        stuck_indices.clear();
-        if (nbr_tries >= tries_threshold)
-        {
-            for (unsigned i = 0; i < stuck_radii_.size(); i++)
-            {
-                stuck_radii.push_back(stuck_radii_[i]);
-                stuck_indices.push_back(stuck_indices_[i]);
-            }
-            nbr_tries = 0;
-        }
-
-        auto endTime = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime);
-
-
-    } // end for batches
-
+    // Discard any axon that got permanently stuck (retries and jostling
+    // exhausted without ever reaching the true wall -- tracked in
+    // stuck_indices as it happens, above), or that ended up too trivial
+    // overall (fewer than 10 spheres total) even if it did reach the wall.
+    // An axon is never kept at a partial depth: it either makes it all the
+    // way, or it is discarded entirely, matching this function's documented
+    // intent (see the "No relocate-and-retry" comment at its call site) --
+    // both cases need every already-committed sphere removed from
+    // sphere_grid, not just the first, since layered growth can leave
+    // several committed spheres behind before an axon is deemed not worth
+    // keeping.
+    std::unordered_set<int> stuck_id_set(stuck_indices.begin(), stuck_indices.end());
     int counts = 0;
-    for (int i = axons.size() - 1; i >= 0; --i) {
-        if (axons[i].outer_spheres.size() <= 1) {
+    for (int i = static_cast<int>(axons.size()) - 1; i >= 0; --i) {
+        bool too_short = axons[i].outer_spheres.size() < 10;
+        bool got_stuck = stuck_id_set.count(axons[i].id) > 0;
+        if (too_short || got_stuck) {
+            for (const auto &sph : axons[i].outer_spheres) {
+                sphere_grid.remove(sph);
+            }
             axons.erase(axons.begin() + i);
             counts++;
         }

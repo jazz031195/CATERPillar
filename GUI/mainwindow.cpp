@@ -83,7 +83,21 @@ Window::Window(QWidget *parent)
     QPushButton *btnGrow = new QPushButton("Grow White Matter Substrate", this);
     btnGrow->setStyleSheet("font-weight: bold; padding: 10px; margin-top: 10px;");
     wmLayout->addWidget(btnGrow);
-    
+
+    layerProgressBar = new QProgressBar(this);
+    layerProgressBar->setRange(0, 100);
+    layerProgressBar->setValue(0);
+    layerProgressBar->setFormat("Growing axons: 0%");
+    layerProgressBar->hide();
+    wmLayout->addWidget(layerProgressBar);
+
+    swellingProgressBar = new QProgressBar(this);
+    swellingProgressBar->setRange(0, 100);
+    swellingProgressBar->setValue(0);
+    swellingProgressBar->setFormat("Swelling: not started yet");
+    swellingProgressBar->hide();
+    wmLayout->addWidget(swellingProgressBar);
+
     mainTabs->addTab(tabWhiteMatter, "1. White Matter Cell Generation");
 
     connect(btnGrow, &QPushButton::clicked, this, &Window::onSaveButtonClicked);
@@ -160,6 +174,17 @@ Window::Window(QWidget *parent)
     connect(btnRun, &QPushButton::clicked, this, &Window::runMCSimulation);
 
     mainTabs->addTab(tabMonteCarlo, "3. Monte Carlo Simulation");
+}
+
+Window::~Window()
+{
+    // A run kicked off by StartSimulation() may still be growing on
+    // growthThread when the window closes -- std::thread's destructor calls
+    // std::terminate() on a still-joinable thread, so wait for it here
+    // instead (blocks briefly rather than crashing).
+    if (growthThread.joinable()) {
+        growthThread.join();
+    }
 }
 
 void Window::buildParameterStack(QVBoxLayout *wmLayout)
@@ -1642,6 +1667,26 @@ bool Window::check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&
 }
 
 
+void Window::onGrowthProgress(double completed_depth, double total_depth)
+{
+    int pct = total_depth > 0.0 ? int(100.0 * std::min(1.0, completed_depth / total_depth)) : 0;
+    layerProgressBar->setValue(pct);
+    layerProgressBar->setFormat(QString("Growing axons: %1 / %2 um (%3%)")
+                                    .arg(completed_depth, 0, 'f', 1)
+                                    .arg(total_depth, 0, 'f', 1)
+                                    .arg(pct));
+}
+
+void Window::onSwellingProgress(double current_icvf, double target_icvf)
+{
+    int pct = target_icvf > 0.0 ? int(100.0 * std::min(1.0, current_icvf / target_icvf)) : 100;
+    swellingProgressBar->setValue(pct);
+    swellingProgressBar->setFormat(QString("Swelling: ICVF %1 / %2 (%3%)")
+                                       .arg(current_icvf, 0, 'f', 4)
+                                       .arg(target_icvf, 0, 'f', 4)
+                                       .arg(pct));
+}
+
 void Window::StartSimulation(){
 
     X_axons.clear(); Y_axons.clear(); Z_axons.clear(); R_axons.clear();
@@ -1649,7 +1694,54 @@ void Window::StartSimulation(){
     X_glial_pop2.clear(); Y_glial_pop2.clear(); Z_glial_pop2.clear(); R_glial_pop2.clear(); Branch_glial_pop2.clear();
     X_blood_vessels.clear(); Y_blood_vessels.clear(); Z_blood_vessels.clear(); R_blood_vessels.clear();
 
-    auto [axons, blood_vessels, glial_pop1, glial_pop2] = CoreLogic::runSimulation(parameters);
+    layerProgressBar->setValue(0);
+    layerProgressBar->setFormat("Growing axons: 0%");
+    layerProgressBar->show();
+    swellingProgressBar->setValue(0);
+    swellingProgressBar->setFormat("Swelling: not started yet");
+    swellingProgressBar->show();
+
+    Parameters localParams = parameters; // by-value copy: safe to read from the worker thread
+
+    if (growthThread.joinable()) {
+        growthThread.join(); // previous run's thread, if any, has already finished by now
+    }
+
+    growthThread = std::thread([this, localParams]() {
+        auto growthCb = [this](double completed, double total) {
+            QMetaObject::invokeMethod(this, "onGrowthProgress", Qt::QueuedConnection,
+                                       Q_ARG(double, completed), Q_ARG(double, total));
+        };
+        auto swellCb = [this](double current_icvf, double target_icvf) {
+            QMetaObject::invokeMethod(this, "onSwellingProgress", Qt::QueuedConnection,
+                                       Q_ARG(double, current_icvf), Q_ARG(double, target_icvf));
+        };
+
+        auto [axons, blood_vessels, glial_pop1, glial_pop2] =
+            CoreLogic::runSimulation(localParams, growthCb, swellCb);
+
+        this->pendingAxons = std::move(axons);
+        this->pendingBloodVessels = std::move(blood_vessels);
+        this->pendingGlialPop1 = std::move(glial_pop1);
+        this->pendingGlialPop2 = std::move(glial_pop2);
+
+        QMetaObject::invokeMethod(this, "onGrowthFinished", Qt::QueuedConnection);
+    });
+}
+
+void Window::onGrowthFinished(){
+
+    if (growthThread.joinable()) {
+        growthThread.join();
+    }
+
+    layerProgressBar->hide();
+    swellingProgressBar->hide();
+
+    auto &axons = pendingAxons;
+    auto &blood_vessels = pendingBloodVessels;
+    auto &glial_pop1 = pendingGlialPop1;
+    auto &glial_pop2 = pendingGlialPop2;
 
     Eigen::Vector3d min_l = {0,0,0};
     Eigen::Vector3d max_l ={parameters.voxel_size, parameters.voxel_size, parameters.voxel_size};

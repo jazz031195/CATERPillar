@@ -39,7 +39,16 @@ CATERPillar_autogen/timestamp: \
 	/home/localadmin/Documents/CATERPillar/src/Blood_Vessel.h \
 	/home/localadmin/Documents/CATERPillar/src/CaterpillarGrowth.cpp \
 	/home/localadmin/Documents/CATERPillar/src/CaterpillarGrowth.h \
+	/home/localadmin/Documents/CATERPillar/src/Eigen/Cholesky \
 	/home/localadmin/Documents/CATERPillar/src/Eigen/Core \
+	/home/localadmin/Documents/CATERPillar/src/Eigen/Dense \
+	/home/localadmin/Documents/CATERPillar/src/Eigen/Eigenvalues \
+	/home/localadmin/Documents/CATERPillar/src/Eigen/Geometry \
+	/home/localadmin/Documents/CATERPillar/src/Eigen/Householder \
+	/home/localadmin/Documents/CATERPillar/src/Eigen/Jacobi \
+	/home/localadmin/Documents/CATERPillar/src/Eigen/LU \
+	/home/localadmin/Documents/CATERPillar/src/Eigen/QR \
+	/home/localadmin/Documents/CATERPillar/src/Eigen/SVD \
 	/home/localadmin/Documents/CATERPillar/src/Eigen/src/Cholesky/LDLT.h \
 	/home/localadmin/Documents/CATERPillar/src/Eigen/src/Cholesky/LLT.h \
 	/home/localadmin/Documents/CATERPillar/src/Eigen/src/Cholesky/LLT_LAPACKE.h \
@@ -517,6 +526,7 @@ CATERPillar_autogen/timestamp: \
 	/usr/include/c++/11/streambuf \
 	/usr/include/c++/11/string \
 	/usr/include/c++/11/string_view \
+	/usr/include/c++/11/thread \
 	/usr/include/c++/11/tr1/bessel_function.tcc \
 	/usr/include/c++/11/tr1/beta_function.tcc \
 	/usr/include/c++/11/tr1/ell_integral.tcc \
@@ -1051,6 +1061,7 @@ CATERPillar_autogen/timestamp: \
 	/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLayout \
 	/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLineEdit \
 	/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QMainWindow \
+	/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QProgressBar \
 	/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QPushButton \
 	/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QScrollBar \
 	/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QScrollerProperties \

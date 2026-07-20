@@ -27,6 +27,15 @@ void Axon::keep_one_sphere(){
 
 }
 
+void Axon::truncate_to(std::size_t n){
+    if (outer_spheres.size() > n) {
+        outer_spheres.resize(n);
+    }
+    // growth_attempts is deliberately left untouched here -- callers decide
+    // whether/how to adjust it (e.g. growthThread's retry path increments it
+    // itself, matching keep_one_sphere()'s existing convention).
+}
+
 void Axon::destroy(){
     outer_spheres.clear();
     growth_attempts = 0;
@@ -51,6 +60,49 @@ void Axon::add_sphere(const Sphere &sphere_to_add){
 }
 
  
+
+void Axon::removeEngulfedSpheres(std::vector<Sphere> &removed){
+
+    if (outer_spheres.size() < 2) {
+        return;
+    }
+
+    std::vector<Sphere> kept;
+    kept.reserve(outer_spheres.size());
+
+    for (const Sphere &candidate : outer_spheres) {
+        bool discard_candidate = false;
+
+        // Collapse backward: pop any kept sphere the candidate now fully
+        // engulfs, or -- if the candidate itself is fully engulfed by the
+        // current last kept sphere -- drop the candidate and stop.
+        while (!kept.empty()) {
+            const Sphere &top = kept.back();
+            double dist = (candidate.center - top.center).norm();
+
+            if (dist + candidate.radius <= top.radius) {
+                // candidate entirely inside top: useless, don't keep it
+                discard_candidate = true;
+                break;
+            }
+            if (dist + top.radius <= candidate.radius) {
+                // top entirely inside candidate: top was useless all along
+                removed.push_back(top);
+                kept.pop_back();
+                continue;
+            }
+            break; // neither engulfs the other
+        }
+
+        if (discard_candidate) {
+            removed.push_back(candidate);
+        } else {
+            kept.push_back(candidate);
+        }
+    }
+
+    outer_spheres = std::move(kept);
+}
 
 void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits){
     double new_volume = 0.0;

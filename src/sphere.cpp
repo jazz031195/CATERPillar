@@ -116,7 +116,7 @@ inline double maxDist2PointAABB(const Eigen::Vector3d& p,
 // Estimate fraction of cell inside sphere by sampling 8 corners + center (cheap and decent).
 inline double Sphere::estimateFraction9(const Eigen::Vector3d& bmin,
                                 const Eigen::Vector3d& bmax,
-                                const double R2)
+                                const double R2) const
 {
     int inside = 0;
     // 8 corners
@@ -142,7 +142,7 @@ inline double Sphere::estimateFraction9(const Eigen::Vector3d& bmin,
 double Sphere::sphereBoxIntersectionVolume(const Eigen::Vector3d& min_limits,
                                    const Eigen::Vector3d& max_limits,
                                    double eps_rel,
-                                   int    max_depth)
+                                   int    max_depth) const
 {
     const Eigen::Vector3d& C = center;
     const double R  = radius;

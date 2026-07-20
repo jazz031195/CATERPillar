@@ -16,11 +16,14 @@
 #include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QPushButton>
+#include <QProgressBar>
 #include <QtDataVisualization/Q3DScatter>
 #include "slidergroup.h"
 #include "ScatterDataModifier.h" // Include ScatterDataModifier
 #include "../src/parameters.h"
-#include <QComboBox>  
+#include "../src/core_logic.h"
+#include <QComboBox>
+#include <thread>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -32,6 +35,7 @@ class Window : public QWidget
 
 public:
     Window(QWidget *parent = nullptr);
+    ~Window();
     void createStatisticsMenu();
     void plotRadiusDistribution();
     void plotTortuosityDistribution();
@@ -57,6 +61,9 @@ private slots:
     void ReadBloodVesselsFromFile(const QString& fileName);
     void generateMonteCarloConf();
     void runMCSimulation();
+    void onGrowthProgress(double completed_depth, double total_depth);
+    void onSwellingProgress(double current_icvf, double target_icvf);
+    void onGrowthFinished();
 
 private:
     void initParameters();
@@ -64,6 +71,14 @@ private:
     QGroupBox* createControls(const QString &title);
     void resizeEvent(QResizeEvent *e);
     void StartSimulation();
+
+    QProgressBar *layerProgressBar = nullptr;
+    QProgressBar *swellingProgressBar = nullptr;
+    std::thread growthThread;
+    std::vector<Axon> pendingAxons;
+    std::vector<Blood_Vessel> pendingBloodVessels;
+    std::vector<Glial> pendingGlialPop1;
+    std::vector<Glial> pendingGlialPop2;
     SlidersGroup *slidersGroup;
     OpenGLWindow *openglWindow = nullptr;
     QWidget *visualizationWidget = nullptr;

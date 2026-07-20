@@ -9,7 +9,9 @@
 #include <QString>
 
 
-CoreLogic::SimResult CoreLogic::runSimulation(const Parameters& params) {
+CoreLogic::SimResult CoreLogic::runSimulation(const Parameters& params,
+                                               ProgressCallback on_growth_progress,
+                                               ProgressCallback on_swelling_progress) {
     std::cout << "\n========================================" << std::endl;
     std::cout << " Starting CATERPillar Simulation Engine " << std::endl;
     std::cout << " Output Directory: " << params.data_directory << std::endl;
@@ -34,6 +36,8 @@ CoreLogic::SimResult CoreLogic::runSimulation(const Parameters& params) {
         
         // 1. Initialize the distribution engine using our clean parameters object
         CaterpillarGrowth Sim(params, min_l, max_l);
+        Sim.on_growth_progress = on_growth_progress;
+        Sim.on_swelling_progress = on_swelling_progress;
 
         // 2. Grow the Substrate!
         Sim.createSubstrate();
@@ -167,6 +171,7 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     params.axon_can_shrink = data["AxonParameters"].value("CanShrink", true);
     params.regrow_thr = data["AxonParameters"].value("RegrowThreshold", 10);
     params.undulation_factor = data["AxonParameters"].value("UndulationFactor", 5);
+    params.swelling_factor = data["AxonParameters"].value("SwellingFactor", 1.0);
 
     // ==========================================
     // 3. Glial Parameters

@@ -580,6 +580,8 @@ CMakeFiles/CATERPillar.dir/CATERPillar_autogen/mocs_compilation.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qregularexpression.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QPushButton \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qpushbutton.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QProgressBar \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qprogressbar.h \
  /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/slidergroup.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QGroupBox \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qgroupbox.h \
@@ -592,6 +594,80 @@ CMakeFiles/CATERPillar.dir/CATERPillar_autogen/mocs_compilation.cpp.o: \
  /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/ScatterDataModifier.h \
  /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/parameters.h \
  /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/Eigen/Core \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/core_logic.h \
+ /home/localadmin/Documents/CATERPillar/src/parameters.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Axon.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/sphere.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/Core \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/obstacle.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/Dense \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/Core \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/LU \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Core/util/DisableStupidWarnings.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/misc/Kernel.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/misc/Image.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/LU/FullPivLU.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/LU/PartialPivLU.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/LU/Determinant.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/LU/InverseImpl.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/LU/arch/Inverse_SSE.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Core/util/ReenableStupidWarnings.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/Cholesky \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/Jacobi \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Jacobi/Jacobi.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Cholesky/LLT.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Cholesky/LDLT.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/QR \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/Householder \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Householder/Householder.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Householder/HouseholderSequence.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Householder/BlockHouseholder.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/QR/HouseholderQR.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/QR/FullPivHouseholderQR.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/QR/ColPivHouseholderQR.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/SVD \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/misc/RealSvd2x2.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/SVD/UpperBidiagonalization.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/SVD/SVDBase.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/SVD/JacobiSVD.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/SVD/BDCSVD.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/Geometry \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/OrthoMethods.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/EulerAngles.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/Homogeneous.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/RotationBase.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/Rotation2D.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/Quaternion.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/AngleAxis.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/Transform.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/Translation.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/Scaling.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/Hyperplane.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/ParametrizedLine.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/AlignedBox.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/Umeyama.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Geometry/arch/Geometry_SSE.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/Eigenvalues \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/Tridiagonalization.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/RealSchur.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/./HessenbergDecomposition.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/EigenSolver.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/./RealSchur.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/./Tridiagonalization.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/ComplexSchur.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/./ComplexSchur.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/RealQZ.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/./RealQZ.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/SphereGrid.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Blood_Vessel.h \
+ /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/../src/../src/Glial.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QComboBox \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qcombobox.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractitemdelegate.h \
@@ -601,6 +677,8 @@ CMakeFiles/CATERPillar.dir/CATERPillar_autogen/mocs_compilation.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtabbar.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qrubberband.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qabstractitemmodel.h \
+ /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
+ /usr/include/c++/11/bits/this_thread_sleep.h \
  /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/moc_openglwindow.cpp \
  /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/2LCCYRVYXB/../../../GUI/openglwindow.h \
  /home/localadmin/Documents/CATERPillar/build/CATERPillar_autogen/HFA4SCIXVZ/moc_qcustomplot.cpp \
@@ -823,7 +901,6 @@ CMakeFiles/CATERPillar.dir/CATERPillar_autogen/mocs_compilation.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qdeadlinetimer.h \
  /usr/include/c++/11/future /usr/include/c++/11/condition_variable \
  /usr/include/c++/11/bits/atomic_futex.h \
- /usr/include/c++/11/bits/std_thread.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qthreadpool.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qthread.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qthreadstorage.h \
@@ -1061,7 +1138,6 @@ CMakeFiles/CATERPillar.dir/CATERPillar_autogen/mocs_compilation.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qplaintextedit.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qtextedit.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qabstracttextdocumentlayout.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qprogressbar.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qprogressdialog.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qproxystyle.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QCommonStyle \

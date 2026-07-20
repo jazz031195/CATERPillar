@@ -374,11 +374,8 @@ def create_subplots(file_path):
     axs[1, 0].set_ylabel('Count')
     
 
-    if "csv" in file_path:
-        # plot tortuosity per axon with seaborn = total length / distance between first and last sphere
-        tortuosities, radii = tortuosity(axons, csv=True)
-    elif "swc" in file_path:
-        tortuosities, radii = tortuosity(axons, csv=False)
+    tortuosities, radii = tortuosity(axons)
+
 
     tort = pd.DataFrame()
     tort["Tortuosity"] = tortuosities
@@ -1349,9 +1346,9 @@ def plot_radii_with_length(file_path, axon_id, z_step=0.005):
 
 if __name__ == "__main__":
 
-    file_path = "/home/localadmin/Documents/Santi/Healthy_Voxel_corrected.csv"
+    file_path = "/home/localadmin/Documents/CATERPillar/tests/run_75pct_eps03_uf5_4thread_100um_swf100_rerun.csv"
 
-    plot_radii(file_path, "glial_cell")
+    create_subplots(file_path)
 
     
 

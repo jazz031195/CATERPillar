@@ -1,13 +1,13 @@
 {
     "GeneralParameters": {
         "OutputDirectory": "/home/localadmin/Documents/CATERPillar/output/",
-        "Filename": "run_001",
-        "VoxelEdgeLength": 50.0,
+        "Filename": "run_50pct_c2_05_test_100um",
+        "VoxelEdgeLength": 100.0,
         "Repetitions": 1,
         "OverlappingFactor": 4
     },
     "AxonParameters": {
-        "AxonsICVF": 20.0,
+        "AxonsICVF": 50.0,
         "AxonsWithMyelinICVF": 0.0,
         "BloodVesselsICVF": 0.0,
         "NumberOfPopulations": 1,
@@ -16,8 +16,8 @@
         "Alpha": 4.0,
         "Beta": 0.25,
         "MinRadius": 0.15,
-        "Tortuosity_Epsilon": 0.01,
-        "FODF_c2": 1.0,
+        "Tortuosity_Epsilon": 0.1,
+        "FODF_c2": 0.5,
         "BeadingAmplitude": 0.3,
         "BeadingStd": 0.02,
         "K1": 0.35,
@@ -26,7 +26,8 @@
         "Tortuous": true,
         "CanShrink": true,
         "RegrowThreshold": 10,
-        "UndulationFactor": 5
+        "UndulationFactor": 5,
+        "SwellingFactor": 1.0
     },
     "GlialParameters": {
         "Pop1SomaICVF": 0.0,
