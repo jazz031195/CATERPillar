@@ -4,7 +4,7 @@
 
 CATERPillar (**Computational Axonal Threading Engine for Realistic Proliferation**) is an advanced computational framework designed to simulate natural axonal growth using overlapping spheres as fundamental building blocks. By employing a biologically inspired approach, CATERPillar enables parallel axon development while effectively preventing collisions, allowing users to control key structural parameters such as **density, tortuosity, and beading**.
 
-What sets CATERPillar apart is its ability to generate not only realistic **axonal architectures** but also **glial cell structures**, significantly enhancing the biological fidelity of tissue microstructure simulations. This makes it a valuable tool for studying brain tissue models and validating diffusion-based imaging techniques.
+What sets CATERPillar apart is its ability to generate not only realistic **axonal architectures** but also **glial cell structures** and **branching blood vessels**, significantly enhancing the biological fidelity of tissue microstructure simulations. This makes it a valuable tool for studying brain tissue models and validating diffusion-based imaging techniques.
 
 The code for the Monte Carlo Simulator adapted for overlapping spheres is available using this link: https://github.com/jazz031195/Permeable_MCDS.
 
@@ -68,6 +68,7 @@ This mode allows you to execute heavy math and generate `.csv` files on remote s
 
 ### **General Parameters:**
 
+  * **Number of Repetitions:** Number of independent substrates to generate in a single run, each with a new random seed. When greater than 1, an index is appended to the output filenames (e.g. `run_001_1.csv`, `run_001_2.csv`, ...).
   * **Voxel Edge Length (μm):** Defines the length of the cubic substrate, determining the overall volume of the simulation space.
   * **Overlapping Factor:** Controls the spacing between consecutive spheres during axonal growth. The distance is computed as $\max(R_1, R_2) / F$, where $R_1$ and $R_2$ are the radii of two consecutive spheres, and $F$ is the chosen overlapping factor. A higher overlapping factor results in closer sphere placement, reducing the gaps. A recommended value for optimal results is **4**.
   * **Minimum Sphere Radius (μm):** Specifies the smallest allowable sphere radius within the voxel. This constraint helps prevent excessively narrow spaces that could impede Monte Carlo Simulations.
@@ -85,8 +86,14 @@ This mode allows you to execute heavy math and generate `.csv` files on remote s
   * **Fibre Orientation Dispersion Function ($c_2$):** Defined as $\langle \cos^2\psi \rangle$, where $\psi$ is the angle between the axon growth direction and the z-axis. This parameter quantifies the degree of fibre orientation dispersion within the substrate.
   * **Number of Axon Populations:** Specifies the number of distinct axonal populations that can grow within the substrate (range: 1-3). Each population adopts a primary orientation perpendicular to the others. If two populations are selected, users can choose between a **sheet configuration** or an **interwoven configuration**.
   * **Beading Amplitude ($A$):** Defines the amplitude of axonal beading as a fraction of the axon's initial radius ($R$), influencing morphological variability. The radius of an axon changes with its length stochastically. The next sphere's radius is drawn from a normal distribution centered on the previous radius. If the computed radius falls outside the boundary $R \pm A \cdot R$, the normal distribution will instead be centered at that boundary value.
+  * **Beading Standard Deviation:** Standard deviation of the normal distribution used to draw each new sphere's radius around the beading target described above. Higher values increase local radius variability along the axon.
   * **Gamma Distribution for Radii ($\alpha$):** Shape parameter for the Gamma distribution governing axon radii. A recommended value for realistic axon widths is **4**.
   * **Gamma Distribution for Radii ($\beta$):** Scale parameter for the Gamma distribution governing axon radii. A recommended value for realistic axon widths is **0.25**.
+
+### **Blood Vessel Parameters:**
+
+  * **Blood Vessels ICVF (%):** Defines the volume fraction occupied by the main blood vessel trunks within the substrate.
+  * **Blood Vessel Branches ICVF (%):** Defines the volume fraction occupied by branches growing off the main blood vessels.
 
 ### **Glial Cell Parameters:**
 
@@ -101,6 +108,16 @@ This mode allows you to execute heavy math and generate `.csv` files on remote s
   * **Number of Primary Processes:** The number of processes that emerge directly from the soma.
   * **Can glial cell population have branching:** If ticked, the glial cell can grow higher-order (secondary/tertiary) processes. If unticked, only primary processes will be present. If the target ICVF for processes cannot be reached with the selected number of primary processes, the system will automatically grow more of them.
 
+### **Advanced Parameters (JSON configuration only):**
+
+*(Note: These parameters are not exposed in the GUI and default to sensible values. They can be overridden in Headless / HPC mode by adding the corresponding key under `AxonParameters` in the JSON configuration file — see `example_config.json`.)*
+
+  * **`Tortuous`** *(bool, default `true`)*: Enables stochastic tortuosity during axon growth.
+  * **`CanShrink`** *(bool, default `true`)*: Allows axon radii to shrink locally to resolve collisions during growth.
+  * **`RegrowThreshold`** *(int, default `10`)*: Number of consecutive failed growth attempts before an axon is abandoned and regrown from a new seed.
+  * **`UndulationFactor`** *(int, default `5`)*: Controls the frequency of undulations along the axon path.
+  * **`SwellingFactor`** *(double, default `1.0`)*: Scales the target radius axons grow toward during the final densification pass; values below `1.0` shrink axons during growth so they can be swelled up to their true target radius afterwards, helping reach higher ICVF targets.
+
 -----
 
 ## **Output**
@@ -113,16 +130,16 @@ Once the simulation is complete, the **GUI** will display the generated substrat
 
 ### **Generated Files**
 
-Upon completion, the following output files are automatically saved in your selected directory:
+Upon completion, the following output files are automatically saved in your selected output directory, named after the **`Filename`** parameter (e.g. `run_001.csv` and `run_001_growth_info.txt`). If **Number of Repetitions** is greater than 1, each repetition's files are suffixed with its index (e.g. `run_001_1.csv`, `run_001_1_growth_info.txt`, ...):
 
-1.  **`voxel.csv`** – Contains precise spatial and morphological data for the substrate, with each line defining a single sphere’s properties.
-2.  **`voxel_info.txt`** – Provides metadata, summary statistics, and a record of the exact parameters used during the simulation.
+1.  **`<filename>.csv`** – Contains precise spatial and morphological data for the substrate, with each line defining a single sphere's properties.
+2.  **`<filename>_growth_info.txt`** – Provides metadata, summary statistics, and a record of the exact parameters used during the simulation.
 
-The **`voxel.csv`** file is structured with the following columns for external analysis or Monte Carlo integration:
+The **`<filename>.csv`** file is a space-delimited file structured with the following columns for external analysis or Monte Carlo integration:
 
-  * **`cell_type`:** The classification of the cell (`axon`, `glial_cell`, or `neuron`).
+  * **`cell_type`:** The classification of the cell (`axon`, `glial_cell`, or `blood_vessel`).
   * **`cell_id`:** The unique identifier of the cell (starting from 0).
-  * **`component`:** The structural component (`soma`, `branch`, `axon`, or `spine`).
+  * **`component`:** The structural component (`soma`, `branch`, `axon`, `blood_vessel`, or `spine`).
   * **`component_id`:** The identifier of the specific component (starting from 0).
   * **`X Y Z`:** The 3D spatial coordinates of the sphere center (μm).
   * **`inner_radius`:** The inner radius of the sphere (μm).
