@@ -18,6 +18,7 @@
 #include <variant>
 #include <QComboBox>
 #include <QFontComboBox>
+#include <QThread>
 #include "qcustomplot-source/qcustomplot.h"
 
 Window::Window(QWidget *parent)
@@ -190,12 +191,18 @@ Window::Window(QWidget *parent)
     inputVoxelSizeMC->setValue(0.1);
     inputVoxelSizeMC->setSuffix(" mm");
 
+    inputNumThreadsMC = new QSpinBox();
+    inputNumThreadsMC->setRange(1, 1000);
+    int idealThreads = QThread::idealThreadCount();
+    inputNumThreadsMC->setValue(idealThreads > 0 ? idealThreads : 1);
+
     mcForm->addRow("N (Walkers):", inputN);
     mcForm->addRow("T (Time steps):", inputT);
     mcForm->addRow("Duration:", inputDuration);
     mcForm->addRow("Diffusivity Intra:", inputDiffIntra);
     mcForm->addRow("Diffusivity Extra:", inputDiffExtra);
     mcForm->addRow("Voxel Size (edge length):", inputVoxelSizeMC);
+    mcForm->addRow("Number of Threads:", inputNumThreadsMC);
 
     QHBoxLayout *SchemeLayout = new QHBoxLayout();
     SchemeLayout->addWidget(inputSchemeFile);
@@ -402,6 +409,15 @@ void Window::runMCSimulation()
         }
 
         confFilePath = outputDir + "/config.conf";
+        if (QFile::exists(confFilePath)) {
+            int rep = 0;
+            QString candidate;
+            do {
+                candidate = outputDir + QString("/config_rep_%1.conf").arg(rep, 2, 10, QChar('0'));
+                rep++;
+            } while (QFile::exists(candidate));
+            confFilePath = candidate;
+        }
         QString expPrefix = outputDir + "/run";
 
         QFile file(confFilePath);
@@ -415,7 +431,8 @@ void Window::runMCSimulation()
         out << "T " << inputT->text() << "\n";
         out << "duration " << inputDuration->text() << "\n";
         out << "diffusivity_intra " << inputDiffIntra->text() << "\n";
-        out << "diffusivity_extra " << inputDiffExtra->text() << "\n\n";
+        out << "diffusivity_extra " << inputDiffExtra->text() << "\n";
+        out << "num_process " << inputNumThreadsMC->value() << "\n\n";
 
         out << "scheme_file " << inputSchemeFile->text() << "\n\n";
 
