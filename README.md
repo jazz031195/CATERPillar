@@ -16,19 +16,26 @@ CATERPillar uses CMake, making it fully cross-platform for Linux, macOS, and Hig
 
 ### **1. Install Prerequisites**
 
-Make sure you have a modern C++ compiler, CMake, Qt5, and Boost installed on your system.
+Make sure you have a C++17 compiler and CMake installed on your system. Eigen is vendored in `src/Eigen`, so no separate Eigen install is needed.
+
+The headless build (`CATERPillar-cli`, see `-DBUILD_GUI=OFF` below) needs nothing beyond that — no Qt, no other external libraries. The full GUI build (`CATERPillar`) additionally needs Qt5's Widgets, PrintSupport, and DataVisualization modules, plus OpenGL.
 
 **For Ubuntu / Debian Linux:**
 
 ```bash
 sudo apt update
-sudo apt install cmake qtbase5-dev libqt5datavisualization5-dev libboost-all-dev
+# CLI-only build (e.g. on a cluster with no display) -- just a compiler and CMake:
+sudo apt install cmake
+# Full GUI + CLI build, additionally:
+sudo apt install qtbase5-dev libqt5datavisualization5-dev
 ```
 
 **For macOS (using Homebrew):**
 
 ```bash
-brew install cmake qt5 boost
+brew install cmake
+# Full GUI + CLI build, additionally:
+brew install qt5
 ```
 
 ### **2. Compile the Source Code**
@@ -39,6 +46,13 @@ Navigate to the downloaded repository folder in your terminal and run the follow
 mkdir build
 cd build
 cmake ..
+make
+```
+
+This builds two targets: `CATERPillar` (the GUI) and `CATERPillar-cli` (a headless build of just the growth simulation). On a machine without the Qt Widgets/DataVisualization/OpenGL stack (e.g. a compute cluster), configure with the GUI disabled to skip those dependencies entirely and build only `CATERPillar-cli`:
+
+```bash
+cmake .. -DBUILD_GUI=OFF
 make
 ```
 
@@ -55,10 +69,10 @@ Launch the GUI by running:
 The GUI allows you to configure biophysical parameters and generate realistic numerical substrates. To generate a new substrate, click **"Grow Substrate"**. To visualize a previously generated substrate, click **"Visualise Substrate"**.
 
 **Mode B: Headless / HPC Mode (JSON Configuration)**
-To bypass the GUI entirely and run simulations in the terminal, pass the `--config` argument followed by the path to your JSON settings file:
+To run simulations in the terminal, without ever needing the GUI's Qt Widgets/OpenGL dependencies, use the `CATERPillar-cli` binary with the `--config` argument followed by the path to your JSON settings file:
 
 ```bash
-./CATERPillar --config example_config.json
+./CATERPillar-cli --config example_config.json
 ```
 This mode allows you to execute heavy math and generate `.csv` files on remote servers without display capabilities (X11 forwarding is not required). An example configuration file (`example_config.json`) is included in the repository to help you correctly format your parameters.
 

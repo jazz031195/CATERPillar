@@ -1,34 +1,59 @@
 cmake_minimum_required(VERSION 3.10)
 project(CATERPillar VERSION 1.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
+option(BUILD_GUI "Build the Qt Widgets GUI application (CATERPillar)" ON)
 
-find_package(Qt5 COMPONENTS Widgets PrintSupport DataVisualization REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(OpenGL REQUIRED)
+# Eigen is vendored at src/Eigen -- already on the include path below, no system
+# Eigen3 install needed. The headless CLI target below needs no external
+# libraries at all: just a C++17 compiler (std::filesystem) and CMake.
 
-file(GLOB_RECURSE ALL_SOURCES 
-    "src/*.cpp" 
-    "src/*.h" 
-    "GUI/*.cpp" 
-    "GUI/*.h" 
-    "GUI/*.ui"
-    "GUI/*.qrc"
+file(GLOB CORE_SOURCES
+    "src/*.cpp"
+    "src/*.h"
+)
+list(REMOVE_ITEM CORE_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main_cli.cpp
 )
 
-add_executable(CATERPillar ${ALL_SOURCES})
+# --- Headless CLI target: just the growth simulation, no external libraries required ---
+add_executable(CATERPillar-cli ${CORE_SOURCES} src/main_cli.cpp)
 
-target_include_directories(CATERPillar PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR} 
+target_include_directories(CATERPillar-cli PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/GUI
 )
 
-target_link_libraries(CATERPillar PRIVATE Qt5::Widgets Qt5::PrintSupport Qt5::DataVisualization Eigen3::Eigen OpenGL::GL)
+# --- GUI target: full CATERPillar application ---
+if(BUILD_GUI)
+    find_package(Qt5 COMPONENTS Widgets PrintSupport DataVisualization REQUIRED)
+    find_package(OpenGL REQUIRED)
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/logo_catrepillar.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(GLOB_RECURSE GUI_SOURCES
+        "GUI/*.cpp"
+        "GUI/*.h"
+        "GUI/*.ui"
+        "GUI/*.qrc"
+    )
+
+    add_executable(CATERPillar ${CORE_SOURCES} src/main.cpp ${GUI_SOURCES})
+
+    set_target_properties(CATERPillar PROPERTIES
+        AUTOMOC ON
+        AUTOUIC ON
+        AUTORCC ON
+    )
+
+    target_include_directories(CATERPillar PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/GUI
+    )
+
+    target_link_libraries(CATERPillar PRIVATE Qt5::Widgets Qt5::PrintSupport Qt5::DataVisualization OpenGL::GL)
+
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/logo_catrepillar.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
