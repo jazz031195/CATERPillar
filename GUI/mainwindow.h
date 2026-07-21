@@ -91,7 +91,13 @@ private:
     QLineEdit *inputDiffIntra;
     QLineEdit *inputDiffExtra;
     QLineEdit *inputSchemeFile;
-    QLineEdit *inputCsvPath; 
+    QLineEdit *inputCsvPath;
+    QLineEdit *inputExecutablePath;
+    QLineEdit *inputLoadConfigPath;
+    QDoubleSpinBox *inputVoxelSizeMC;
+    QCheckBox *checkIncludeAxons;
+    QCheckBox *checkIncludeGlial;
+    QCheckBox *checkIncludeBloodVessels;
     QProcess *simulatorProcess; 
 
     QComboBox *configurationComboBox;
