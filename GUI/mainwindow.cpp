@@ -27,6 +27,14 @@ Window::Window(QWidget *parent)
     this->openglWindow = new OpenGLWindow(); // Make sure this is instantiated
     this->visualizationWidget = nullptr;
     this->simulatorProcess = new QProcess(this);
+    connect(simulatorProcess, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
+            this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            QMessageBox::information(this, "Success", "Simulation finished successfully.");
+        } else {
+            QMessageBox::warning(this, "Error", "Simulation crashed or exited with an error.");
+        }
+    });
 
     // Main layout for the entire window
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -129,6 +137,39 @@ Window::Window(QWidget *parent)
     // =========================================================
     QWidget *tabMonteCarlo = new QWidget();
     QVBoxLayout *mcLayout = new QVBoxLayout(tabMonteCarlo);
+
+    // Path to the MC-DC simulator executable (machine-specific, so no default value)
+    QFormLayout *executableForm = new QFormLayout();
+    inputExecutablePath = new QLineEdit();
+    inputExecutablePath->setPlaceholderText("/path/to/MC-DC_Simulator");
+    QHBoxLayout *executableLayout = new QHBoxLayout();
+    executableLayout->addWidget(inputExecutablePath);
+    QPushButton *btnBrowseExecutable = new QPushButton("Browse...");
+    executableLayout->addWidget(btnBrowseExecutable);
+    executableForm->addRow("Simulator Executable:", executableLayout);
+    mcLayout->addLayout(executableForm);
+
+    connect(btnBrowseExecutable, &QPushButton::clicked, [this]() {
+        QString file = QFileDialog::getOpenFileName(this, "Select MC-DC Simulator Executable", "", "All Files (*)");
+        if (!file.isEmpty()) inputExecutablePath->setText(file);
+    });
+
+    // Load an existing config file to run as-is, bypassing the parameter form below
+    QFormLayout *loadConfigForm = new QFormLayout();
+    inputLoadConfigPath = new QLineEdit();
+    inputLoadConfigPath->setPlaceholderText("Leave empty to build a config file from the parameters below");
+    QHBoxLayout *loadConfigLayout = new QHBoxLayout();
+    loadConfigLayout->addWidget(inputLoadConfigPath);
+    QPushButton *btnBrowseLoadConfig = new QPushButton("Browse...");
+    loadConfigLayout->addWidget(btnBrowseLoadConfig);
+    loadConfigForm->addRow("Load Existing Config File:", loadConfigLayout);
+    mcLayout->addLayout(loadConfigForm);
+
+    connect(btnBrowseLoadConfig, &QPushButton::clicked, [this]() {
+        QString file = QFileDialog::getOpenFileName(this, "Select Existing Config File", "", "Config Files (*.conf);;All Files (*)");
+        if (!file.isEmpty()) inputLoadConfigPath->setText(file);
+    });
+
     QFormLayout *mcForm = new QFormLayout();
 
     // Default values
@@ -137,22 +178,24 @@ Window::Window(QWidget *parent)
     inputDuration = new QLineEdit("0.092");
     inputDiffIntra = new QLineEdit("2.5e-9");
     inputDiffExtra = new QLineEdit("1.5e-9");
-    inputSchemeFile = new QLineEdit("/users/jnguyend/MCDS/Permeable_MCDS/Santi/ukbb_protocol.scheme");
-    inputCsvPath = new QLineEdit("/users/jnguyend/MCDS/Permeable_MCDS/Santi/Healthy_Voxel_corrected.csv");
+    inputSchemeFile = new QLineEdit();
+    inputSchemeFile->setPlaceholderText("/path/to/protocol.scheme (diffusion acquisition scheme)");
+    inputCsvPath = new QLineEdit();
+    inputCsvPath->setPlaceholderText("/path/to/obstacles.csv (cell geometry file)");
+
+    inputVoxelSizeMC = new QDoubleSpinBox();
+    inputVoxelSizeMC->setRange(0.001, 10.0);
+    inputVoxelSizeMC->setDecimals(3);
+    inputVoxelSizeMC->setSingleStep(0.01);
+    inputVoxelSizeMC->setValue(0.1);
+    inputVoxelSizeMC->setSuffix(" mm");
 
     mcForm->addRow("N (Walkers):", inputN);
     mcForm->addRow("T (Time steps):", inputT);
     mcForm->addRow("Duration:", inputDuration);
     mcForm->addRow("Diffusivity Intra:", inputDiffIntra);
     mcForm->addRow("Diffusivity Extra:", inputDiffExtra);
-    mcForm->addRow("Scheme File:", inputSchemeFile);
-    
-    // Adding a layout with a browse button for the CSV file
-    QHBoxLayout *csvLayout = new QHBoxLayout();
-    csvLayout->addWidget(inputCsvPath);
-    QPushButton *btnBrowseCsv = new QPushButton("Browse...");
-    csvLayout->addWidget(btnBrowseCsv);
-    mcForm->addRow("Obstacle CSV Path:", csvLayout);
+    mcForm->addRow("Voxel Size (edge length):", inputVoxelSizeMC);
 
     QHBoxLayout *SchemeLayout = new QHBoxLayout();
     SchemeLayout->addWidget(inputSchemeFile);
@@ -160,12 +203,48 @@ Window::Window(QWidget *parent)
     SchemeLayout->addWidget(btnBrowseScheme);
     mcForm->addRow("Scheme File Path:", SchemeLayout);
 
+    connect(btnBrowseScheme, &QPushButton::clicked, [this]() {
+        QString file = QFileDialog::getOpenFileName(this, "Select Scheme File", "", "Scheme Files (*.scheme);;All Files (*)");
+        if (!file.isEmpty()) inputSchemeFile->setText(file);
+    });
+
+    mcLayout->addLayout(mcForm);
+
+    // Obstacles to include: the user must pick at least one, checked at Run time.
+    // A single CSV path is shared across whichever obstacle types are checked.
+    QGroupBox *obstacleGroup = new QGroupBox("Obstacles to Include");
+    QVBoxLayout *obstacleLayout = new QVBoxLayout();
+
+    checkIncludeAxons = new QCheckBox("Axons");
+    checkIncludeAxons->setChecked(true);
+    checkIncludeGlial = new QCheckBox("Glial Cells");
+    checkIncludeBloodVessels = new QCheckBox("Blood Vessels");
+
+    QLabel *bloodVesselsMCWarningLabel = new QLabel("Blood Vessels: work in progress, not validated yet");
+    bloodVesselsMCWarningLabel->setStyleSheet("color: #b36b00;");
+
+    QHBoxLayout *obstacleCheckboxLayout = new QHBoxLayout();
+    obstacleCheckboxLayout->addWidget(checkIncludeAxons);
+    obstacleCheckboxLayout->addWidget(checkIncludeGlial);
+    obstacleCheckboxLayout->addWidget(checkIncludeBloodVessels);
+    obstacleCheckboxLayout->addWidget(bloodVesselsMCWarningLabel);
+    obstacleLayout->addLayout(obstacleCheckboxLayout);
+
+    QFormLayout *obstacleCsvForm = new QFormLayout();
+    QHBoxLayout *csvLayout = new QHBoxLayout();
+    csvLayout->addWidget(inputCsvPath);
+    QPushButton *btnBrowseCsv = new QPushButton("Browse...");
+    csvLayout->addWidget(btnBrowseCsv);
+    obstacleCsvForm->addRow("Obstacle CSV Path:", csvLayout);
+    obstacleLayout->addLayout(obstacleCsvForm);
+
+    obstacleGroup->setLayout(obstacleLayout);
+    mcLayout->addWidget(obstacleGroup);
+
     connect(btnBrowseCsv, &QPushButton::clicked, [this]() {
         QString file = QFileDialog::getOpenFileName(this, "Select Obstacle CSV", "", "CSV Files (*.csv)");
         if (!file.isEmpty()) inputCsvPath->setText(file);
     });
-
-    mcLayout->addLayout(mcForm);
 
     QPushButton *btnRun = new QPushButton("Run", this);
     btnRun->setStyleSheet("font-weight: bold; padding: 10px;"); // Make it stand out
@@ -276,6 +355,9 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
     // --- PAGE 5: BLOOD VESSELS ---
     QGroupBox *bloodVesselGroup = new QGroupBox("Blood Vessel Parameters");
     QFormLayout *bloodLayout = new QFormLayout;
+    QLabel *bloodVesselsWarningLabel = new QLabel("<b>Blood Vessels: work in progress, not validated yet.</b>");
+    bloodVesselsWarningLabel->setStyleSheet("color: #b36b00;");
+    bloodLayout->addRow(bloodVesselsWarningLabel);
     bloodLayout->addRow(blood_vessels_icvf_qlabel, blood_vessels_icvf_SpinBox);
     bloodLayout->addRow(blood_vessels_processes_icvf_qlabel, blood_vessels_processes_icvf_SpinBox);
     bloodVesselGroup->setLayout(bloodLayout);
@@ -287,102 +369,108 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
 
 void Window::runMCSimulation()
 {
-    // 1. Define a temporary configuration file path in the current directory
-    QString confFilePath = QDir::currentPath() + "/temp_simulation.conf";
-    QFile file(confFilePath);
-    
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(this, "Error", "Could not create configuration file.");
+    if (simulatorProcess->state() != QProcess::NotRunning) {
+        QMessageBox::warning(this, "Error", "A Monte Carlo simulation is already running.");
         return;
     }
 
-    // 2. Write parameters to the configuration file
-    QTextStream out(&file);
-    out << "N " << inputN->text() << "\n";
-    out << "T " << inputT->text() << "\n";
-    out << "duration " << inputDuration->text() << "\n";
-    out << "diffusivity_intra " << inputDiffIntra->text() << "\n";
-    out << "diffusivity_extra " << inputDiffExtra->text() << "\n\n";
-    
-    out << "scheme_file " << inputSchemeFile->text() << "\n\n";
+    QString confFilePath = inputLoadConfigPath->text().trimmed();
 
-    // Inject the user's CSV path directly into the obstacle list
-    out << "<obstacle>\n";
-    out << "<axons_list>\n";
-    out << inputCsvPath->text() << "\n"; 
-    out << "permeability global 0\n";
-    out << "</axons_list>\n";
-    out << "</obstacle>\n\n";
+    if (!confFilePath.isEmpty()) {
+        // An existing config file was supplied: read it directly, skipping the form below entirely.
+        if (!QFile::exists(confFilePath)) {
+            QMessageBox::critical(this, "Error", "Could not find the config file at:\n" + confFilePath);
+            return;
+        }
+    } else {
+        // No existing config supplied: the user must pick at least one obstacle type to build the config from.
+        if (!checkIncludeAxons->isChecked() && !checkIncludeGlial->isChecked() && !checkIncludeBloodVessels->isChecked()) {
+            QMessageBox::critical(this, "Error", "Please select at least one obstacle type to include (Axons, Glial Cells, or Blood Vessels).");
+            return;
+        }
+        if (inputCsvPath->text().trimmed().isEmpty()) {
+            QMessageBox::critical(this, "Error", "Please specify the Obstacle CSV path.");
+            return;
+        }
 
-    // Add necessary fixed blocks (voxel, sampling_area)
-    out << "<voxel>\n0.0 0.0 0.0\n0.1 0.1 0.1\n</voxel>\n\n";
-    out << "<sampling_area>\n0.015 0.015 0.015\n0.085 0.085 0.085\n</sampling_area>\n\n";
-    out << "<END>\n";
-    file.close();
+        // No existing config supplied: build one from the form, into a user-chosen output directory.
+        QString outputDir = QFileDialog::getExistingDirectory(this,
+                                                               tr("Select Output Directory for Monte Carlo Simulation"),
+                                                               QDir::homePath());
+        if (outputDir.isEmpty()) {
+            return; // User canceled the dialog
+        }
 
-    // 3. Execute the simulation
-    QString executablePath = "./MC-DC_Simulator"; // Adjust if your executable is named differently or elsewhere
+        confFilePath = outputDir + "/config.conf";
+        QString expPrefix = outputDir + "/run";
+
+        QFile file(confFilePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QMessageBox::critical(this, "Error", "Could not create configuration file.");
+            return;
+        }
+
+        QTextStream out(&file);
+        out << "N " << inputN->text() << "\n";
+        out << "T " << inputT->text() << "\n";
+        out << "duration " << inputDuration->text() << "\n";
+        out << "diffusivity_intra " << inputDiffIntra->text() << "\n";
+        out << "diffusivity_extra " << inputDiffExtra->text() << "\n\n";
+
+        out << "scheme_file " << inputSchemeFile->text() << "\n\n";
+
+        // exp_prefix tells the simulator where to save the config's output files (traj, hit, signals, ...)
+        out << "exp_prefix " << expPrefix << "\n\n";
+
+        // Inject the same CSV path into a list block for each checked obstacle type
+        out << "<obstacle>\n";
+        if (checkIncludeAxons->isChecked()) {
+            out << "<axons_list>\n";
+            out << inputCsvPath->text() << "\n";
+            out << "permeability global 0\n";
+            out << "</axons_list>\n";
+        }
+        if (checkIncludeGlial->isChecked()) {
+            out << "<glials_list>\n";
+            out << inputCsvPath->text() << "\n";
+            out << "permeability global 0\n";
+            out << "</glials_list>\n";
+        }
+        if (checkIncludeBloodVessels->isChecked()) {
+            out << "<blood_vessels_list>\n";
+            out << inputCsvPath->text() << "\n";
+            out << "permeability global 0\n";
+            out << "</blood_vessels_list>\n";
+        }
+        out << "</obstacle>\n\n";
+
+        // Add the voxel block, sized from the user-defined voxel edge length.
+        double voxelSize = inputVoxelSizeMC->value();
+        QString voxelSizeStr = QString::number(voxelSize);
+        out << "<voxel>\n0.0 0.0 0.0\n" << voxelSizeStr << " " << voxelSizeStr << " " << voxelSizeStr << "\n</voxel>\n\n";
+        out << "<END>\n";
+        file.close();
+    }
+
+    // Execute the simulation
+    QString executablePath = inputExecutablePath->text();
+    if (executablePath.isEmpty()) {
+        QMessageBox::critical(this, "Error", "Please specify the path to the MC-DC simulator executable.");
+        return;
+    }
+    if (!QFile::exists(executablePath)) {
+        QMessageBox::critical(this, "Error", "Could not find the Monte Carlo simulator executable at:\n" + executablePath);
+        return;
+    }
+
     QStringList arguments;
     arguments << confFilePath;
-
-    connect(simulatorProcess, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), 
-            this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
-        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
-            QMessageBox::information(this, "Success", "Simulation finished successfully.");
-        } else {
-            QMessageBox::warning(this, "Error", "Simulation crashed or exited with an error.");
-        }
-    });
 
     simulatorProcess->start(executablePath, arguments);
 
     if (!simulatorProcess->waitForStarted()) {
-        QMessageBox::critical(this, "Error", "Could not start the simulator executable. Make sure it is in the same directory.");
+        QMessageBox::critical(this, "Error", "Could not start the simulator executable at:\n" + executablePath);
     }
-}
-
-void Window::generateMonteCarloConf()
-{
-    // Ask the user where they want to save the .conf file
-    QString savePath = QFileDialog::getSaveFileName(this, 
-                                                    tr("Save Monte Carlo Config"), 
-                                                    "simulation.conf", 
-                                                    tr("Configuration Files (*.conf)"));
-    if (savePath.isEmpty()) {
-        return; // User canceled the dialog
-    }
-
-    QFile file(savePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(this, "Error", "Could not open file for writing.");
-        return;
-    }
-
-    QTextStream out(&file);
-
-    // Write the parameters exactly as the executable expects them
-    out << "N " << inputN->text() << "\n";
-    out << "T " << inputT->text() << "\n";
-    out << "duration " << inputDuration->text() << "\n";
-    out << "diffusivity_intra " << inputDiffIntra->text() << "\n";
-    out << "diffusivity_extra " << inputDiffExtra->text() << "\n\n";
-    
-    out << "scheme_file " << inputSchemeFile->text() << "\n\n";
-
-    // You can hardcode standard blocks or dynamically generate them from other inputs
-    out << "<obstacle>\n";
-    out << "<axons_list>\n";
-    out << "/path/to/axons.csv\n"; // Replace with actual dynamically fetched path if needed
-    out << "permeability global 0\n";
-    out << "</axons_list>\n";
-    out << "</obstacle>\n\n";
-
-    // ... Write remaining fixed/variable blocks (voxel, sampling_area) here ...
-
-    out << "<END>\n";
-
-    file.close();
-    QMessageBox::information(this, "Success", "Configuration file saved successfully!");
 }
 
 void Window::SelectSWCFileButton() {
