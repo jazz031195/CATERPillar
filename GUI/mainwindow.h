@@ -15,6 +15,7 @@
 #include <QString>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
+#include <QSpinBox>
 #include <QPushButton>
 #include <QProgressBar>
 #include <QtDataVisualization/Q3DScatter>
@@ -94,6 +95,7 @@ private:
     QLineEdit *inputExecutablePath;
     QLineEdit *inputLoadConfigPath;
     QDoubleSpinBox *inputVoxelSizeMC;
+    QSpinBox *inputNumThreadsMC;
     QCheckBox *checkIncludeAxons;
     QCheckBox *checkIncludeGlial;
     QCheckBox *checkIncludeBloodVessels;
