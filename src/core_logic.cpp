@@ -137,9 +137,10 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     
     params.repetitions = data["GeneralParameters"]["Repetitions"];
     params.spheres_overlap_factor = data["GeneralParameters"]["OverlappingFactor"];
+    params.nbr_threads = data["GeneralParameters"]["NumberOfThreads"];
 
     // ==========================================
-    // 2. Axon Parameters 
+    // 2. Axon Parameters
     // ==========================================
     params.axons_wo_myelin_icvf = double(data["AxonParameters"]["AxonsICVF"]) / 100.0;
     params.axons_w_myelin_icvf = double(data["AxonParameters"]["AxonsWithMyelinICVF"]) / 100.0;
@@ -148,7 +149,6 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
 
     params.nbr_axons_populations = data["AxonParameters"]["NumberOfPopulations"];
     params.crossing_fibers_type = data["AxonParameters"]["CrossingFibersType"];
-    params.nbr_threads = data["AxonParameters"]["NumberOfThreads"];
     
     // Axon morphology
     params.alpha = data["AxonParameters"]["Alpha"];
