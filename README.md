@@ -4,9 +4,9 @@
 
 CATERPillar (**Computational Axonal Threading Engine for Realistic Proliferation**) is an advanced computational framework designed to simulate natural axonal growth using overlapping spheres as fundamental building blocks. By employing a biologically inspired approach, CATERPillar enables parallel axon development while effectively preventing collisions, allowing users to control key structural parameters such as **density, tortuosity, and beading**.
 
-What sets CATERPillar apart is its ability to generate not only realistic **axonal architectures** but also **glial cell structures** and **branching blood vessels**, significantly enhancing the biological fidelity of tissue microstructure simulations. This makes it a valuable tool for studying brain tissue models and validating diffusion-based imaging techniques.
+What sets CATERPillar apart is its ability to generate not only realistic **axonal architectures** but also **glial cell structures**, significantly enhancing the biological fidelity of tissue microstructure simulations. This makes it a valuable tool for studying brain tissue models and validating diffusion-based imaging techniques.
 
-The code for the Monte Carlo Simulator adapted for overlapping spheres is available using this link: https://github.com/jazz031195/Permeable_MCDS.
+The code for the Monte Carlo Simulator adapted for overlapping spheres is available on the `whitematter` branch of this repository: https://github.com/jazz031195/Permeable_MCDS/tree/whitematter.
 
 -----
 
