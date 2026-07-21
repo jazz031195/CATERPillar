@@ -14,33 +14,66 @@ The code for the Monte Carlo Simulator adapted for overlapping spheres is availa
 
 CATERPillar uses CMake, making it fully cross-platform for Linux, macOS, and High-Performance Computing (HPC) environments.
 
-### **1. Install Prerequisites**
+CATERPillar can be built and run in two ways: **without the GUI** (a headless `CATERPillar-cli` binary, driven by a JSON config file — ideal for clusters and batch processing) or **with the GUI** (an interactive `CATERPillar` application for exploring parameters visually). Pick whichever fits your use case; both build from the same source tree.
 
-Make sure you have a C++17 compiler and CMake installed on your system. Eigen is vendored in `src/Eigen`, so no separate Eigen install is needed.
+-----
 
-The headless build (`CATERPillar-cli`, see `-DBUILD_GUI=OFF` below) needs nothing beyond that — no Qt, no other external libraries. The full GUI build (`CATERPillar`) additionally needs Qt5's Widgets, PrintSupport, and DataVisualization modules, plus OpenGL.
+### **Option A: Without the GUI (headless / HPC)**
 
-**For Ubuntu / Debian Linux:**
+This is the lightest option: no Qt, no display server, no external libraries at all beyond a compiler and CMake (Eigen is vendored in `src/Eigen`).
+
+**1. Install prerequisites**
 
 ```bash
+# Ubuntu / Debian
 sudo apt update
-# CLI-only build (e.g. on a cluster with no display) -- just a compiler and CMake:
 sudo apt install cmake
-# Full GUI + CLI build, additionally:
-sudo apt install qtbase5-dev libqt5datavisualization5-dev
+
+# macOS (Homebrew)
+brew install cmake
 ```
 
-**For macOS (using Homebrew):**
+You'll also need a C++17 compiler, which normally comes preinstalled (`g++`/`clang++`) or alongside the packages above.
+
+**2. Build**
 
 ```bash
-brew install cmake
-# Full GUI + CLI build, additionally:
-brew install qt5
+mkdir build
+cd build
+cmake .. -DBUILD_GUI=OFF
+make
 ```
 
-### **2. Compile the Source Code**
+This produces a single binary, `CATERPillar-cli`, and never searches for Qt/OpenGL at all.
 
-Navigate to the downloaded repository folder in your terminal and run the following commands to generate the build files and compile the executable:
+**3. Run**
+
+```bash
+./CATERPillar-cli --config example_config/example_config.json
+```
+
+Pass the path to your JSON settings file after `--config`. An example (`example_config/example_config.json`) is included in the repository to help you correctly format your parameters. This mode executes the growth simulation and writes `.csv` output, with no display capability required (no X11 forwarding needed on a cluster).
+
+-----
+
+### **Option B: With the GUI**
+
+This builds the full interactive application, in addition to the headless binary.
+
+**1. Install prerequisites**
+
+You'll need everything from Option A, plus Qt5's Widgets, PrintSupport, and DataVisualization modules, and OpenGL:
+
+```bash
+# Ubuntu / Debian
+sudo apt update
+sudo apt install cmake qtbase5-dev libqt5datavisualization5-dev
+
+# macOS (Homebrew)
+brew install cmake qt5
+```
+
+**2. Build**
 
 ```bash
 mkdir build
@@ -49,32 +82,15 @@ cmake ..
 make
 ```
 
-This builds two targets: `CATERPillar` (the GUI) and `CATERPillar-cli` (a headless build of just the growth simulation). On a machine without the Qt Widgets/DataVisualization/OpenGL stack (e.g. a compute cluster), configure with the GUI disabled to skip those dependencies entirely and build only `CATERPillar-cli`:
+`BUILD_GUI` defaults to `ON`, so this produces both `CATERPillar` (the GUI) and `CATERPillar-cli` (headless).
 
-```bash
-cmake .. -DBUILD_GUI=OFF
-make
-```
-
-### **3. Run CATERPillar**
-
-CATERPillar can be run in two distinct modes: an interactive graphical interface (ideal for exploring parameters) or a headless command-line mode (ideal for High-Performance Computing clusters and automated batch processing).
-
-**Mode A: Graphical User Interface (GUI)**
-Launch the GUI by running:
+**3. Run**
 
 ```bash
 ./CATERPillar
 ```
+
 The GUI allows you to configure biophysical parameters and generate realistic numerical substrates. To generate a new substrate, click **"Grow Substrate"**. To visualize a previously generated substrate, click **"Visualise Substrate"**.
-
-**Mode B: Headless / HPC Mode (JSON Configuration)**
-To run simulations in the terminal, without ever needing the GUI's Qt Widgets/OpenGL dependencies, use the `CATERPillar-cli` binary with the `--config` argument followed by the path to your JSON settings file:
-
-```bash
-./CATERPillar-cli --config example_config/example_config.json
-```
-This mode allows you to execute heavy math and generate `.csv` files on remote servers without display capabilities (X11 forwarding is not required). An example configuration file (`example_config/example_config.json`) is included in the repository to help you correctly format your parameters.
 
 -----
 
