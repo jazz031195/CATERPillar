@@ -27,6 +27,14 @@ Window::Window(QWidget *parent)
     this->openglWindow = new OpenGLWindow(); // Make sure this is instantiated
     this->visualizationWidget = nullptr;
     this->simulatorProcess = new QProcess(this);
+    connect(simulatorProcess, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
+            this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            QMessageBox::information(this, "Success", "Simulation finished successfully.");
+        } else {
+            QMessageBox::warning(this, "Error", "Simulation crashed or exited with an error.");
+        }
+    });
 
     // Main layout for the entire window
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -287,10 +295,23 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
 
 void Window::runMCSimulation()
 {
-    // 1. Define a temporary configuration file path in the current directory
-    QString confFilePath = QDir::currentPath() + "/temp_simulation.conf";
+    if (simulatorProcess->state() != QProcess::NotRunning) {
+        QMessageBox::warning(this, "Error", "A Monte Carlo simulation is already running.");
+        return;
+    }
+
+    // 1. Ask the user where the config file and simulation outputs should be saved
+    QString outputDir = QFileDialog::getExistingDirectory(this,
+                                                           tr("Select Output Directory for Monte Carlo Simulation"),
+                                                           QDir::homePath());
+    if (outputDir.isEmpty()) {
+        return; // User canceled the dialog
+    }
+
+    QString confFilePath = outputDir + "/config.conf";
+    QString expPrefix = outputDir + "/run";
+
     QFile file(confFilePath);
-    
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox::critical(this, "Error", "Could not create configuration file.");
         return;
@@ -303,13 +324,16 @@ void Window::runMCSimulation()
     out << "duration " << inputDuration->text() << "\n";
     out << "diffusivity_intra " << inputDiffIntra->text() << "\n";
     out << "diffusivity_extra " << inputDiffExtra->text() << "\n\n";
-    
+
     out << "scheme_file " << inputSchemeFile->text() << "\n\n";
+
+    // exp_prefix tells the simulator where to save the config's output files (traj, hit, signals, ...)
+    out << "exp_prefix " << expPrefix << "\n\n";
 
     // Inject the user's CSV path directly into the obstacle list
     out << "<obstacle>\n";
     out << "<axons_list>\n";
-    out << inputCsvPath->text() << "\n"; 
+    out << inputCsvPath->text() << "\n";
     out << "permeability global 0\n";
     out << "</axons_list>\n";
     out << "</obstacle>\n\n";
@@ -321,23 +345,19 @@ void Window::runMCSimulation()
     file.close();
 
     // 3. Execute the simulation
-    QString executablePath = "./MC-DC_Simulator"; // Adjust if your executable is named differently or elsewhere
+    QString executablePath = QDir::homePath() + "/Documents/MCDS/Permeable_MCDS/MC-DC_Simulator";
+    if (!QFile::exists(executablePath)) {
+        QMessageBox::critical(this, "Error", "Could not find the Monte Carlo simulator executable at:\n" + executablePath);
+        return;
+    }
+
     QStringList arguments;
     arguments << confFilePath;
-
-    connect(simulatorProcess, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), 
-            this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
-        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
-            QMessageBox::information(this, "Success", "Simulation finished successfully.");
-        } else {
-            QMessageBox::warning(this, "Error", "Simulation crashed or exited with an error.");
-        }
-    });
 
     simulatorProcess->start(executablePath, arguments);
 
     if (!simulatorProcess->waitForStarted()) {
-        QMessageBox::critical(this, "Error", "Could not start the simulator executable. Make sure it is in the same directory.");
+        QMessageBox::critical(this, "Error", "Could not start the simulator executable at:\n" + executablePath);
     }
 }
 
