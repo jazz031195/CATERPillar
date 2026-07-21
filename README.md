@@ -103,6 +103,7 @@ The GUI allows you to configure biophysical parameters and generate realistic nu
   * **Overlapping Factor:** Controls the spacing between consecutive spheres during axonal growth. The distance is computed as $\max(R_1, R_2) / F$, where $R_1$ and $R_2$ are the radii of two consecutive spheres, and $F$ is the chosen overlapping factor. A higher overlapping factor results in closer sphere placement, reducing the gaps. A recommended value for optimal results is **4**.
   * **Minimum Sphere Radius (μm):** Specifies the smallest allowable sphere radius within the voxel. This constraint helps prevent excessively narrow spaces that could impede Monte Carlo Simulations.
   * **Visualise Voxel:** Ticking this box allows the GUI to plot the 3D substrate once the growth is completed.
+  * **Number of Threads:** Determines the number of axons that can grow simultaneously during the simulation, impacting computational efficiency.
 
 ### **Axon Parameters:**
 
@@ -111,19 +112,13 @@ The GUI allows you to configure biophysical parameters and generate realistic nu
     $$\text{Myelin thickness}=K_1+K_2\cdot D_{\text{in}}+K_3\cdot\log(D_{\text{in}})$$
     This log-linear fit was proposed by Lee et al. (DOI: 10.1007/s00429-019-01844-6) using $K_1=0.35$, $K_2=0.006$, and $K_3=0.024$.
   * **Axons ICVF (%):** Specifies the volume fraction of non-myelinated axons within the voxel.
-  * **Number of Threads:** Determines the number of axons that can grow simultaneously during the simulation, impacting computational efficiency.
   * **Tortuosity ($\epsilon$):** Represents the standard deviation of the Gaussian distribution governing the 3D positioning of spheres during axonal growth. Higher values result in increased axonal tortuosity.
   * **Fibre Orientation Dispersion Function ($c_2$):** Defined as $\langle \cos^2\psi \rangle$, where $\psi$ is the angle between the axon growth direction and the z-axis. This parameter quantifies the degree of fibre orientation dispersion within the substrate.
-  * **Number of Axon Populations:** Specifies the number of distinct axonal populations that can grow within the substrate (range: 1-3). Each population adopts a primary orientation perpendicular to the others. If two populations are selected, users can choose between a **sheet configuration** or an **interwoven configuration**.
+  * **Number of Axon Populations:** Specifies the number of distinct axonal populations that can grow within the substrate (range: 1-3). Each population adopts a primary orientation perpendicular to the others. If two populations are selected, users can choose between a **sheet configuration** or an **interwoven configuration** — set via the `CrossingFibersType` key in the JSON config file (`0` = sheet, `1` = interwoven).
   * **Beading Amplitude ($A$):** Defines the amplitude of axonal beading as a fraction of the axon's initial radius ($R$), influencing morphological variability. The radius of an axon changes with its length stochastically. The next sphere's radius is drawn from a normal distribution centered on the previous radius. If the computed radius falls outside the boundary $R \pm A \cdot R$, the normal distribution will instead be centered at that boundary value.
   * **Beading Standard Deviation:** Standard deviation of the normal distribution used to draw each new sphere's radius around the beading target described above. Higher values increase local radius variability along the axon.
   * **Gamma Distribution for Radii ($\alpha$):** Shape parameter for the Gamma distribution governing axon radii. A recommended value for realistic axon widths is **4**.
   * **Gamma Distribution for Radii ($\beta$):** Scale parameter for the Gamma distribution governing axon radii. A recommended value for realistic axon widths is **0.25**.
-
-### **Blood Vessel Parameters:**
-
-  * **Blood Vessels ICVF (%):** Defines the volume fraction occupied by the main blood vessel trunks within the substrate.
-  * **Blood Vessel Branches ICVF (%):** Defines the volume fraction occupied by branches growing off the main blood vessels.
 
 ### **Glial Cell Parameters:**
 

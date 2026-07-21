@@ -4,7 +4,8 @@
         "Filename": "run_001",
         "VoxelEdgeLength": 50.0,
         "Repetitions": 1,
-        "OverlappingFactor": 4
+        "OverlappingFactor": 4,
+        "NumberOfThreads": 4
     },
     "AxonParameters": {
         "AxonsICVF": 20.0,
@@ -12,7 +13,6 @@
         "BloodVesselsICVF": 0.0,
         "NumberOfPopulations": 1,
         "CrossingFibersType": 0,
-        "NumberOfThreads": 4,
         "Alpha": 4.0,
         "Beta": 0.25,
         "MinRadius": 0.15,
