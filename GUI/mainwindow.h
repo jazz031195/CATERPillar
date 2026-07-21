@@ -59,7 +59,6 @@ private slots:
     void ReadGlialCellsFromFile(const QString& fileName);
     void ReadGlialCellsFromCSV(const QString& fileName);
     void ReadBloodVesselsFromFile(const QString& fileName);
-    void generateMonteCarloConf();
     void runMCSimulation();
     void onGrowthProgress(double completed_depth, double total_depth);
     void onSwellingProgress(double current_icvf, double target_icvf);

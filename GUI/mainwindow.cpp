@@ -203,6 +203,11 @@ Window::Window(QWidget *parent)
     SchemeLayout->addWidget(btnBrowseScheme);
     mcForm->addRow("Scheme File Path:", SchemeLayout);
 
+    connect(btnBrowseScheme, &QPushButton::clicked, [this]() {
+        QString file = QFileDialog::getOpenFileName(this, "Select Scheme File", "", "Scheme Files (*.scheme);;All Files (*)");
+        if (!file.isEmpty()) inputSchemeFile->setText(file);
+    });
+
     mcLayout->addLayout(mcForm);
 
     // Obstacles to include: the user must pick at least one, checked at Run time.
@@ -215,10 +220,14 @@ Window::Window(QWidget *parent)
     checkIncludeGlial = new QCheckBox("Glial Cells");
     checkIncludeBloodVessels = new QCheckBox("Blood Vessels");
 
+    QLabel *bloodVesselsMCWarningLabel = new QLabel("Blood Vessels: work in progress, not validated yet");
+    bloodVesselsMCWarningLabel->setStyleSheet("color: #b36b00;");
+
     QHBoxLayout *obstacleCheckboxLayout = new QHBoxLayout();
     obstacleCheckboxLayout->addWidget(checkIncludeAxons);
     obstacleCheckboxLayout->addWidget(checkIncludeGlial);
     obstacleCheckboxLayout->addWidget(checkIncludeBloodVessels);
+    obstacleCheckboxLayout->addWidget(bloodVesselsMCWarningLabel);
     obstacleLayout->addLayout(obstacleCheckboxLayout);
 
     QFormLayout *obstacleCsvForm = new QFormLayout();
@@ -346,6 +355,9 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
     // --- PAGE 5: BLOOD VESSELS ---
     QGroupBox *bloodVesselGroup = new QGroupBox("Blood Vessel Parameters");
     QFormLayout *bloodLayout = new QFormLayout;
+    QLabel *bloodVesselsWarningLabel = new QLabel("<b>Blood Vessels: work in progress, not validated yet.</b>");
+    bloodVesselsWarningLabel->setStyleSheet("color: #b36b00;");
+    bloodLayout->addRow(bloodVesselsWarningLabel);
     bloodLayout->addRow(blood_vessels_icvf_qlabel, blood_vessels_icvf_SpinBox);
     bloodLayout->addRow(blood_vessels_processes_icvf_qlabel, blood_vessels_processes_icvf_SpinBox);
     bloodVesselGroup->setLayout(bloodLayout);
@@ -432,16 +444,10 @@ void Window::runMCSimulation()
         }
         out << "</obstacle>\n\n";
 
-        // Add necessary fixed blocks (voxel, sampling_area), sized from the user-defined voxel edge length.
-        // Sampling area is inset from the voxel by 15% on each side, matching the previous fixed defaults (0.015 / 0.1).
+        // Add the voxel block, sized from the user-defined voxel edge length.
         double voxelSize = inputVoxelSizeMC->value();
-        double margin = voxelSize * 0.15;
         QString voxelSizeStr = QString::number(voxelSize);
-        QString marginLowStr = QString::number(margin);
-        QString marginHighStr = QString::number(voxelSize - margin);
         out << "<voxel>\n0.0 0.0 0.0\n" << voxelSizeStr << " " << voxelSizeStr << " " << voxelSizeStr << "\n</voxel>\n\n";
-        out << "<sampling_area>\n" << marginLowStr << " " << marginLowStr << " " << marginLowStr << "\n"
-            << marginHighStr << " " << marginHighStr << " " << marginHighStr << "\n</sampling_area>\n\n";
         out << "<END>\n";
         file.close();
     }
@@ -465,50 +471,6 @@ void Window::runMCSimulation()
     if (!simulatorProcess->waitForStarted()) {
         QMessageBox::critical(this, "Error", "Could not start the simulator executable at:\n" + executablePath);
     }
-}
-
-void Window::generateMonteCarloConf()
-{
-    // Ask the user where they want to save the .conf file
-    QString savePath = QFileDialog::getSaveFileName(this, 
-                                                    tr("Save Monte Carlo Config"), 
-                                                    "simulation.conf", 
-                                                    tr("Configuration Files (*.conf)"));
-    if (savePath.isEmpty()) {
-        return; // User canceled the dialog
-    }
-
-    QFile file(savePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(this, "Error", "Could not open file for writing.");
-        return;
-    }
-
-    QTextStream out(&file);
-
-    // Write the parameters exactly as the executable expects them
-    out << "N " << inputN->text() << "\n";
-    out << "T " << inputT->text() << "\n";
-    out << "duration " << inputDuration->text() << "\n";
-    out << "diffusivity_intra " << inputDiffIntra->text() << "\n";
-    out << "diffusivity_extra " << inputDiffExtra->text() << "\n\n";
-    
-    out << "scheme_file " << inputSchemeFile->text() << "\n\n";
-
-    // You can hardcode standard blocks or dynamically generate them from other inputs
-    out << "<obstacle>\n";
-    out << "<axons_list>\n";
-    out << "/path/to/axons.csv\n"; // Replace with actual dynamically fetched path if needed
-    out << "permeability global 0\n";
-    out << "</axons_list>\n";
-    out << "</obstacle>\n\n";
-
-    // ... Write remaining fixed/variable blocks (voxel, sampling_area) here ...
-
-    out << "<END>\n";
-
-    file.close();
-    QMessageBox::information(this, "Success", "Configuration file saved successfully!");
 }
 
 void Window::SelectSWCFileButton() {
