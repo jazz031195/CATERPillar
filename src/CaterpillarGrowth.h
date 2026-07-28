@@ -53,6 +53,7 @@ public:
     std::vector<int> stuck_indices;    /*!< Indices of stuck axons, to regrow */
     std::vector<Glial> glial_pop1;     /*!< Vector of glial_pop1 */
     std::vector<Glial> glial_pop2;    /*!< Vector of glial_pop2s */
+    std::vector<Glial> glial_pop3;    /*!< Vector of glial_pop3s */
     std::vector<Blood_Vessel> blood_vessels; /*!< Vector of blood vessels */
 
     SphereGrid sphere_grid;              /*!< Spatial grid indexing every sphere added to the environment */
@@ -66,10 +67,13 @@ public:
     
     double glial_pop2_radius_mean; /*!< Mean radius of glial_pop2 */
     double glial_pop1_radius_mean;       /*!< Mean radius of glial_pop1 */
+    double glial_pop3_radius_mean; /*!< Mean radius of glial_pop3 */
     double glial_pop2_radius_std; /*!< Standard deviation of glial_pop2 */
     double glial_pop1_radius_std;       /*!< Standard deviation of glial_pop1 */
+    double glial_pop3_radius_std; /*!< Standard deviation of glial_pop3 */
     bool glial_pop1_branching;               /*!< If true, the glial_pop1 can branch */
     bool glial_pop2_branching;               /*!< If true, the glial_pop2 can branch */
+    bool glial_pop3_branching;               /*!< If true, the glial_pop3 can branch */
 
     double target_axons_w_myelin_icvf;        /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double target_axons_wo_myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons without myelin */
@@ -77,8 +81,11 @@ public:
     double target_glial_pop1_processes_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
     double target_glial_pop2_soma_icvf;        /*!< glial_pop2 Intracellular Compartment Volume Fraction */
     double target_glial_pop2_processes_icvf;    /*!< glial_pop2 Intracellular Compartment Volume Fraction */
-    double target_blood_vessels_icvf;    /*!< Blood Vessel Compartment Volume Fraction */
-    double total_volume; /*!< Total volume of the voxel */
+    double target_glial_pop3_soma_icvf;        /*!< glial_pop3 Intracellular Compartment Volume Fraction */
+    double target_glial_pop3_processes_icvf;    /*!< glial_pop3 Intracellular Compartment Volume Fraction */
+    double target_blood_vessels_icvf;    /*!< Blood Vessel Compartment Volume Fraction -- target is interpreted relative to the (padded) blood-vessel voxel, see big_total_volume */
+    double total_volume; /*!< Total volume of the real (small) voxel */
+    double big_total_volume; /*!< Total volume of the (padded) blood-vessel voxel (bv_min_limits/bv_max_limits) */
     double target_axons_icvf;        
 
     double axons_w_myelin_icvf;        /*!< Intracellular Compartment Volume Fraction of axons with myelin */
@@ -87,16 +94,22 @@ public:
     double glial_pop1_processes_icvf;         /*!< Astrocyte Intracellular Compartment Volume Fraction */
     double glial_pop2_soma_icvf;        /*!< glial_pop2 Intracellular Compartment Volume Fraction */
     double glial_pop2_processes_icvf;    /*!< glial_pop2 Intracellular Compartment Volume Fraction */
+    double glial_pop3_soma_icvf;        /*!< glial_pop3 Intracellular Compartment Volume Fraction */
+    double glial_pop3_processes_icvf;    /*!< glial_pop3 Intracellular Compartment Volume Fraction */
     double axons_icvf;        /*!< Intracellular Compartment Volume Fraction of axons without myelin */
     double myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double extracellular_icvf;        /*!< Extracellular Compartment Volume Fraction */
-    double blood_vessels_icvf;    /*!< Blood Vessel Compartment Volume Fraction */
+    double blood_vessels_icvf;    /*!< Arteriole Compartment Volume Fraction, relative to the real (small) voxel -- display only */
+    double blood_vessels_icvf_big; /*!< Arteriole Compartment Volume Fraction, relative to the (padded) blood-vessel voxel -- what target_blood_vessels_icvf is actually compared against */
     double epsilon_blood_vessels;
     double mean_vessel_rad;
     double std_vessel_rad;
+    double capillary_radius;     /*!< Fixed radius for every capillary sphere (no decay) */
+    int max_generations;         /*!< Deepest allowed capillary branching depth from the arteriole */
 
-    double target_blood_vessels_processes_icvf;  /*!< Target Intracellular Compartment Volume Fraction of blood vessel branches */
-    double blood_vessels_processes_icvf;         /*!< Achieved Intracellular Compartment Volume Fraction of blood vessel branches */
+    double target_blood_vessels_processes_icvf;  /*!< Target Intracellular Compartment Volume Fraction of capillaries -- interpreted relative to the (padded) blood-vessel voxel */
+    double blood_vessels_processes_icvf;         /*!< Achieved Intracellular Compartment Volume Fraction of capillaries, relative to the real (small) voxel -- display only */
+    double blood_vessels_processes_icvf_big;     /*!< Achieved Intracellular Compartment Volume Fraction of capillaries, relative to the (padded) blood-vessel voxel -- what target_blood_vessels_processes_icvf is actually compared against */
 
     double swelling_factor;
 
@@ -113,6 +126,12 @@ public:
     Eigen::Vector3d min_limits;         /*!< Voxel min limits (if any) (bottom left corner) */
     Eigen::Vector3d max_limits;         /*!< Voxel max limits (if any) */
 
+    Eigen::Vector3d bv_min_limits;       /*!< Blood vessel growth voxel min limits: min_limits symmetrically padded out to blood_vessels_voxel_size (or == min_limits if unset/not larger). Trunk/branch growth targets and stopping conditions use this box so vessels have room to actually reach an edge; seeding and ICVF still use min_limits/max_limits. */
+    Eigen::Vector3d bv_max_limits;       /*!< Blood vessel growth voxel max limits, see bv_min_limits. */
+
+    std::vector<int> intersecting_vessel_ids;              /*!< id of every blood vessel touching the (randomly placed) real voxel, set by PlaceSmallVoxel() */
+    std::vector<Eigen::Vector3d> intersecting_vessel_seeds; /*!< seed (begin) coordinate of each vessel in intersecting_vessel_ids, same order -- for growth_info.txt */
+
     double min_radius;                  /*!< Minimum radius value of all axons */
     double max_radius;                  /*!< Maximum radius value of all axons */
 
@@ -126,6 +145,9 @@ public:
     double mean_glial_pop2_process_length;   /*!< Mean length of glial processes */
     double std_glial_pop2_process_length;    /*!< Standard deviation of glial processes */
     int glial_pop2_nbr_primary_processes;          /*!< Number of primary processes for glial cells */
+    double mean_glial_pop3_process_length;   /*!< Mean length of glial processes */
+    double std_glial_pop3_process_length;    /*!< Standard deviation of glial processes */
+    int glial_pop3_nbr_primary_processes;          /*!< Number of primary processes for glial cells */
 
     double c1;                              /*!< First coefficient of the Myelin thickness */
     double c2;                              /*!< Second coefficient of the Myelin thickness */
@@ -214,6 +236,7 @@ public:
      *         with many cells.
      */
     bool checkNoCollisions();
+
     /*!
      *  \param radii_ List of target axon radii (in/out: entries may be overwritten with a
      *         resampled replacement radius if the original draw never found a valid spot,
@@ -415,7 +438,36 @@ public:
      */
     Eigen::Vector3d randomPointOnPlane(const Eigen::Vector3d &begin, const Eigen::Vector3d &end, const int &axis1, const int &axis2, const int &axis3, double &angle, bool &outside_voxel);
 
+    /*!
+     *  \brief Inverts myelin_thickness (outerRadius = innerRadius +
+     *         myelin_thickness(innerRadius)) for a single outer radius. Uses
+     *         inner_radius_lut when it's been built and outerRadius falls
+     *         inside its range (the common case: add_Myelin calls this once
+     *         per sphere of every myelinated axon, so a precomputed table
+     *         turns what would be a full Newton's-method solve -- several
+     *         iterations, two function evaluations each -- into one O(1)
+     *         interpolated lookup), falling back to the exact Newton's-method
+     *         solve otherwise (buildInnerRadiusLUT itself uses this fallback
+     *         path to populate the table in the first place, and any query
+     *         outside the table's precomputed range also lands here rather
+     *         than extrapolating).
+     */
     double findInnerRadius(const double &outerRadius);
+
+    /*!
+     *  \brief Precomputes inner_radius_lut: findInnerRadius's exact
+     *         Newton's-method answer at n_points uniformly-spaced outer radii
+     *         across [lo, hi], linearly interpolated between by
+     *         findInnerRadius afterward. Meant to be called once, after the
+     *         true outer-radius range in play is known (e.g. right after
+     *         generate_radii sorts/sets max_radius), before any of the many
+     *         per-sphere findInnerRadius calls in add_Myelin(). A no-op if
+     *         hi <= lo (e.g. no myelinated axons were actually placed).
+     */
+    void buildInnerRadiusLUT(double lo, double hi, int n_points = 2000);
+
+    std::vector<double> inner_radius_lut_outer; /*!< uniformly-spaced outer radii sample points, ascending */
+    std::vector<double> inner_radius_lut_inner; /*!< findInnerRadius's exact answer at each inner_radius_lut_outer entry, same order */
 
     void growBranches(const int &population_nbr);
 
@@ -434,7 +486,31 @@ public:
      */
     void ApplyMurraysLawToBloodVessels();
 
-    void ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos, const std::vector<Blood_Vessel> &blood_vessels);
+    /*!
+     *  \brief Randomly repositions the real (small) voxel -- min_limits/max_limits,
+     *         same edge length as before, translated -- somewhere inside the
+     *         (padded) blood-vessel voxel, subject to actually intersecting at
+     *         least one already-grown blood vessel (arteriole and/or capillaries).
+     *         Meant to run once, after blood vessels are fully grown (including
+     *         Murray's law thinning), and before any other population is placed --
+     *         everything downstream (glial cells, axons, ICVF, output) uses
+     *         min_limits/max_limits, so this must finalize their position first.
+     *         Picks a uniformly random sphere among every grown vessel sphere,
+     *         then a random small-voxel placement guaranteed to contain that
+     *         sphere's center (clamped to stay inside the big voxel), rather than
+     *         blindly retrying random placements until one happens to intersect --
+     *         with a sparse vessel network in a large big voxel, blind placement
+     *         could need many tries (or fail outright) to land near a vessel at
+     *         all. If there are no blood vessels to intersect, min_limits/max_limits
+     *         are left at their default (origin-anchored) position instead, since
+     *         the intersection requirement would otherwise be unsatisfiable.
+     *         Populates intersecting_vessel_ids/intersecting_vessel_seeds with
+     *         every vessel that ends up touching the committed placement (not
+     *         just the one used to seed the search), for growth_info.txt.
+     */
+    void PlaceSmallVoxel();
+
+    void ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos, const std::vector<Glial> &glial_pop3, const std::vector<Blood_Vessel> &blood_vessels);
     
     double c2toKappa(double c2_target, double c2_tol, double kappa_max);
     std::vector<double> generate_angles(const int &num_samples);

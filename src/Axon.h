@@ -156,6 +156,17 @@ public:
 
     void update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits);
 
+    /*!
+     *  \brief Computes volume_myelin: the myelin sheath's own volume alone
+     *         (outer boundary minus the bare axon core), by summing the same
+     *         truncated-cone volume as update_Volume but over inner_spheres,
+     *         then subtracting from volume (the outer boundary's volume --
+     *         must already be up to date, e.g. via a prior update_Volume
+     *         call). 0 for non-myelinated axons or before add_Myelin has
+     *         populated inner_spheres.
+     */
+    void update_MyelinVolume(const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits);
+
 };
 
 #endif // AXON_H

@@ -18,6 +18,8 @@ class BloodVesselGrowth : public CellGrowth
 {
 public:
     Blood_Vessel& bv_to_grow;  /*!< Reference to the Blood_Vessel being grown */
+    double capillary_radius;  /*!< Fixed radius every capillary (branch_id >= 1) sphere is grown at -- unused by main-vessel-only growth (GrowBloodVessels), which never calls growBranch. */
+    int max_generations;      /*!< Deepest allowed capillary branching depth from the arteriole -- same scope as capillary_radius. */
 
     BloodVesselGrowth() = delete;
 
@@ -28,7 +30,9 @@ public:
                        const Eigen::Vector3d &min_limits_,
                        const Eigen::Vector3d &max_limits_,
                        const double &epsilon_,
-                       const double &min_radius_);
+                       const double &min_radius_,
+                       const double &capillary_radius_ = 0.0,
+                       const int &max_generations_ = 7);
 
 
     ~BloodVesselGrowth();
@@ -59,9 +63,12 @@ public:
     bool shrinkRadius(const double &radius_to_shrink, const bool& axon_can_shrink, const int &factor);
     void update_straight(bool can_grow_, int &grow_straight, int &straight_growths);
 
-    // Branch growth (branch_id >= 1), mirrors GlialCellGrowth's secondary-branch machinery
-    bool AddOneSphere(const double &radius_, const bool &create_sphere, int &grow_straight, const int &i, const bool &check_collision_with_branches, const int &parent, const int &factor);
-    void add_spheres(Sphere &sph, const Sphere &last_sphere, const bool &check_collision_with_branches, const int &factor, const int &index_ram_spheres);
+    // Branch growth (branch_id >= 1), mirrors GlialCellGrowth's secondary-branch machinery.
+    // extra_excluded_branch_id is the branch this one directly sprouted from (its "parent"),
+    // exempted from collision checks on top of the branch's own id -- see
+    // SphereGrid::canSpherebePlaced. -1 means no extra exemption.
+    bool AddOneSphere(const double &radius_, const bool &create_sphere, int &grow_straight, const int &i, const bool &check_collision_with_branches, const int &parent, const int &factor, int extra_excluded_branch_id = -1);
+    void add_spheres(Sphere &sph, const Sphere &last_sphere, const bool &check_collision_with_branches, const int &factor, const int &index_ram_spheres, int extra_excluded_branch_id = -1);
     void find_next_center(Sphere &s, double dist_, const std::vector<Sphere> &spheres, const Eigen::Vector3d &target);
     bool GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::Vector3d &attractor, const double &radius, const Sphere &sphere_to_emerge_from, const Eigen::Vector3d &vector_to_prev_center, const int &nbr_spheres, const int &nbr_spheres_between, const int &vessel_id, const int &branch_id);
     std::vector<Sphere> addIntermediateSpheres(const Sphere &random_sphere, const Sphere &first_sphere, const int &branch_nbr, const int &nbr_spheres, const int &nbr_spheres_between, const std::function<double(double)> &compute_radius, const double &t_start, const double &t_end);

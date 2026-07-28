@@ -106,12 +106,13 @@ void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
     if (x.empty()) return;
 
     std::vector<QColor> colors(x.size());
-    std::vector<size_t> idxAxon, idxG1, idxG2, idxBV;
+    std::vector<size_t> idxAxon, idxG1, idxG2, idxG3, idxBV;
     for (size_t i = 0; i < groupIds.size(); ++i) {
         switch (static_cast<SphereGroup>(groupIds[i])) {
             case SphereGroup::Axon:   idxAxon.push_back(i); break;
             case SphereGroup::Glial1: idxG1.push_back(i);   break;
             case SphereGroup::Glial2: idxG2.push_back(i);   break;
+            case SphereGroup::Glial3: idxG3.push_back(i);   break;
             case SphereGroup::Blood:  idxBV.push_back(i);   break;
         }
     }
@@ -127,6 +128,7 @@ void OpenGLWindow::setSpheres(const std::vector<std::vector<double>>& x,
     assignGradient(idxBV, QColor(255, 200, 200), QColor(170, 0, 0));
     assignGradient(idxG1, QColor(200, 255, 200), QColor(0, 150, 0));
     assignGradient(idxG2, QColor(220, 255, 220), QColor(0, 110, 0));
+    assignGradient(idxG3, QColor(200, 220, 255), QColor(0, 60, 170));
     if (!idxAxon.empty()) {
         std::vector<QColor> tmp(idxAxon.size());
         generateRandomColors(idxAxon.size(), tmp);
@@ -264,14 +266,20 @@ void OpenGLWindow::initializeGL()
         "layout(location = 1) in vec3 color;\n"
         "layout(location = 2) in float radius;\n"
         "out vec3 fragColor;\n"
-        "uniform mat4 mvp;\n"   // Model-View-Projection matrix
-        "uniform float zoom;\n" // Camera zoom factor
+        "uniform mat4 mvp;\n"            // Model-View-Projection matrix
+        "uniform float viewportHeight;\n" // Viewport height in pixels
+        "uniform float tanHalfFovY;\n"    // tan(fovY / 2), matches projectionMatrix's fovY
         "void main() {\n"
         "    gl_Position = mvp * vec4(position, 1.0);\n"
         "    fragColor = color;\n"
-        //   Adjust the 10.0 multiplier depending on how large you want the cells
-        "    float calculatedSize = (radius * 60.0) / (gl_Position.w * zoom);\n"
-        "    gl_PointSize = clamp(calculatedSize, 4.0, 100.0);\n" 
+        // Physically-based point-sprite size: the on-screen diameter of a sphere of
+        // world radius `radius` at (view-space) distance gl_Position.w, so that two
+        // spheres touching in world space (center distance == r1+r2) still visibly
+        // touch on screen regardless of how different their radii are (e.g. a large
+        // soma vs. a thin process) -- an ad hoc size formula here previously caused
+        // touching spheres of very different radii to render with a visible gap.
+        "    float calculatedSize = (radius * viewportHeight) / (gl_Position.w * tanHalfFovY);\n"
+        "    gl_PointSize = clamp(calculatedSize, 1.0, 500.0);\n"
         "}\n";
 
     const char *fragmentShaderSource =
@@ -314,10 +322,11 @@ void OpenGLWindow::initializeGL()
 
 void OpenGLWindow::resizeGL(int w, int h)
 {
-    glViewport(0, 0, w, h);  
+    glViewport(0, 0, w, h);
     projectionMatrix.setToIdentity();
     // CHANGED: 1.0f and 10000.0f to restore Z-buffer precision
-    projectionMatrix.perspective(45.0f, float(w) / float(h), 10.0f, 10000.0f);  
+    projectionMatrix.perspective(fovYDegrees, float(w) / float(h), 10.0f, 10000.0f);
+    viewportHeightPx = float(h);
 }
 QVector3D rotateAround(const QVector3D& position, float deltaTheta, float deltaPhi) {
     float x = position.x();
@@ -393,10 +402,8 @@ void OpenGLWindow::paintGL()
 
     // -- Set Uniforms (Global variables for this draw call) --
     shaderProgram->setUniformValue("mvp", mvpMatrix);
-    
-    // Pass a scaled zoom factor so the shader knows how much to shrink/grow the points
-    float scaleFactor = std::max(0.001f, zoomFactor * 0.05f); 
-    shaderProgram->setUniformValue("zoom", scaleFactor);
+    shaderProgram->setUniformValue("viewportHeight", viewportHeightPx);
+    shaderProgram->setUniformValue("tanHalfFovY", static_cast<float>(qTan(qDegreesToRadians(fovYDegrees / 2.0f))));
 
     // -- Set Attributes (Per-point data variables) --
     // Location 0: Positions (X, Y, Z)

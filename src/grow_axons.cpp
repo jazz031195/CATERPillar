@@ -63,7 +63,15 @@ AxonGrowth::AxonGrowth(const AxonGrowth &other)
 
 Eigen::Vector3d AxonGrowth::find_next_center_straight(const double distance, const std::vector<Sphere> &spheres)
 {
-    if (spheres.size() < 2){
+    // Only the last sphere's center is ever read below -- direction comes from
+    // the persisted turn_start_direction/turn_target_direction, not from a
+    // second point -- so the real precondition is just "not empty". A stricter
+    // "< 2" guard here used to assert(0) whenever a collision rollback (see
+    // Axon::truncate_to) left an axon with only its seed sphere while
+    // grow_straight was still 1 from before the rollback: a legitimate,
+    // reachable state (now additionally guarded against by truncate_to
+    // resetting grow_straight itself), not a real invariant violation.
+    if (spheres.empty()){
         assert(0);
     }
     Eigen::Vector3d last_center = spheres[spheres.size() - 1].center;

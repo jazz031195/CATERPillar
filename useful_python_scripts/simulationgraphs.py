@@ -60,7 +60,12 @@ def read_swc_file(file_path):
         return read_swc_file_new(file_path)
 
 def read_swc_file_new(file_path):
-    columns = ["cell_type","cell_id", "component", "component_id", "X", "Y", "Z", "inner_radius","outer_radius"]
+    # Matches CaterpillarGrowth::create_SWC_file's current header exactly:
+    # "cell_type cell_id component component_id parent_component_id X Y Z inner_radius outer_radius".
+    # parent_component_id was previously missing here, silently shifting every
+    # column after component_id one slot to the left (X read as component_id,
+    # Y as X, etc.) for any file written after that column was added.
+    columns = ["cell_type","cell_id", "component", "component_id", "parent_component_id", "X", "Y", "Z", "inner_radius","outer_radius"]
     df = pd.read_csv(file_path, sep=' ', names=columns)
 
     df = df.iloc[1:]
@@ -71,6 +76,7 @@ def read_swc_file_new(file_path):
     df["inner_radius"] = [float(i) for i in list(df["inner_radius"])]
     df["cell_id"] = [float(i) for i in list(df["cell_id"])]
     df["component_id"] = [float(i) for i in list(df["component_id"])]
+    df["parent_component_id"] = [float(i) for i in list(df["parent_component_id"])]
     df["cell_type"] = [str(i) for i in list(df["cell_type"])]
     df["component"] = [str(i) for i in list(df["component"])]
     return df

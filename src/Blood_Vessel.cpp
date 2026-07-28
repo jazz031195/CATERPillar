@@ -50,6 +50,7 @@ void Blood_Vessel::add_first_sphere(const Sphere &s){
 
     Sphere s0 = s;
     s0.branch_id = 0;
+    s0.id = next_sphere_id++;
     ramification_spheres.clear();
     ramification_spheres.resize(1);
     ramification_spheres[0].push_back(s0);
@@ -63,8 +64,9 @@ void Blood_Vessel::add_sphere(const Sphere &sphere_to_add){
 }
 
 
-void Blood_Vessel::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits){
+void Blood_Vessel::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits, const Eigen::Vector3d &big_min_limits, const Eigen::Vector3d &big_max_limits){
     double new_volume = 0.0;
+    double new_volume_big = 0.0;
 
     const std::vector<Sphere> &trunk = ramification_spheres[0];
 
@@ -89,27 +91,45 @@ void Blood_Vessel::update_Volume(const int &factor, const Eigen::Vector3d &min_l
             new_volume += segment_volume / 2.0;
         }
         // If both are out of bounds, add nothing
+
+        bool current_in_bounds_big = Obstacle::check_borders(big_min_limits, big_max_limits, current_sphere.center, barrier_tickness);
+        bool last_in_bounds_big = Obstacle::check_borders(big_min_limits, big_max_limits, last_sphere.center, barrier_tickness);
+
+        if (current_in_bounds_big && last_in_bounds_big) {
+            new_volume_big += segment_volume;
+        } else if (current_in_bounds_big || last_in_bounds_big) {
+            new_volume_big += segment_volume / 2.0;
+        }
     }
 
     volume = new_volume;
+    volume_big = new_volume_big;
 }
 
-void Blood_Vessel::compute_processes_icvf(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits) {
+void Blood_Vessel::compute_processes_icvf(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits, const Eigen::Vector3d &big_min_limits, const Eigen::Vector3d &big_max_limits) {
     volume_processes = 0.0;
+    volume_processes_big = 0.0;
     for (int b = 1; b < ramification_spheres.size(); ++b) {
         for (int i = factor; i < ramification_spheres[b].size(); i += factor) {
             Sphere &s = ramification_spheres[b][i-factor];
             Sphere &s_next = ramification_spheres[b][i];
-            if (s_next.center [0] + s_next.radius < min_limits[0] || s_next.center [0] - s_next.radius > max_limits[0] ||
-                s_next.center [1] + s_next.radius < min_limits[1] || s_next.center [1] - s_next.radius > max_limits[1] ||
-                s_next.center [2] + s_next.radius < min_limits[2] || s_next.center [2] - s_next.radius > max_limits[2]) {
-                continue;
-            }
 
             double distance = (s_next.center - s.center).norm();
             double v = M_PI * (s.radius * s.radius + s_next.radius * s_next.radius + s.radius * s_next.radius) * distance / 3.0;
-            volume_processes += v;
 
+            bool in_small = !(s_next.center [0] + s_next.radius < min_limits[0] || s_next.center [0] - s_next.radius > max_limits[0] ||
+                s_next.center [1] + s_next.radius < min_limits[1] || s_next.center [1] - s_next.radius > max_limits[1] ||
+                s_next.center [2] + s_next.radius < min_limits[2] || s_next.center [2] - s_next.radius > max_limits[2]);
+            if (in_small) {
+                volume_processes += v;
+            }
+
+            bool in_big = !(s_next.center [0] + s_next.radius < big_min_limits[0] || s_next.center [0] - s_next.radius > big_max_limits[0] ||
+                s_next.center [1] + s_next.radius < big_min_limits[1] || s_next.center [1] - s_next.radius > big_max_limits[1] ||
+                s_next.center [2] + s_next.radius < big_min_limits[2] || s_next.center [2] - s_next.radius > big_max_limits[2]);
+            if (in_big) {
+                volume_processes_big += v;
+            }
         }
     }
 }
@@ -167,52 +187,50 @@ void Blood_Vessel::enforceMurraysLaw() {
         }
         std::sort(children_by_position.begin(), children_by_position.end());
 
+        // Capillaries (any branch whose parent isn't the arteriole, branch 0) hold a
+        // fixed radius and never obey Murray's law at all -- only junctions directly
+        // off the arteriole thin the arteriole's own downstream continuation to make
+        // room for the (always unchanged) capillary. Children are still queued above
+        // so deeper structure is visited, just never rescaled here.
+        if (parent_branch != 0) {
+            continue;
+        }
+
         for (const auto &entry : children_by_position) {
             int parent_index = entry.first;
             int child_branch = entry.second;
 
             double R_parent = ramification_spheres[parent_branch][parent_index].radius;
 
-            // current radii of the two daughters just downstream of the junction: the
-            // branch that just started (r2), and the parent's own continuation (r1),
-            // which by default both start out equal to R_parent.
+            // r2: the capillary's fixed radius, read but never rescaled. r1: the
+            // arteriole's own continuation just downstream of the junction, which by
+            // default starts out equal to R_parent.
             double r2 = ramification_spheres[child_branch][0].radius;
             bool has_continuation = parent_index + 1 < static_cast<int>(ramification_spheres[parent_branch].size());
             double r1 = has_continuation ? ramification_spheres[parent_branch][parent_index + 1].radius : R_parent;
 
-            double sum_cubes = r1 * r1 * r1 + r2 * r2 * r2;
-            if (sum_cubes <= 0.0) {
+            // Only the arteriole side is solved for: r1_new^3 = R_parent^3 - r2^3
+            // (capillary radius is fixed, so it's the arteriole that thins to make
+            // Murray's law hold). If the capillary alone would need more cross-section
+            // than the arteriole has here, there's nothing left to give it.
+            double r1_new_cubed = R_parent * R_parent * R_parent - r2 * r2 * r2;
+            if (r1_new_cubed <= 0.0) {
+                deleteSubtree(child_branch);
                 continue;
             }
+            double r1_new = std::cbrt(r1_new_cubed);
+            double scale = (r1 > 0.0) ? (r1_new / r1) : 0.0;
 
-            // Rescale both daughters by the same factor so R_parent^3 = r1^3 + r2^3 holds;
-            // since r1 and r2 both start out equal to R_parent, this splits evenly.
-            double scale = std::cbrt((R_parent * R_parent * R_parent) / sum_cubes);
-
-            // Predict whether the child would survive this scale *before* applying
-            // it anywhere. A branch's radius decays monotonically from its start to
-            // its tip, so the tip is always the weakest link: if the scaled tip
-            // radius still clears minimum_radius, every other sphere in the branch
-            // does too, and the branch is guaranteed to still reach the voxel plane
-            // it was grown to cross (scaling never moves sphere centers). If the
-            // scaled tip would drop below minimum_radius, the branch would end up
-            // truncated downstream anyway -- almost always losing exactly the part
-            // that crossed the plane -- so discard it outright here and skip the
-            // split entirely, leaving the parent's own radius untouched, as though
-            // this branch had never been created. This avoids needlessly thinning
-            // a parent for a branch that ultimately doesn't survive.
-            double predicted_child_tip_radius = ramification_spheres[child_branch].back().radius * scale;
-
-            // Symmetrically, check the parent's own continuation. Unlike a branch,
-            // the trunk's radius isn't a strictly monotonic decay (it can "bead" --
+            // Symmetrically to before, check the arteriole's own continuation before
+            // committing: it isn't a strictly monotonic decay (it can "bead" --
             // oscillate around a baseline), so its weakest point downstream of this
-            // junction isn't necessarily its very last sphere: scan the whole
-            // affected range for the true minimum. A parent that has already
+            // junction isn't necessarily its very last sphere -- scan the whole
+            // affected range for the true minimum. An arteriole that has already
             // received several upstream splits can be pushed below minimum_radius
-            // here even when this specific split looks reasonable in isolation --
-            // in which case this split would only get truncated downstream anyway,
-            // so reject it the same way: discard the child, leave the parent as-is.
-            double predicted_parent_tail_radius = R_parent;
+            // here even when this specific split looks reasonable in isolation -- in
+            // which case this split would only get truncated downstream anyway, so
+            // reject it the same way: discard the capillary, leave the arteriole as-is.
+            double predicted_parent_tail_radius = r1_new;
             if (has_continuation) {
                 double min_parent_tail_radius = std::numeric_limits<double>::max();
                 for (int i = parent_index + 1; i < static_cast<int>(ramification_spheres[parent_branch].size()); ++i) {
@@ -221,7 +239,7 @@ void Blood_Vessel::enforceMurraysLaw() {
                 predicted_parent_tail_radius = min_parent_tail_radius * scale;
             }
 
-            if (predicted_child_tip_radius < minimum_radius || predicted_parent_tail_radius < minimum_radius) {
+            if (r2 < minimum_radius || predicted_parent_tail_radius < minimum_radius) {
                 deleteSubtree(child_branch);
                 continue;
             }
@@ -231,9 +249,8 @@ void Blood_Vessel::enforceMurraysLaw() {
                     ramification_spheres[parent_branch][i].radius *= scale;
                 }
             }
-            for (auto &sph : ramification_spheres[child_branch]) {
-                sph.radius *= scale;
-            }
+            // The capillary (child_branch) keeps its fixed radius -- intentionally
+            // never rescaled.
         }
     }
 }
@@ -332,7 +349,7 @@ void Blood_Vessel::pruneUndersizedBranches(const Eigen::Vector3d &min_limits, co
     }
 }
 
-void Blood_Vessel::bridgeJunctionGaps(const int &factor) {
+void Blood_Vessel::bridgeJunctionGaps(const int &factor, const SphereGrid &sphere_grid) {
     int next_id = 0;
     for (const auto &branch : ramification_spheres) {
         for (const auto &s : branch) {
@@ -367,8 +384,23 @@ void Blood_Vessel::bridgeJunctionGaps(const int &factor) {
         for (int k = 1; k <= nbr_extra; ++k) {
             double t = static_cast<double>(k) / (nbr_extra + 1);
             Eigen::Vector3d pos = parent_sph.center + t * (child_first.center - parent_sph.center);
-            double rad = parent_sph.radius + t * (child_first.radius - parent_sph.radius);
-            Sphere s(next_id++, child_first.object_id, child_first.object_type, pos, rad, static_cast<int>(b), prev_id);
+            // Branch b (the child here) is always a capillary (branch 0, the arteriole,
+            // is never a "child" in this function) -- capillaries hold one fixed radius
+            // everywhere, so bridge spheres filling this gap use child_first.radius
+            // throughout rather than interpolating from the (generally much larger,
+            // Murray's-law-thinned) parent radius.
+            double rad = child_first.radius;
+            Sphere s(next_id, child_first.object_id, child_first.object_type, pos, rad, static_cast<int>(b), prev_id);
+            // Straight-line interpolation between two already-valid points can still pass
+            // near an unrelated branch (of this vessel, another vessel, or another cell
+            // type entirely) that neither endpoint was near; skip this sphere rather than
+            // force a real overlap (self and the parent, pb, are expected to be touched
+            // -- that's not a collision). Checked against the real environment grid, not
+            // just this vessel's own branches.
+            if (!sphere_grid.canSpherebePlaced(s, /*check_collision_with_branches=*/true, pb)) {
+                continue;
+            }
+            next_id++;
             bridge.push_back(s);
             prev_id = s.id;
             if (has_lengths) {
@@ -384,7 +416,7 @@ void Blood_Vessel::bridgeJunctionGaps(const int &factor) {
     }
 }
 
-void Blood_Vessel::reinterpolateAfterShrink(const int &factor) {
+void Blood_Vessel::reinterpolateAfterShrink(const int &factor, const SphereGrid &sphere_grid) {
     // Find the highest sphere id used anywhere in this vessel, so newly inserted
     // spheres get ids that don't collide with any existing one (parent_id links
     // and children_branches lookups rely on ids being unique within the vessel).
@@ -399,6 +431,17 @@ void Blood_Vessel::reinterpolateAfterShrink(const int &factor) {
         auto &branch = ramification_spheres[b];
         if (branch.size() < 2) {
             continue;
+        }
+
+        // Branch b's own parent (if any): a re-densified point near this branch's own
+        // attachment point can legitimately end up close to it too, same reasoning as
+        // bridgeJunctionGaps.
+        int parent_branch = -1;
+        {
+            int pb, pi;
+            if (findSphereById(branch[0].parent_id, pb, pi)) {
+                parent_branch = pb;
+            }
         }
 
         bool has_lengths = b < static_cast<int>(lengths_branches.size()) && lengths_branches[b].size() == branch.size();
@@ -434,7 +477,15 @@ void Blood_Vessel::reinterpolateAfterShrink(const int &factor) {
                     double t = static_cast<double>(k) / (nbr_extra + 1);
                     Eigen::Vector3d pos = a.center + t * (branch[i + 1].center - a.center);
                     double rad = a.radius + t * (branch[i + 1].radius - a.radius);
-                    Sphere s(next_id++, a.object_id, a.object_type, pos, rad, a.branch_id, prev_id);
+                    Sphere s(next_id, a.object_id, a.object_type, pos, rad, a.branch_id, prev_id);
+                    // Same reasoning as bridgeJunctionGaps: this is pure geometric
+                    // interpolation, so skip a candidate that would overlap an unrelated
+                    // branch (of this vessel, another vessel, or another cell type)
+                    // instead of forcing a real collision.
+                    if (!sphere_grid.canSpherebePlaced(s, /*check_collision_with_branches=*/true, parent_branch)) {
+                        continue;
+                    }
+                    next_id++;
                     new_branch.push_back(s);
                     prev_id = s.id;
                     if (has_lengths) {

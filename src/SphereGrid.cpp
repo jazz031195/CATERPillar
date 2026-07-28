@@ -115,7 +115,7 @@ static bool axisIntervalsOverlap(double c1, double r1, double c2, double r2, dou
     return !(max1 < min2 || max2 < min1);
 }
 
-bool SphereGrid::canSpherebePlaced(const Sphere &sph, bool check_collision_with_branches) const
+bool SphereGrid::canSpherebePlaced(const Sphere &sph, bool check_collision_with_branches, int extra_excluded_branch_id) const
 {
     // Deliberately does not go through query(): this is the single most
     // frequently called function in the whole codebase (every growth
@@ -141,7 +141,7 @@ bool SphereGrid::canSpherebePlaced(const Sphere &sph, bool check_collision_with_
                     // skip spheres belonging to the same object (self)
                     if (entry.object_id == sph.object_type &&
                         entry.cell_id == sph.object_id &&
-                        (!check_collision_with_branches || entry.branch_id == sph.branch_id)) {
+                        (!check_collision_with_branches || entry.branch_id == sph.branch_id || entry.branch_id == extra_excluded_branch_id)) {
                         continue;
                     }
 

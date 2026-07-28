@@ -29,7 +29,7 @@ public:
     void setVoxelBounds(const QVector3D& minCorner, const QVector3D& maxCorner);
 
     void resetCamera();
-    enum class SphereGroup : int { Axon = 0, Glial1 = 1, Glial2 = 2, Blood = 3 };
+    enum class SphereGroup : int { Axon = 0, Glial1 = 1, Glial2 = 2, Blood = 3, Glial3 = 4 };
 
     void buildBatchedGeometry();
     std::atomic<bool> geometryReady{false};
@@ -82,6 +82,8 @@ private:
     QMatrix4x4 projectionMatrix;
     QTimer timer;
     float zoomFactor = 1.0f;  // Adjust this for zoom control
+    float viewportHeightPx = 600.0f;  // Set in resizeGL(); used to size point sprites to their true projected radius
+    static constexpr float fovYDegrees = 45.0f;  // Must match projectionMatrix.perspective()'s fovY in resizeGL()
     float rotationX = 0.0f;   // X-axis rotation
     float rotationY = 0.0f;   // Y-axis rotation
     QVector3D cameraPosition;  // Camera position for panning

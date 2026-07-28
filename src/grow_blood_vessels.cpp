@@ -22,17 +22,23 @@ BloodVesselGrowth::BloodVesselGrowth(Blood_Vessel &bv_to_grow_,
                        const Eigen::Vector3d &min_limits_,
                        const Eigen::Vector3d &max_limits_,
                        const double &epsilon_,
-                       const double &min_radius_)
+                       const double &min_radius_,
+                       const double &capillary_radius_,
+                       const int &max_generations_)
     : CellGrowth(sphere_grid_,
                  extended_min_limits_, extended_max_limits_,
                  min_limits_, max_limits_,
                  epsilon_, min_radius_),
-      bv_to_grow(bv_to_grow_)
+      bv_to_grow(bv_to_grow_),
+      capillary_radius(capillary_radius_),
+      max_generations(max_generations_)
 {}
 
 BloodVesselGrowth::BloodVesselGrowth(const BloodVesselGrowth &other)
     : CellGrowth(other), // call base copy constructor
-      bv_to_grow(other.bv_to_grow) {}
+      bv_to_grow(other.bv_to_grow),
+      capillary_radius(other.capillary_radius),
+      max_generations(other.max_generations) {}
 
 
 // =====================================================================================
@@ -64,7 +70,10 @@ bool BloodVesselGrowth::AddOneSphere(double radius_, bool create_sphere, int gro
         assert(false); // or return false;
     }
 
-    if (trunk.size() > (max_limits-min_limits).norm()*factor/(bv_to_grow.radius)*100) {
+    // Sized off extended_min/max_limits (the blood-vessel growth voxel, which may be
+    // padded larger than the real one) rather than min/max_limits, so this safety cap
+    // can't truncate a trunk before it reaches its actual (possibly farther) target face.
+    if (trunk.size() > (extended_max_limits-extended_min_limits).norm()*factor/(bv_to_grow.radius)*100) {
         finished = true;
         return false; // Vessel has grown too long
     }
@@ -166,10 +175,13 @@ bool BloodVesselGrowth::AddOneSphere(double radius_, bool create_sphere, int gro
     if (create_sphere) {
         s.parent_id = last_sphere.id;
         add_spheres(s, last_sphere, factor);
-        // Update volume if within the stricter [min_limits, max_limits]
+        // Refresh volume (both real-voxel and blood-vessel-voxel figures) as long as
+        // the newest sphere is still within the growth region -- gated on the wider
+        // extended_min/max_limits (not min/max_limits) so this keeps running for
+        // spheres grown past the real voxel into the padded region too.
         Sphere newly_added = trunk.back(); // s with final coords
-        if (check_borders(min_limits, max_limits, newly_added.center, newly_added.radius)) {
-            bv_to_grow.update_Volume(factor, min_limits, max_limits);
+        if (check_borders(extended_min_limits, extended_max_limits, newly_added.center, newly_added.radius)) {
+            bv_to_grow.update_Volume(factor, min_limits, max_limits, extended_min_limits, extended_max_limits);
         }
     }
 
@@ -192,28 +204,24 @@ void BloodVesselGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, cons
 
     // nbr of spheres to add in between
     int nbr_spheres = factor - 1;
-    int last_id = last_sphere.id;
 
     if (factor > 1){
         // distance between two consecutive spheres
         double distance = (sph.center - last_sphere.center).norm();
         Eigen::Vector3d vector = (sph.center - last_sphere.center).normalized();
         double distance_between_spheres = distance/(nbr_spheres+1);
-        int id_;
         for (int i = 0 ; i < nbr_spheres; i++){
             Eigen::Vector3d position = last_sphere.center + vector*distance_between_spheres*(i+1);
             double rad = last_sphere.radius + (sph.radius - last_sphere.radius)*(i+1)/(nbr_spheres+1);
-            id_ = last_id+ 1;
-            Sphere s(id_, sph.object_id, sph.object_type, position, rad, sph.branch_id, sph.parent_id);
+            Sphere s(bv_to_grow.next_sphere_id++, sph.object_id, sph.object_type, position, rad, sph.branch_id, sph.parent_id);
 
             bool can_grow_ = canSpherebePlaced(s);
             if(can_grow_){
-                last_id = s.id;
                 bv_to_grow.add_sphere(s);
             }
         }
     }
-    sph.id = last_id + 1;
+    sph.id = bv_to_grow.next_sphere_id++;
     bv_to_grow.add_sphere(sph);
 
 }
@@ -459,7 +467,7 @@ void BloodVesselGrowth::growthThread(
 // Branch growth (branch_id >= 1) - mirrors GlialCellGrowth's secondary-branch machinery
 // =====================================================================================
 
-void BloodVesselGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const bool &check_collision_with_branches, const int &factor, const int &index_ram_spheres){
+void BloodVesselGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const bool &check_collision_with_branches, const int &factor, const int &index_ram_spheres, int extra_excluded_branch_id){
 
     // nbr of spheres to add in between
     int nbr_spheres = factor - 1;
@@ -473,20 +481,20 @@ void BloodVesselGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, cons
         for (int i = 0 ; i < nbr_spheres; i++){
             Eigen::Vector3d position = last_sphere.center + vector*distance_between_spheres*(i+1);
             double rad = last_sphere.radius + (sph.radius - last_sphere.radius)*(i+1)/(nbr_spheres+1);
-            id_ = last_sphere.id + i + 1;
+            id_ = bv_to_grow.next_sphere_id++;
             Sphere s(id_, last_sphere.object_id, last_sphere.object_type, position, rad, last_sphere.branch_id, sph.parent_id);
-            bool can_grow_ = canSpherebePlaced(s, check_collision_with_branches);
+            bool can_grow_ = canSpherebePlaced(s, check_collision_with_branches, extra_excluded_branch_id);
             if(can_grow_){
                 bv_to_grow.ramification_spheres[index_ram_spheres].push_back(s);
             }
         }
     }
-    sph.id = last_sphere.id + nbr_spheres + 1;
+    sph.id = bv_to_grow.next_sphere_id++;
     bv_to_grow.ramification_spheres[index_ram_spheres].push_back(sph);
 }
 
 
-bool BloodVesselGrowth::AddOneSphere(const double &radius_, const bool &create_sphere, int &grow_straight, const int &i, const bool &check_collision_with_branches, const int &parent, const int &factor)
+bool BloodVesselGrowth::AddOneSphere(const double &radius_, const bool &create_sphere, int &grow_straight, const int &i, const bool &check_collision_with_branches, const int &parent, const int &factor, int extra_excluded_branch_id)
 {
 
     if (bv_to_grow.ramification_spheres[i].size() > 1e10)
@@ -516,7 +524,7 @@ bool BloodVesselGrowth::AddOneSphere(const double &radius_, const bool &create_s
     while (!can_grow_ && tries < threshold_tries){
 
         find_next_center(s, distance, bv_to_grow.ramification_spheres[i], destination);
-        can_grow_ = canSpherebePlaced(s, check_collision_with_branches);
+        can_grow_ = canSpherebePlaced(s, check_collision_with_branches, extra_excluded_branch_id);
 
         tries += 1;
     }
@@ -525,7 +533,7 @@ bool BloodVesselGrowth::AddOneSphere(const double &radius_, const bool &create_s
     {
         if (create_sphere){
             s.parent_id = parent;
-            add_spheres(s, last_sphere, check_collision_with_branches, factor, i);
+            add_spheres(s, last_sphere, check_collision_with_branches, factor, i, extra_excluded_branch_id);
         }
         // if is not in inside voxel
         if (!check_borders(extended_min_limits, extended_max_limits, s.center, s.radius)){
@@ -570,9 +578,14 @@ bool BloodVesselGrowth::GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen
         // vessels have no primary/secondary distinction: always avoid folding back
         // toward the branch it emerges from, mirroring Glial's secondary-branch case.
         sphere_to_emerge_from.getPointOnSphereSurface(point, vector, vector_to_prev_center, false);
-        attractor = point + (max_limits[0] + 10) * vector;
-        first_sphere = Sphere(nbr_spheres + nbr_spheres_between + 1, vessel_id, blood_constant, point, radius, branch_id, sphere_to_emerge_from.id);
-        if (canSpherebePlaced(first_sphere, /*check_collision_with_branches=*/ false)) {
+        // "+10" past extended_max_limits (not max_limits): keeps this attractor point
+        // meaningfully outside the actual (possibly padded) growth voxel.
+        attractor = point + (extended_max_limits[0] + 10) * vector;
+        first_sphere = Sphere(bv_to_grow.next_sphere_id++, vessel_id, blood_constant, point, radius, branch_id, sphere_to_emerge_from.id);
+        // Exempt only this branch's own id and its direct parent (sphere_to_emerge_from's
+        // branch) -- not the whole vessel -- so a legitimate touch at the attachment point
+        // doesn't get flagged, while every *other* branch is still checked from sphere 1.
+        if (canSpherebePlaced(first_sphere, /*check_collision_with_branches=*/ true, sphere_to_emerge_from.branch_id)) {
             stop = true;
             // check boundaries
             bool is_inside_voxel = check_borders(extended_min_limits, extended_max_limits, first_sphere.center, first_sphere.radius);
@@ -607,11 +620,13 @@ std::vector<Sphere> BloodVesselGrowth::addIntermediateSpheres(const Sphere &rand
         double rad = compute_radius(t);
 
         Sphere next(
-            nbr_spheres + i + 1, first_sphere.object_id, first_sphere.object_type, position, rad, branch_nbr,
+            bv_to_grow.next_sphere_id++, first_sphere.object_id, first_sphere.object_type, position, rad, branch_nbr,
             random_sphere.id);
 
-        // Check if the sphere can be placed
-        if (canSpherebePlaced(next, /*check_collision_with_branches=*/ false)) {
+        // Check if the sphere can be placed. Exempt only this branch's own id and its
+        // direct parent (random_sphere's branch) -- not the whole vessel -- same reasoning
+        // as GenerateFirstSphereinProcess.
+        if (canSpherebePlaced(next, /*check_collision_with_branches=*/ true, random_sphere.branch_id)) {
             intermediate_spheres.emplace_back(next);
         }
     }
@@ -665,7 +680,26 @@ bool BloodVesselGrowth::growBranch(int &nbr_spheres, const int &factor) {
         return false;
     }
     std::discrete_distribution<int> branch_dist(branch_weights.begin(), branch_weights.end());
-    int random_branch = branch_dist(rng);
+
+    // Cap how many generations of capillary branching are allowed from the arteriole:
+    // a new branch's generation is its chosen parent's generation + 1, and that must
+    // not exceed max_generations. Resample the candidate parent up to 20 times looking
+    // for one that keeps the new branch within the limit; if none is found, fall back
+    // to sprouting directly off the arteriole (branch 0, generation 0) so growth still
+    // makes progress instead of stalling.
+    const int max_branch_selection_tries = 20;
+    int random_branch = -1;
+    for (int try_i = 0; try_i < max_branch_selection_tries; ++try_i) {
+        int candidate = branch_dist(rng);
+        int candidate_generation = bv_to_grow.branch_generation[candidate];
+        if (candidate_generation + 1 <= max_generations) {
+            random_branch = candidate;
+            break;
+        }
+    }
+    if (random_branch < 0) {
+        random_branch = 0;
+    }
 
     int size = bv_to_grow.ramification_spheres[random_branch].size();
     int random_sphere_ind = 1 + rand() % (size - 1);
@@ -677,31 +711,37 @@ bool BloodVesselGrowth::growBranch(int &nbr_spheres, const int &factor) {
     }
     double old_length = bv_to_grow.lengths_branches[random_branch][random_sphere_ind];
 
-    // Branches no longer target a random (Gaussian) length: they always aim to
+    // Capillaries no longer target a random (Gaussian) length: they always aim to
     // cross a voxel face, so a length of 2x the voxel edge length is generous
     // enough to guarantee that (the longest possible straight-line distance
     // inside the box is its diagonal, sqrt(3)*edge < 2*edge) regardless of
     // where along the box the branch starts or which direction it grows in.
-    // If a branch instead gets stuck (collision, or its radius decays below
-    // minimum_radius) before ever reaching a face, it is discarded below.
-    double voxel_edge_length = max_limits[0] - min_limits[0];
+    // If a branch instead gets stuck (collision) before ever reaching a face, it
+    // is discarded below.
+    // Uses extended_min/max_limits (the blood-vessel growth voxel, which may be
+    // padded larger than the real one) so the budget actually covers the box
+    // branches are targeting -- min/max_limits would under-budget a branch aimed
+    // at the farther, padded face.
+    double voxel_edge_length = extended_max_limits[0] - extended_min_limits[0];
     double length_to_grow = 2.0 * voxel_edge_length;
     int nbr_non_checked_spheres = factor*3 ;
 
     Eigen::Vector3d vector_to_prev_sphere = (random_sphere.center - bv_to_grow.ramification_spheres[random_branch][random_sphere_ind - 1].center).normalized();
     Sphere first_sphere;
     Eigen::Vector3d attractor = Eigen::Vector3d(0, 0, 0);
-    double initial_radius = random_sphere.radius;
+    // Capillaries hold one fixed radius for their entire length, unrelated to the
+    // parent (arteriole/capillary) sphere's own local radius at the attachment
+    // point -- no decay, and never rescaled by Murray's law (see
+    // Blood_Vessel::enforceMurraysLaw, which only ever thins the arteriole side).
+    double initial_radius = capillary_radius;
     bool first_sphere_created = GenerateFirstSphereinProcess(first_sphere, attractor, initial_radius, random_sphere, vector_to_prev_sphere, nbr_spheres, nbr_spheres_between, bv_to_grow.id, nbr_branches);
 
     if (!first_sphere_created) {
         return false;
     }
 
-    double alpha = -std::log(bv_to_grow.minimum_radius / initial_radius)/length_to_grow;
-
     auto compute_radius = [&](double t) {
-        return std::exp(-alpha * t) * initial_radius;
+        return capillary_radius;
     };
 
     std::vector<Sphere> vector_first_spheres;
@@ -718,10 +758,12 @@ bool BloodVesselGrowth::growBranch(int &nbr_spheres, const int &factor) {
     bv_to_grow.lengths_branches.resize(current_branch + 1);
     bv_to_grow.attractors.resize(current_branch + 1);
     bv_to_grow.children_branches.resize(current_branch + 1);
+    bv_to_grow.branch_generation.resize(current_branch + 1);
     bv_to_grow.ramification_spheres[current_branch] = vector_first_spheres;
     bv_to_grow.lengths_branches[current_branch] = std::vector<double>(vector_first_spheres.size(), old_length);
     bv_to_grow.attractors[current_branch] = attractor;
     bv_to_grow.children_branches[random_branch].push_back(current_branch);
+    bv_to_grow.branch_generation[current_branch] = bv_to_grow.branch_generation[random_branch] + 1;
 
     Eigen::Vector3d prev_pos = first_sphere.center;
     double distance = initial_radius;
@@ -735,13 +777,24 @@ bool BloodVesselGrowth::growBranch(int &nbr_spheres, const int &factor) {
 
         double R_ = compute_radius(distance);
 
-        if (R_ <= bv_to_grow.minimum_radius || distance >= length_to_grow) {
+        // No radius-decay stopping condition (R_ is always capillary_radius); only
+        // the length budget and AddOneSphere's own collision/wall handling end growth.
+        if (distance >= length_to_grow) {
             can_grow = false;
 
         }
         else {
             int grow_straight = 0;
-            can_grow = AddOneSphere(R_, true, grow_straight, current_branch, bv_to_grow.ramification_spheres.back().size() > nbr_non_checked_spheres, parent, factor);
+            // Always check collisions against every OTHER branch of this vessel except
+            // this one's own (current_branch, exempted unconditionally). The direct
+            // parent (random_branch) is exempted too, but only while still within the
+            // near-attachment window (first nbr_non_checked_spheres spheres) -- past
+            // that, the branch must avoid its own parent same as any other branch, so it
+            // can't drift back into it later in its growth. This replaces the old
+            // distance-based grace period that exempted the *whole vessel* (any sibling,
+            // not just the parent) for that same window.
+            int extra_excluded_branch_id = (bv_to_grow.ramification_spheres.back().size() <= nbr_non_checked_spheres) ? random_branch : -1;
+            can_grow = AddOneSphere(R_, true, grow_straight, current_branch, /*check_collision_with_branches=*/true, parent, factor, extra_excluded_branch_id);
             if (can_grow) {
                 double segment = (prev_pos - bv_to_grow.ramification_spheres.back().back().center).norm();
                 distance += segment;
@@ -761,9 +814,9 @@ bool BloodVesselGrowth::growBranch(int &nbr_spheres, const int &factor) {
 
     // finished is only set true by AddOneSphere when the branch's last placed
     // sphere fell outside the voxel box, i.e. the branch actually reached a
-    // voxel plane. Any other reason the loop stopped (radius decayed below
-    // minimum_radius, or growth got stuck against a collision) leaves
-    // finished false, and the branch must be discarded.
+    // voxel plane. Any other reason the loop stopped (hit the length budget, or
+    // growth got stuck against a collision) leaves finished false, and the
+    // branch must be discarded.
     if (finished && bv_to_grow.ramification_spheres.back().size() > nbr_non_checked_spheres) {
         nbr_spheres += bv_to_grow.ramification_spheres.back().size();
 

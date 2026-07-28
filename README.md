@@ -162,6 +162,7 @@ The **`<filename>.csv`** file is a space-delimited file structured with the foll
   * **`cell_id`:** The unique identifier of the cell (starting from 0).
   * **`component`:** The structural component (`soma`, `branch`, `axon`, `blood_vessel`, or `spine`).
   * **`component_id`:** The identifier of the specific component (starting from 0).
+  * **`parent_component_id`:** For branched cells (`glial_cell`, `blood_vessel`), the `component_id` of the branch this one grew off of (the soma or trunk is its own parent-less root, `parent_component_id` `0`). For unbranched cells (`axon`), always equal to `component_id`.
   * **`X Y Z`:** The 3D spatial coordinates of the sphere center (μm).
   * **`inner_radius`:** The inner radius of the sphere (μm).
   * **`outer_radius`:** The outer radius of the sphere (μm). This will differ from the inner radius if myelin is present.

@@ -88,10 +88,13 @@ CoreLogic::SimResult CoreLogic::runSimulation(const Parameters& params,
             std::cout << " All simulations completed successfully! " << std::endl;
             std::cout << "========================================" << std::endl;
 
-            return std::make_tuple(Sim.axons, 
-                                Sim.blood_vessels, 
-                                Sim.glial_pop1, 
-                                Sim.glial_pop2);
+            return std::make_tuple(Sim.axons,
+                                Sim.blood_vessels,
+                                Sim.glial_pop1,
+                                Sim.glial_pop2,
+                                Sim.glial_pop3,
+                                Sim.min_limits,
+                                Sim.max_limits);
                 } 
 
     }
@@ -144,8 +147,13 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     // ==========================================
     params.axons_wo_myelin_icvf = double(data["AxonParameters"]["AxonsICVF"]) / 100.0;
     params.axons_w_myelin_icvf = double(data["AxonParameters"]["AxonsWithMyelinICVF"]) / 100.0;
-    params.blood_vessels_icvf = double(data["AxonParameters"]["BloodVesselsICVF"]) / 100.0;
-    params.blood_vessels_processes_icvf = data["AxonParameters"].value("BloodVesselsProcessesICVF", 0.0) / 100.0;
+    // Arteriole = the main vessel (formerly "blood vessels"/"trunk"); Capillaries =
+    // the branches that emerge from it. Renamed to match the new two-tier model.
+    params.blood_vessels_icvf = double(data["AxonParameters"]["ArterioleICVF"]) / 100.0;
+    params.blood_vessels_processes_icvf = data["AxonParameters"].value("CapillariesICVF", 0.0) / 100.0;
+    params.capillary_radius = data["AxonParameters"].value("CapillaryRadius", 1.0);
+    params.max_generations = data["AxonParameters"].value("MaxGenerations", 7);
+    params.blood_vessels_voxel_size = data["AxonParameters"].value("BloodVesselsVoxelEdgeLength", 0.0);
 
     params.nbr_axons_populations = data["AxonParameters"]["NumberOfPopulations"];
     params.crossing_fibers_type = data["AxonParameters"]["CrossingFibersType"];
@@ -196,6 +204,16 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     params.std_glial_pop2_process_length = data["GlialParameters"]["Pop2StdProcessLength"];
     params.glial_pop2_nbr_primary_processes = data["GlialParameters"]["Pop2NbrPrimaryProcesses"];
     params.glial_pop2_branching = data["GlialParameters"]["Pop2Branching"];
+
+    // Population 3 (optional -- defaults keep older config files without it working unchanged)
+    params.glial_pop3_soma_icvf = data["GlialParameters"].value("Pop3SomaICVF", 0.0) / 100.0;
+    params.glial_pop3_processes_icvf = data["GlialParameters"].value("Pop3ProcessesICVF", 0.0) / 100.0;
+    params.glial_pop3_radius_mean = data["GlialParameters"].value("Pop3SomaRadiusMean", 0.5);
+    params.glial_pop3_radius_std = data["GlialParameters"].value("Pop3SomaRadiusStd", 0.1);
+    params.mean_glial_pop3_process_length = data["GlialParameters"].value("Pop3MeanProcessLength", 10.0);
+    params.std_glial_pop3_process_length = data["GlialParameters"].value("Pop3StdProcessLength", 15.0);
+    params.glial_pop3_nbr_primary_processes = data["GlialParameters"].value("Pop3NbrPrimaryProcesses", 5);
+    params.glial_pop3_branching = data["GlialParameters"].value("Pop3Branching", true);
 
     // ==========================================
     // Run the math!

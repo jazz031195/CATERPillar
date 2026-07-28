@@ -12,6 +12,11 @@ using namespace std;
 using namespace Eigen;
 using namespace std::chrono;
 
+// A grown process shorter than this (soma-to-tip, in um) is discarded outright
+// rather than kept as a visually degenerate stub -- independent of how far
+// below the population's configured mean/std a particular length draw fell.
+static constexpr double kMinGlialProcessLength = 5.0;
+
 
 GlialCellGrowth::~GlialCellGrowth() {}
 
@@ -44,7 +49,7 @@ void GlialCellGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const 
         for (int i = 0 ; i < nbr_spheres; i++){
             Eigen::Vector3d position = last_sphere.center + vector*distance_between_spheres*(i+1);
             double rad = last_sphere.radius + (sph.radius - last_sphere.radius)*(i+1)/(nbr_spheres+1);
-            id_ = last_sphere.id + i + 1;
+            id_ = glial_cell_to_grow.next_sphere_id++;
             Sphere s(id_, last_sphere.object_id, last_sphere.object_type, position, rad, last_sphere.branch_id, sph.parent_id);
             bool can_grow_ = canSpherebePlaced(s, check_collision_with_branches);
             if(can_grow_){
@@ -52,7 +57,7 @@ void GlialCellGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const 
             }
         }
     }
-    sph.id = last_sphere.id + nbr_spheres + 1;
+    sph.id = glial_cell_to_grow.next_sphere_id++;
     glial_cell_to_grow.ramification_spheres[index_ram_spheres].push_back(sph);
 }
 
@@ -84,14 +89,38 @@ bool GlialCellGrowth::AddOneSphere(const double &radius_, const bool &create_sph
     Sphere s(id_, glial_cell_to_grow.id, glial_cell_constant, {0,0,0}, radius_, i);
 
     int tries = 0;
-    int threshold_tries = 100;
+    // Only the first 100 tries keep AddOneSphere's original behavior --
+    // epsilon-biased toward this branch's fixed attractor, unchanged, so the
+    // common case (that already succeeds well within 100 tries) isn't
+    // slowed down. Every one of those 100 tries resamples a fresh direction,
+    // but always within the same narrow cone centered on the same fixed,
+    // far-away attractor -- if a local obstacle blocks that whole cone (e.g.
+    // another cell's soma sitting roughly along this branch's original
+    // heading), all 100 can fail even with plenty of free space just off to
+    // the side, well before the voxel is anywhere near full. Observed to
+    // noticeably truncate primary glial processes short of their sampled
+    // target even at ~5% overall ICVF, where genuine global crowding is an
+    // unlikely explanation. Two further stages progressively widen the
+    // angular spread so a genuinely blocked branch gets real chances to
+    // route around the obstacle instead of just re-rolling the same cone.
+    int threshold_tries = 300;
 
     while (!can_grow_ && tries < threshold_tries){
 
-        find_next_center(s, distance, glial_cell_to_grow.ramification_spheres[i], destination);
+        double std_override = -1.0; // default: find_next_center falls back to epsilon, unchanged from before
+        if (tries >= 200) {
+            // cos(phi) ~ N(1, 3) clamped to [-1, 1] piles up near both poles
+            // with a broad spread between -- close enough to an unbiased
+            // direction over the whole sphere for a last-resort escape try.
+            std_override = 3.0;
+        } else if (tries >= 100) {
+            std_override = epsilon + 1.0; // moderately widened first
+        }
+
+        find_next_center(s, distance, glial_cell_to_grow.ramification_spheres[i], destination, std_override);
         // check if there is a collision
         can_grow_ = canSpherebePlaced(s, check_collision_with_branches);
-        
+
         tries += 1;
     }
 
@@ -102,19 +131,12 @@ bool GlialCellGrowth::AddOneSphere(const double &radius_, const bool &create_sph
             s.parent_id = parent;
             add_spheres(s, last_sphere, check_collision_with_branches, factor, i);
         }
-        // if is not in inside voxel
-        if (!check_borders(extended_min_limits, extended_max_limits, s.center, s.radius)){ 
-            finished = true;
-            //cout << "hits end of voxel" << endl;
-            return false;
-        }
-        else{
-            //cout << "can grow" << endl;
-
-            return true;
-        }
-
-
+        // Processes are allowed to keep growing past the voxel boundary --
+        // only their own sampled length budget (growPrimaryBranch/
+        // growSecondaryBranch) or a genuine collision stops them. Where a
+        // branch may *originate* is still gated separately (see
+        // growSecondaryBranch's source-inside-voxel check).
+        return true;
     }
     else // collides and >1000 tries
     {
@@ -132,13 +154,13 @@ void GlialCellGrowth::find_next_center_straight(double distance, Sphere &s, cons
     s.center = new_center;
 }
 
-void GlialCellGrowth::find_next_center(Sphere &s,  double dist_, const std::vector<Sphere> &spheres, const Eigen::Vector3d &target)
+void GlialCellGrowth::find_next_center(Sphere &s,  double dist_, const std::vector<Sphere> &spheres, const Eigen::Vector3d &target, double std_override)
 {
 
     Eigen::Vector3d target_ = target;
     Eigen::Vector3d vector_to_target = target_ - spheres[spheres.size() - 1].center;
     vector_to_target = vector_to_target.normalized();
-    double std_ = epsilon;
+    double std_ = (std_override >= 0.0) ? std_override : epsilon;
     Eigen::Vector3d vector = generate_random_point_on_sphere(std_);
     vector = apply_bias_toward_target(vector, vector_to_target);
     Eigen::Vector3d position = spheres[spheres.size() - 1].center + dist_ * vector.normalized();
@@ -170,19 +192,11 @@ bool GlialCellGrowth::GenerateFirstSphereinProcess(Sphere &first_sphere, Eigen::
         sphere_to_emerge_from.getPointOnSphereSurface(point, vector, vector_to_prev_center, primary_process);
         //cout << "Point on sphere surface: " << point.transpose() << ", Direction vector: " << vector.transpose() << endl;
         attractor = findDistantPoint(vector, point, max_limits[0]);
-        first_sphere = Sphere(nbr_spheres + nbr_spheres_between + 1, cell_id, glial_cell_constant, point, radius, branch_id, sphere_to_emerge_from.id);
+        first_sphere = Sphere(glial_cell_to_grow.next_sphere_id++, cell_id, glial_cell_constant, point, radius, branch_id, sphere_to_emerge_from.id);
         //cout <<"check placement for first sphere at position: " << first_sphere.center.transpose() << " with radius: " << first_sphere.radius << endl;
         if (canSpherebePlaced(first_sphere, /*check_collision_with_branches=*/ false)) {
             stop = true;
-            // check boundaries
-            bool is_inside_voxel = check_borders(extended_min_limits, extended_max_limits, first_sphere.center, first_sphere.radius);
-            if (!is_inside_voxel) {
-                stop = false;
-                tries_++;
-                //cout << "First sphere is outside voxel boundaries." << endl;
-                if (tries_ == max_nbr_tries) return false;
-            } 
-        } 
+        }
         else {
             //cout << "First sphere collides with existing structures." << endl;
             tries_++;
@@ -209,7 +223,7 @@ std::vector<Sphere> GlialCellGrowth::addIntermediateSpheres(const Sphere &random
         double rad = compute_radius(t);
 
         Sphere next(
-            nbr_spheres + i + 1, first_sphere.object_id, first_sphere.object_type, position, rad, branch_nbr,
+            glial_cell_to_grow.next_sphere_id++, first_sphere.object_id, first_sphere.object_type, position, rad, branch_nbr,
             random_sphere.id);
 
         // Check if the sphere can be placed
@@ -254,11 +268,18 @@ bool GlialCellGrowth::growPrimaryBranch(int &nbr_spheres, const double &mean_pri
     std::random_device rd;
     std::mt19937 generator(rd());
     std::normal_distribution<double> length_dist(mean_primary_process_length, std_primary_process_length);
+    // Floor relative to the requested mean, not the sample itself: a Gaussian
+    // draw can land small or negative (e.g. whenever std_primary_process_length
+    // is comparable to or larger than the mean, as the GUI's own defaults are),
+    // and a floor derived from that same draw is equally small/negative -- it
+    // stops acting as a floor right when it's needed most, letting a branch
+    // that grows only its first (on-the-soma) sphere slip through as "valid".
+    double min_length = std::max(0.5*mean_primary_process_length, kMinGlialProcessLength);
     double length = length_dist(generator);
-    double min_length = 0.5*length; // Minimum length to grow a branch
     int tries = 0;
     while (length < min_length && tries < 100) {
         length = length_dist(generator);
+        tries++;
     }
 
     if (length < min_length) {
@@ -333,10 +354,21 @@ bool GlialCellGrowth::growPrimaryBranch(int &nbr_spheres, const double &mean_pri
     //cout << "Growing primary branch..." << endl;
     double distance = initial_radius + first_radius;
     while (can_grow) {
- 
-        // Calculate the radius at the current distance
-        double R_ = compute_radius(distance);
-        if (R_ <= glial_cell_to_grow.minimum_radius or distance >= length) {
+
+        // Radius at the current distance, clamped to minimum_radius so the
+        // branch keeps growing in *length* toward its true sampled target
+        // even once decay alone would have taken it below that floor. alpha
+        // above is deliberately calibrated against min(length, mean) so the
+        // radius still visibly tapers within about a mean-length's worth of
+        // distance even when the true target is much longer -- but that must
+        // only govern how fast the radius shrinks, not how far the branch is
+        // allowed to grow. Previously R_ <= minimum_radius doubled as the
+        // loop's own stop condition, so any branch with length > mean (about
+        // half of all draws) silently had its actual grown length capped at
+        // ~mean regardless of its sampled target -- e.g. never observed to
+        // exceed mean_process_length at all, no matter how large std was.
+        double R_ = std::max(compute_radius(distance), glial_cell_to_grow.minimum_radius);
+        if (distance >= length) {
             break;
         } else {
             bool check_collision = glial_cell_to_grow.ramification_spheres[j].size() >= nbr_non_checked_spheres;
@@ -345,14 +377,27 @@ bool GlialCellGrowth::growPrimaryBranch(int &nbr_spheres, const double &mean_pri
             can_grow = AddOneSphere(R_, true, grow_straight, j, check_collision, parent, factor);
         }
 
-        if (can_grow) {
-            const auto &new_sphere = glial_cell_to_grow.ramification_spheres[j].back();
-            distance += (prev_pos - new_sphere.center).norm();
-            prev_pos = new_sphere.center;
+        // AddOneSphere can add spheres (via add_spheres, up to `factor` of them:
+        // intermediate spheres plus the sphere itself) and *still* return false
+        // right afterward (e.g. the sphere lands outside the extended voxel
+        // bounds) -- so lengths_branches must be resynced against however many
+        // spheres actually landed in ramification_spheres[j], regardless of
+        // AddOneSphere's return value, or it silently falls behind. Once that
+        // happens it stays wrong for the rest of this branch's life, and any
+        // later secondary branch that attaches partway along it (via
+        // lengths_branches[branch][index] in growSecondaryBranch) reads
+        // past the end of a too-short lengths_branches[j] -- undefined
+        // behavior, observed in practice as garbage old_length values.
+        {
             int nbr_spheres_in_branch_before = glial_cell_to_grow.lengths_branches[j].size();
-            int nbr_spheres_in_branch_after = glial_cell_to_grow.ramification_spheres.back().size();
-            for (int i = nbr_spheres_in_branch_before; i < nbr_spheres_in_branch_after; i++) {
-                glial_cell_to_grow.lengths_branches[j].push_back(distance);
+            int nbr_spheres_in_branch_after = glial_cell_to_grow.ramification_spheres[j].size();
+            if (nbr_spheres_in_branch_after > nbr_spheres_in_branch_before) {
+                const auto &new_sphere = glial_cell_to_grow.ramification_spheres[j].back();
+                distance += (prev_pos - new_sphere.center).norm();
+                prev_pos = new_sphere.center;
+                for (int i = nbr_spheres_in_branch_before; i < nbr_spheres_in_branch_after; i++) {
+                    glial_cell_to_grow.lengths_branches[j].push_back(distance);
+                }
             }
         }
     }
@@ -369,7 +414,7 @@ bool GlialCellGrowth::growPrimaryBranch(int &nbr_spheres, const double &mean_pri
         //cout << "Branch grown" << endl;
         // Update the number of spheres
         nbr_spheres += glial_cell_to_grow.ramification_spheres.back().size();
-        
+
         return true;
     }
     return true;
@@ -401,7 +446,10 @@ bool GlialCellGrowth::growSecondaryBranch(int &nbr_spheres, const double &mean_p
 
     int random_branch = branch_dist(rng);
     int nbr_tries = 0;
-    while (glial_cell_to_grow.ramification_spheres[random_branch].empty() && nbr_tries < 100) {
+    // size <= 1 is rejected alongside empty: random_sphere_ind below must land
+    // at index >= 1 (it needs a *previous* sphere to derive a direction from),
+    // which a single-sphere branch can't offer.
+    while (glial_cell_to_grow.ramification_spheres[random_branch].size() <= 1 && nbr_tries < 100) {
         random_branch = branch_dist(rng);
         nbr_tries++;
     }
@@ -412,31 +460,105 @@ bool GlialCellGrowth::growSecondaryBranch(int &nbr_spheres, const double &mean_p
 
     int size = glial_cell_to_grow.ramification_spheres[random_branch].size();
     //int random_sphere_ind = size / 2 + rand() % (size - size / 2);
-    int random_sphere_ind = rand() % size ;
+    int random_sphere_ind = 1 + rand() % (size - 1); // >= 1: needs [random_sphere_ind - 1] below
     Sphere random_sphere = glial_cell_to_grow.ramification_spheres[random_branch][random_sphere_ind];
-    
+
+    // A secondary branch may only originate from a point that is actually
+    // inside the real voxel (min_limits/max_limits, not the extended
+    // growth region) -- unlike ordinary growth, which is now allowed past
+    // the boundary (see AddOneSphere), a *new* branch is not allowed to
+    // spring from a source that already lies outside it. Zero margin (not
+    // random_sphere.radius): the source's own radius would otherwise dilate
+    // the box and let a source sitting just past the true edge still count
+    // as "inside".
+    if (!check_borders(min_limits, max_limits, random_sphere.center, 0.0)) {
+        return false;
+    }
+
     if (glial_cell_to_grow.lengths_branches.size() <= random_branch) {
         cout << "glial_cell.lengths_branches.size() : " << glial_cell_to_grow.lengths_branches.size() << endl;
         cout << "random_branch : " << random_branch << endl;
         cout << "Error: lengths_branches vector is not large enough." << endl;
         assert(0);
     }
+    if (glial_cell_to_grow.lengths_branches[random_branch].size() != glial_cell_to_grow.ramification_spheres[random_branch].size()) {
+        // Would previously read random_sphere_ind out of bounds on
+        // lengths_branches[random_branch] (undefined behavior, observed as
+        // garbage old_length values) whenever a branch's growth loop added
+        // spheres via AddOneSphere without a matching lengths_branches
+        // update -- see the resync fix in growPrimaryBranch/growSecondaryBranch's
+        // growth loops. Kept as a loud assertion rather than silently
+        // trusting the sizes match, since a future change reintroducing that
+        // desync should fail immediately here instead of corrupting length
+        // sampling downstream.
+        cout << "glial_cell.ramification_spheres[" << random_branch << "].size() : "
+             << glial_cell_to_grow.ramification_spheres[random_branch].size()
+             << " != lengths_branches[" << random_branch << "].size() : "
+             << glial_cell_to_grow.lengths_branches[random_branch].size() << endl;
+        assert(0);
+    }
     double old_length = glial_cell_to_grow.lengths_branches[random_branch][random_sphere_ind];
     std::random_device rd;
     std::mt19937 generator(rd());
 
-    std::normal_distribution<double> length_dist(mean_process_length - old_length, std_process_length);
+    // Cap this branch's own total real (travelled arc-length, not straight-line
+    // Euclidean distance -- glial processes wander, so "length" here means the
+    // actual path length, matching how process length is specified/measured
+    // elsewhere in this model) reach from the soma at its parent branch's own
+    // total real length: lengths_branches[random_branch].back() is the parent's
+    // own cumulative arc length at its tip, and old_length (already one of the
+    // parent's own lengths_branches entries) is how far along the parent this
+    // branch is attaching, so the parent's own remaining reach from here is
+    // their difference.
+    double parent_total_length = glial_cell_to_grow.lengths_branches[random_branch].back();
+    double max_length_to_grow = std::max(0.0, parent_total_length - old_length);
+    if (max_length_to_grow < kMinGlialProcessLength) {
+        // Attaching this close to (or past) the parent's own tip leaves no
+        // room for a worthwhile child branch without it overshooting the
+        // parent -- discard the attempt outright, same as growPrimaryBranch's
+        // own "not enough room" rejection.
+        return false;
+    }
+
+    // Every process's own length -- primary or secondary, regardless of
+    // nesting depth or how far along its parent it attaches -- is drawn from
+    // the same N(mean_process_length, std_process_length), matching
+    // growPrimaryBranch. This used to be sampled from
+    // N(mean_process_length - old_length, std_process_length) instead, aiming
+    // to make the *cumulative* soma-to-tip length hit N(mean, std): but
+    // combined with max_length_to_grow (the parent-reach cap above), that
+    // shrank the *effective* sampling window down to a sliver for any branch
+    // attaching more than a little way along its parent, badly compressing
+    // the realized standard deviation of secondary lengths well below
+    // std_process_length -- measured at less than half the configured value
+    // in practice. Sampling the branch's own length independently of
+    // old_length, and letting max_length_to_grow act purely as a rejection
+    // filter (redraw/discard, never shift the distribution), keeps every
+    // accepted sample's underlying distribution faithful to std_process_length.
+    std::normal_distribution<double> length_dist(mean_process_length, std_process_length);
     double length_to_grow = length_dist(generator);
-    double min_length_to_grow = 0.75*length_to_grow;
+    // Just the absolute floor here (unlike growPrimaryBranch's 0.5*mean, which
+    // has no upper bound to conflict with): max_length_to_grow is often well
+    // under mean_process_length for a branch attaching partway along its
+    // parent, so a floor derived from the mean (e.g. 0.75*mean) would frequently
+    // sit *above* max_length_to_grow, making the two bounds contradictory and
+    // rejecting nearly every secondary branch attempt outright. The upfront
+    // "max_length_to_grow < kMinGlialProcessLength" rejection above already
+    // ensures a non-empty window remains.
+    double min_length_to_grow = kMinGlialProcessLength;
     int nbr_non_checked_spheres = factor*3 ;
 
+    // Redraw (not clamp) until the sample actually respects both bounds:
+    // clamping every over-cap draw to exactly max_length_to_grow would pile up
+    // an artificial spike of branches at exactly the parent's own length,
+    // rather than a natural distribution of shorter-than-parent lengths.
     int count = 0;
-    while (count < 100 && length_to_grow < min_length_to_grow) {
+    while (count < 100 && (length_to_grow < min_length_to_grow || length_to_grow > max_length_to_grow)) {
         length_to_grow = length_dist(generator);
         count++;
     }
 
-    if (length_to_grow < min_length_to_grow) {
+    if (length_to_grow < min_length_to_grow || length_to_grow > max_length_to_grow) {
         return false;
     }
 
@@ -504,12 +626,20 @@ bool GlialCellGrowth::growSecondaryBranch(int &nbr_spheres, const double &mean_p
         else {
             int grow_straight = 0;
             can_grow = AddOneSphere(R_, true, grow_straight, current_branch, glial_cell_to_grow.ramification_spheres.back().size() > nbr_non_checked_spheres, parent, factor);
-            if (can_grow) {
+
+            // Same resync as growPrimaryBranch: AddOneSphere can add spheres
+            // and still return false right after (e.g. lands outside the
+            // extended voxel bounds), so lengths_branches must stay synced
+            // with ramification_spheres[current_branch] regardless of the
+            // return value -- otherwise it silently falls behind, and any
+            // later branch attaching partway along *this* one reads past the
+            // end of a too-short lengths_branches[current_branch].
+            int nbr_spheres_in_branch_before = glial_cell_to_grow.lengths_branches[current_branch].size();
+            int nbr_spheres_in_branch_after = glial_cell_to_grow.ramification_spheres[current_branch].size();
+            if (nbr_spheres_in_branch_after > nbr_spheres_in_branch_before) {
                 double segment = (prev_pos - glial_cell_to_grow.ramification_spheres.back().back().center).norm();
                 distance += segment;
                 total_distance += segment;
-                int nbr_spheres_in_branch_before = glial_cell_to_grow.lengths_branches[current_branch].size();
-                int nbr_spheres_in_branch_after = glial_cell_to_grow.ramification_spheres.back().size();
                 for (int i = nbr_spheres_in_branch_before; i < nbr_spheres_in_branch_after; i++) {
                     glial_cell_to_grow.lengths_branches[current_branch].push_back(total_distance);
                 }

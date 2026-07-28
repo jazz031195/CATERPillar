@@ -23,13 +23,26 @@ void Axon::keep_one_sphere(){
     outer_spheres.clear();
     add_sphere(s);
     growth_attempts += 1;
-
+    // Only the seed sphere is left -- "growing straight" has no established
+    // heading to continue with just one point, so a stale grow_straight==1
+    // from before this rollback must not survive it (see truncate_to).
+    grow_straight = 0;
 
 }
 
 void Axon::truncate_to(std::size_t n){
     if (outer_spheres.size() > n) {
         outer_spheres.resize(n);
+    }
+    // A rollback that leaves fewer than 2 spheres wipes out any established
+    // heading find_next_center_straight would need to continue from -- without
+    // this, a grow_straight==1 left over from before the rollback (set while
+    // there were still >= 2 spheres) survives the truncation and the next
+    // AddOneSphere call crashes (find_next_center_straight asserts on < 2
+    // spheres). This is the general case keep_one_sphere() (truncate_to(1))
+    // is a special case of.
+    if (outer_spheres.size() < 2) {
+        grow_straight = 0;
     }
     // growth_attempts is deliberately left untouched here -- callers decide
     // whether/how to adjust it (e.g. growthThread's retry path increments it
@@ -131,6 +144,41 @@ void Axon::update_Volume(const int &factor, const Eigen::Vector3d &min_limits, c
     }
 
     volume = new_volume;
+}
+
+void Axon::update_MyelinVolume(const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits){
+    if (!myelin_sheath || inner_spheres.size() < 2) {
+        volume_myelin = 0.0;
+        return;
+    }
+
+    double inner_volume = 0.0;
+
+    for (size_t i = 1; i < inner_spheres.size(); ++i) {
+        const Sphere &last_sphere = inner_spheres[i - 1];
+        const Sphere &current_sphere = inner_spheres[i];
+
+        double distance = (current_sphere.center - last_sphere.center).norm();
+
+        double segment_volume = M_PI * distance * (
+            current_sphere.radius * current_sphere.radius +
+            last_sphere.radius * last_sphere.radius +
+            current_sphere.radius * last_sphere.radius) / 3.0;
+
+        bool current_in_bounds = Obstacle::check_borders(min_limits, max_limits, current_sphere.center, barrier_tickness);
+        bool last_in_bounds = Obstacle::check_borders(min_limits, max_limits, last_sphere.center, barrier_tickness);
+
+        if (current_in_bounds && last_in_bounds) {
+            inner_volume += segment_volume;
+        } else if (current_in_bounds || last_in_bounds) {
+            inner_volume += segment_volume / 2.0;
+        }
+    }
+
+    // volume (outer boundary, from update_Volume) must already reflect the
+    // current outer_spheres -- the sheath is what's left after subtracting
+    // the bare core.
+    volume_myelin = std::max(0.0, volume - inner_volume);
 }
 
 
