@@ -26,9 +26,12 @@ public:
     std::vector<std::vector<double>> lengths_branches;      /*!< cumulative length at each sphere of each branch */
     std::vector<Eigen::Vector3d> attractors;                /*!< per-branch target direction (unused for branch 0) */
     std::vector<std::vector<int>> children_branches;        /*!< children_branches[b] = ids of every branch that attached to branch b */
+    std::vector<int> branch_generation;                     /*!< branch_generation[b] = generations of capillary branching between branch b and the arteriole (0 for the arteriole itself, 1 for a capillary attached directly to it, etc.) */
     double minimum_radius;                                  /*!< radius branches decay toward */
-    double volume;                                          /*!< Volume of the main vessel (branch 0) */
-    double volume_processes;                                /*!< Volume of the branches (branch_id >= 1) */
+    double volume;                                          /*!< Volume of the main vessel (branch 0), clipped to the real (small) voxel */
+    double volume_processes;                                /*!< Volume of the branches (branch_id >= 1), clipped to the real (small) voxel */
+    double volume_big;                                       /*!< Volume of the main vessel (branch 0), clipped to the (padded) blood-vessel voxel */
+    double volume_processes_big;                             /*!< Volume of the branches (branch_id >= 1), clipped to the (padded) blood-vessel voxel */
     Eigen::Vector3d begin;                          /*!< position of first sphere */
     Eigen::Vector3d end;                            /*!< target position to grow towards */
     int undulation_factor;                          /*!< Factor for ondulation */
@@ -37,7 +40,7 @@ public:
     double phase_shift;                           /*!< Phase shift of radius beading */
     double beading_std;                           /*!< Standard deviation of radius beading */
     int growth_axis ;                            /*!< Axis along which the blood vessel grows (0:x, 1:y, 2:z) */
-
+    int next_sphere_id;                           /*!< Monotonic counter handing out the id of the next sphere added anywhere in this vessel, so ids stay unique within the vessel regardless of overlap factor -- parent_id links and branch-parent lookups rely on that uniqueness. */
 
     Blood_Vessel();
 
@@ -53,13 +56,17 @@ public:
         beading_std = beading_std_;
         undulation_factor = undulation_factor_;
         growth_axis= 2;
-        minimum_radius = radius_/20.0;
+        minimum_radius = 2.0;
         volume = 0.0;
         volume_processes = 0.0;
+        volume_big = 0.0;
+        volume_processes_big = 0.0;
+        next_sphere_id = 0;
         ramification_spheres.clear();
         lengths_branches.clear();
         attractors.clear();
         children_branches.clear();
+        branch_generation.clear();
     };
 
     Blood_Vessel& operator=(const Blood_Vessel &bv){
@@ -72,6 +79,7 @@ public:
             lengths_branches = bv.lengths_branches;
             attractors = bv.attractors;
             children_branches = bv.children_branches;
+            branch_generation = bv.branch_generation;
             minimum_radius = bv.minimum_radius;
             undulation_factor = bv.undulation_factor;
             growth_attempts = bv.growth_attempts;
@@ -80,6 +88,10 @@ public:
             growth_axis= bv.growth_axis;
             volume = bv.volume;
             volume_processes = bv.volume_processes;
+            volume_big = bv.volume_big;
+            volume_processes_big = bv.volume_processes_big;
+            next_sphere_id = bv.next_sphere_id;
+
         }
         return *this;
     };
@@ -88,7 +100,7 @@ public:
     void destroy();
     void keep_one_sphere();
     void add_sphere(const Sphere &sphere_to_add);
-    void update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits);
+    void update_Volume(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits, const Eigen::Vector3d &big_min_limits, const Eigen::Vector3d &big_max_limits);
     void add_first_sphere(const Sphere &s);
 
     /*!
@@ -99,7 +111,7 @@ public:
     /*!
      *  \brief Computes volume_processes from every branch (branch_id >= 1).
      */
-    void compute_processes_icvf(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits);
+    void compute_processes_icvf(const int &factor, const Eigen::Vector3d &min_limits, const Eigen::Vector3d &max_limits, const Eigen::Vector3d &big_min_limits, const Eigen::Vector3d &big_max_limits);
 
     /*!
      *  \brief Finds the sphere with the given id anywhere in this vessel (main vessel or
@@ -160,8 +172,12 @@ public:
      *         sphere spacing, so a chain that was adequately overlapping at its
      *         original (larger) radius can end up with visible gaps once thinned out;
      *         this reinserts spheres to close them.
+     *  \param sphere_grid the shared environment grid (already holds every vessel's
+     *         growth-time geometry by this point): candidate spheres are checked
+     *         against it, not just this vessel's own other branches, so a re-densified
+     *         point can't silently land inside another vessel it happens to pass near.
      */
-    void reinterpolateAfterShrink(const int &factor);
+    void reinterpolateAfterShrink(const int &factor, const SphereGrid &sphere_grid);
 
     /*!
      *  \brief Closes the gap, if any, between each branch's first sphere and the
@@ -174,8 +190,9 @@ public:
      *         own vector, never across the parent/child boundary. Meant to run after
      *         enforceMurraysLaw() and pruneUndersizedBranches(), before
      *         reinterpolateAfterShrink().
+     *  \param sphere_grid see reinterpolateAfterShrink -- same reasoning.
      */
-    void bridgeJunctionGaps(const int &factor);
+    void bridgeJunctionGaps(const int &factor, const SphereGrid &sphere_grid);
 
 };
 #endif // BLOOD_VESSEL_H

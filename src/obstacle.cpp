@@ -16,8 +16,8 @@ bool Obstacle::check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3
     
     // Check if the point is inside the dilated box
     for (int i = 0; i < 3; ++i) {
-        double min_bound = min_l[0] - distance_to_border;
-        double max_bound = max_l[1] + distance_to_border;
+        double min_bound = min_l[i] - distance_to_border;
+        double max_bound = max_l[i] + distance_to_border;
         if (pos[i] < min_bound || pos[i] > max_bound) {
             return false; // Point is outside the dilated box
         }

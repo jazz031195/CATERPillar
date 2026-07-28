@@ -8,6 +8,7 @@
 #include "../src/Glial.h"
 #include "ScatterDataModifier.h"
 #include <QDir>
+#include <QFileInfo>
 #include <fstream>
 #include <QFile>
 #include <QTextStream>
@@ -65,6 +66,7 @@ Window::Window(QWidget *parent)
     QToolButton *btnMyelin = createPictureButton("Myelinated", ":/images/myelin.png");
     QToolButton *btnGlial1 = createPictureButton("Glial Pop 1", ":/images/glial_cells.jpeg");
     QToolButton *btnGlial2 = createPictureButton("Glial Pop 2", ":/images/glial_cells.jpeg");
+    QToolButton *btnGlial3 = createPictureButton("Glial Pop 3", ":/images/glial_cells.jpeg");
     QToolButton *btnBlood = createPictureButton("Blood Vessels", ":/images/blood_vessels.png");
 
     imagesLayout->addWidget(btnGeneral);
@@ -72,6 +74,7 @@ Window::Window(QWidget *parent)
     imagesLayout->addWidget(btnMyelin);
     imagesLayout->addWidget(btnGlial1);
     imagesLayout->addWidget(btnGlial2);
+    imagesLayout->addWidget(btnGlial3);
     imagesLayout->addWidget(btnBlood);
 
     wmLayout->addLayout(imagesLayout);
@@ -85,7 +88,8 @@ Window::Window(QWidget *parent)
     connect(btnMyelin,  &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(2); });
     connect(btnGlial1,  &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(3); });
     connect(btnGlial2,  &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(4); });
-    connect(btnBlood,   &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(5); });
+    connect(btnGlial3,  &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(5); });
+    connect(btnBlood,   &QToolButton::clicked, [this]() { cellParamsStack->setCurrentIndex(6); });
 
     cellParamsStack->setCurrentIndex(0);
 
@@ -126,10 +130,18 @@ Window::Window(QWidget *parent)
     // Create the button and label it for your SWC/CSV functionality
     QPushButton *btnLoadVisFile = new QPushButton("Load SWC/CSV for Visualisation", this);
     btnLoadVisFile->setStyleSheet("padding: 8px; font-weight: bold;");
-    visLayout->addWidget(btnLoadVisFile);
+
+    QPushButton *btnPlotSholl = new QPushButton("Plot Mean Sholl Curve", this);
+    btnPlotSholl->setStyleSheet("padding: 8px; font-weight: bold;");
+
+    QHBoxLayout *visButtonsLayout = new QHBoxLayout();
+    visButtonsLayout->addWidget(btnLoadVisFile);
+    visButtonsLayout->addWidget(btnPlotSholl);
+    visLayout->addLayout(visButtonsLayout);
 
     // CONNECT DIRECTLY TO YOUR EXISTING SLOT
     connect(btnLoadVisFile, &QPushButton::clicked, this, &Window::SelectSWCFileButton);
+    connect(btnPlotSholl, &QPushButton::clicked, this, &Window::ShollAnalysis);
 
     mainTabs->addTab(tabVisualisation, "2. Visualisation");
 
@@ -201,6 +213,20 @@ Window::Window(QWidget *parent)
     mcForm->addRow("Duration:", inputDuration);
     mcForm->addRow("Diffusivity Intra:", inputDiffIntra);
     mcForm->addRow("Diffusivity Extra:", inputDiffExtra);
+
+    // Initial walker compartment: both ticked (default) or neither means no
+    // restriction is written to the config (voxel-wide sampling); exactly one
+    // ticked writes "ini_walkers_pos intra"/"extra" -- see the config-writing block.
+    checkIniWalkersIntra = new QCheckBox("Intra");
+    checkIniWalkersIntra->setChecked(true);
+    checkIniWalkersExtra = new QCheckBox("Extra");
+    checkIniWalkersExtra->setChecked(true);
+
+    QHBoxLayout *iniWalkersLayout = new QHBoxLayout();
+    iniWalkersLayout->addWidget(checkIniWalkersIntra);
+    iniWalkersLayout->addWidget(checkIniWalkersExtra);
+    mcForm->addRow("Initial Walker Compartment:", iniWalkersLayout);
+
     mcForm->addRow("Voxel Size (edge length):", inputVoxelSizeMC);
     mcForm->addRow("Number of Threads:", inputNumThreadsMC);
 
@@ -291,6 +317,9 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
     std::vector<QLabel*> glials_labels2 = { glial_pop2_soma_icvf_qlabel, glial_pop2_processes_icvf_qlabel, glial_pop2_radius_mean_qlabel, glial_pop2_radius_std_qlabel, glial_pop2_mean_process_length_qlabel, glial_pop2_std_process_length_qlabel, glial_pop2_nbr_primary_processes_qlabel };
     std::vector<QDoubleSpinBox*> glials_spinBoxes2 = { glial_pop2_soma_icvf_SpinBox, glial_pop2_processes_icvf_SpinBox, glial_pop2_radius_mean_SpinBox, glial_pop2_radius_std_SpinBox, glial_pop2_mean_process_length_SpinBox, glial_pop2_std_process_length_SpinBox, glial_pop2_nbr_primary_processes_SpinBox };
 
+    std::vector<QLabel*> glials_labels3 = { glial_pop3_soma_icvf_qlabel, glial_pop3_processes_icvf_qlabel, glial_pop3_radius_mean_qlabel, glial_pop3_radius_std_qlabel, glial_pop3_mean_process_length_qlabel, glial_pop3_std_process_length_qlabel, glial_pop3_nbr_primary_processes_qlabel };
+    std::vector<QDoubleSpinBox*> glials_spinBoxes3 = { glial_pop3_soma_icvf_SpinBox, glial_pop3_processes_icvf_SpinBox, glial_pop3_radius_mean_SpinBox, glial_pop3_radius_std_SpinBox, glial_pop3_mean_process_length_SpinBox, glial_pop3_std_process_length_SpinBox, glial_pop3_nbr_primary_processes_SpinBox };
+
     // 2. INITIALIZE STACK
     cellParamsStack = new QStackedWidget();
 
@@ -359,7 +388,17 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
     glialGroup2->setLayout(glialLayout2);
     cellParamsStack->addWidget(glialGroup2);
 
-    // --- PAGE 5: BLOOD VESSELS ---
+    // --- PAGE 5: GLIAL POPULATION 3 ---
+    QGroupBox *glialGroup3 = new QGroupBox("Glial Cell Population 3 Parameters");
+    QFormLayout *glialLayout3 = new QFormLayout;
+    for (size_t i = 0; i < glials_labels3.size(); i++) {
+        glialLayout3->addRow(glials_labels3[i], glials_spinBoxes3[i]);
+    }
+    glialLayout3->addRow(glial_pop3_branching_qlabel, glial_pop3_branching_checkbox);
+    glialGroup3->setLayout(glialLayout3);
+    cellParamsStack->addWidget(glialGroup3);
+
+    // --- PAGE 6: BLOOD VESSELS ---
     QGroupBox *bloodVesselGroup = new QGroupBox("Blood Vessel Parameters");
     QFormLayout *bloodLayout = new QFormLayout;
     QLabel *bloodVesselsWarningLabel = new QLabel("<b>Blood Vessels: work in progress, not validated yet.</b>");
@@ -367,6 +406,11 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
     bloodLayout->addRow(bloodVesselsWarningLabel);
     bloodLayout->addRow(blood_vessels_icvf_qlabel, blood_vessels_icvf_SpinBox);
     bloodLayout->addRow(blood_vessels_processes_icvf_qlabel, blood_vessels_processes_icvf_SpinBox);
+    bloodLayout->addRow(blood_vessel_voxel_size_qlabel, blood_vessel_voxel_size_SpinBox);
+    bloodLayout->addRow(blood_vessel_mean_radius_qlabel, blood_vessel_mean_radius_SpinBox);
+    bloodLayout->addRow(blood_vessel_std_radius_qlabel, blood_vessel_std_radius_SpinBox);
+    bloodLayout->addRow(blood_vessel_capillary_radius_qlabel, blood_vessel_capillary_radius_SpinBox);
+    bloodLayout->addRow(blood_vessel_max_generations_qlabel, blood_vessel_max_generations_SpinBox);
     bloodVesselGroup->setLayout(bloodLayout);
     cellParamsStack->addWidget(bloodVesselGroup);
 
@@ -432,6 +476,18 @@ void Window::runMCSimulation()
         out << "duration " << inputDuration->text() << "\n";
         out << "diffusivity_intra " << inputDiffIntra->text() << "\n";
         out << "diffusivity_extra " << inputDiffExtra->text() << "\n";
+
+        // Initial walker compartment: only write ini_walkers_pos when exactly one of
+        // Intra/Extra is ticked. Both ticked (or neither) means no restriction, so the
+        // simulator's default voxel-wide sampling is used and nothing is written.
+        bool iniIntra = checkIniWalkersIntra->isChecked();
+        bool iniExtra = checkIniWalkersExtra->isChecked();
+        if (iniIntra && !iniExtra) {
+            out << "ini_walkers_pos intra\n";
+        } else if (iniExtra && !iniIntra) {
+            out << "ini_walkers_pos extra\n";
+        }
+
         out << "num_process " << inputNumThreadsMC->value() << "\n\n";
 
         out << "scheme_file " << inputSchemeFile->text() << "\n\n";
@@ -503,12 +559,50 @@ void Window::SelectSWCFileButton() {
         ReadAxonsFromFile(SWCFile);       // Load axons
         ReadGlialCellsFromFile(SWCFile);  // Load glial cells
         ReadBloodVesselsFromFile(SWCFile); // Load blood vessels
-        PlotCells(true, true, true, true);              // Visualize
+
+        // The loaded file has no header describing the real voxel's actual
+        // placement (it can be anywhere inside the padded blood-vessel voxel,
+        // see PlaceSmallVoxel) -- try the accompanying growth_info.txt this
+        // simulation would have written alongside it (same basename, per
+        // CoreLogic::runSimulation's own naming convention) for the "Small
+        // voxel min/max limits" lines it records; fall back to an
+        // origin-anchored box of edge parameters.voxel_size, the only
+        // reasonable guess with no growth_info.txt to read.
+        voxelBoundsMin = QVector3D(0.0f, 0.0f, 0.0f);
+        voxelBoundsMax = QVector3D(parameters.voxel_size, parameters.voxel_size, parameters.voxel_size);
+        QFileInfo fi(filePath);
+        QString growthInfoPath = fi.absolutePath() + "/" + fi.completeBaseName() + "_growth_info.txt";
+        QFile growthInfoFile(growthInfoPath);
+        if (growthInfoFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QTextStream in(&growthInfoFile);
+            bool haveMin = false, haveMax = false;
+            while (!in.atEnd()) {
+                QString line = in.readLine();
+                if (line.startsWith("Small voxel min limits ")) {
+                    QStringList parts = line.split(' ', Qt::SkipEmptyParts);
+                    if (parts.size() >= 6) {
+                        voxelBoundsMin = QVector3D(parts[3].toFloat(), parts[4].toFloat(), parts[5].toFloat());
+                        haveMin = true;
+                    }
+                } else if (line.startsWith("Small voxel max limits ")) {
+                    QStringList parts = line.split(' ', Qt::SkipEmptyParts);
+                    if (parts.size() >= 6) {
+                        voxelBoundsMax = QVector3D(parts[3].toFloat(), parts[4].toFloat(), parts[5].toFloat());
+                        haveMax = true;
+                    }
+                }
+                if (haveMin && haveMax) break;
+            }
+            growthInfoFile.close();
+        }
+
+        PlotCells(true, true, true, true, true);              // Visualize
     }
 }
 void Window::PlotCells(const bool& axons_plot,
                        const bool& glial_pop1_plot,
                        const bool& glial_pop2_plot,
+                       const bool& glial_pop3_plot,
                        const bool& blood_vessels_plot)
 {
     // 1. DATA PREPARATION
@@ -535,6 +629,13 @@ void Window::PlotCells(const bool& axons_plot,
         Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
         R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
         groupIds.insert(groupIds.end(), X_glial_pop2.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial2));
+    }
+    if (glial_pop3_plot){
+        X.insert(X.end(), X_glial_pop3.begin(), X_glial_pop3.end());
+        Y.insert(Y.end(), Y_glial_pop3.begin(), Y_glial_pop3.end());
+        Z.insert(Z.end(), Z_glial_pop3.begin(), Z_glial_pop3.end());
+        R.insert(R.end(), R_glial_pop3.begin(), R_glial_pop3.end());
+        groupIds.insert(groupIds.end(), X_glial_pop3.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial3));
     }
     if (blood_vessels_plot){
         X.insert(X.end(), X_blood_vessels.begin(), X_blood_vessels.end());
@@ -602,9 +703,7 @@ void Window::PlotCells(const bool& axons_plot,
     // 3. DATA UPDATE
     if (this->openglWindow) {
         this->openglWindow->setSpheres(X, Y, Z, R, groupIds);
-        this->openglWindow->setVoxelBounds(
-            QVector3D(0.0f, 0.0f, 0.0f),
-            QVector3D(parameters.voxel_size, parameters.voxel_size, parameters.voxel_size));
+        this->openglWindow->setVoxelBounds(voxelBoundsMin, voxelBoundsMax);
         this->openglWindow->update();
     }
 
@@ -637,6 +736,12 @@ void Window::ShowAllCells(){
     Z.insert(Z.end(), Z_glial_pop2.begin(), Z_glial_pop2.end());
     R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
     groupIds.insert(groupIds.end(), X_glial_pop2.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial2));
+
+    X.insert(X.end(), X_glial_pop3.begin(), X_glial_pop3.end());
+    Y.insert(Y.end(), Y_glial_pop3.begin(), Y_glial_pop3.end());
+    Z.insert(Z.end(), Z_glial_pop3.begin(), Z_glial_pop3.end());
+    R.insert(R.end(), R_glial_pop3.begin(), R_glial_pop3.end());
+    groupIds.insert(groupIds.end(), X_glial_pop3.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial3));
 
     X.insert(X.end(), X_axons.begin(), X_axons.end());
     Y.insert(Y.end(), Y_axons.begin(), Y_axons.end());
@@ -672,6 +777,12 @@ void Window::HideAxons(){
     R.insert(R.end(), R_glial_pop2.begin(), R_glial_pop2.end());
     groupIds.insert(groupIds.end(), X_glial_pop2.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial2));
 
+    X.insert(X.end(), X_glial_pop3.begin(), X_glial_pop3.end());
+    Y.insert(Y.end(), Y_glial_pop3.begin(), Y_glial_pop3.end());
+    Z.insert(Z.end(), Z_glial_pop3.begin(), Z_glial_pop3.end());
+    R.insert(R.end(), R_glial_pop3.begin(), R_glial_pop3.end());
+    groupIds.insert(groupIds.end(), X_glial_pop3.size(), static_cast<int>(OpenGLWindow::SphereGroup::Glial3));
+
     openglWindow->setSpheres(X, Y, Z, R, groupIds);
 
     openglWindow->update();
@@ -703,9 +814,16 @@ void Window::initParameters()
     glial_pop1_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
     glial_pop1_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
     glial_pop2_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
+    glial_pop3_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
     glial_pop2_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
-    blood_vessels_icvf_qlabel = new QLabel(tr("Blood Vessels ICVF (%):"));
-    blood_vessels_processes_icvf_qlabel = new QLabel(tr("Blood Vessel Branches ICVF (%):"));
+    glial_pop3_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
+    blood_vessels_icvf_qlabel = new QLabel(tr("Arteriole ICVF (%):"));
+    blood_vessels_processes_icvf_qlabel = new QLabel(tr("Capillaries ICVF (%):"));
+    blood_vessel_voxel_size_qlabel = new QLabel(tr("Blood Vessel Voxel Edge Length (μm):"));
+    blood_vessel_mean_radius_qlabel = new QLabel(tr("Arteriole Radius Mean (μm):"));
+    blood_vessel_std_radius_qlabel = new QLabel(tr("Arteriole Radius Standard Deviation (μm):"));
+    blood_vessel_capillary_radius_qlabel = new QLabel(tr("Capillary Radius (μm):"));
+    blood_vessel_max_generations_qlabel = new QLabel(tr("Max Capillary Generations:"));
     voxel_size_qlabel = new QLabel(tr("Voxel Edge Length (μm):"));
     minimum_radius_qlabel = new QLabel(tr("Minimum Sphere Radius (μm):"));
     nbr_threads_qlabel = new QLabel(tr("Number of Threads:"));
@@ -718,17 +836,23 @@ void Window::initParameters()
     glial_pop1_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
     glial_pop1_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
     glial_pop2_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
+    glial_pop3_mean_process_length_qlabel = new QLabel(tr("Mean Process Length (μm):"));
     glial_pop2_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
+    glial_pop3_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
     alpha_qlabel = new QLabel(tr("α:"));
     beta_qlabel = new QLabel(tr("β:"));
     glial_pop1_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
     glial_pop1_radius_std_qlabel = new QLabel(tr("Glial Cell Soma Radius Standard Deviation:"));
     glial_pop2_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
+    glial_pop3_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
     glial_pop2_radius_std_qlabel = new QLabel(tr("Glial Cell Soma Radius Standard Deviation:"));
+    glial_pop3_radius_std_qlabel = new QLabel(tr("Glial Cell Soma Radius Standard Deviation:"));
     glial_pop1_nbr_primary_processes_qlabel = new QLabel(tr("Number of Primary Processes:"));
     glial_pop2_nbr_primary_processes_qlabel = new QLabel(tr("Number of Primary Processes:"));
+    glial_pop3_nbr_primary_processes_qlabel = new QLabel(tr("Number of Primary Processes:"));
     glial_pop1_branching_qlabel = new QLabel(tr("Can Glial Cell Population have branching ? "));
     glial_pop2_branching_qlabel = new QLabel(tr("Can Glial Cell Population have branching ? "));
+    glial_pop3_branching_qlabel = new QLabel(tr("Can Glial Cell Population have branching ? "));
 
     nbr_repetitions_SpinBox = new QDoubleSpinBox;
     nbr_repetitions_SpinBox->setRange(1, 100);
@@ -742,7 +866,9 @@ void Window::initParameters()
     glial_pop1_branching_checkbox->setChecked(true);
 
     glial_pop2_branching_checkbox = new QCheckBox;
+    glial_pop3_branching_checkbox = new QCheckBox;
     glial_pop2_branching_checkbox->setChecked(true);
+    glial_pop3_branching_checkbox->setChecked(true);
 
     beading_amplitude_SpinBox = new QDoubleSpinBox;
     beading_amplitude_SpinBox->setRange(0, 1);
@@ -780,14 +906,22 @@ void Window::initParameters()
     glial_pop1_std_process_length_SpinBox->setValue(15);
 
     glial_pop2_mean_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop3_mean_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop2_mean_process_length_SpinBox->setRange(0, 100);
+    glial_pop3_mean_process_length_SpinBox->setRange(0, 100);
     glial_pop2_mean_process_length_SpinBox->setSingleStep(1);
+    glial_pop3_mean_process_length_SpinBox->setSingleStep(1);
     glial_pop2_mean_process_length_SpinBox->setValue(10);
+    glial_pop3_mean_process_length_SpinBox->setValue(10);
 
     glial_pop2_std_process_length_SpinBox = new QDoubleSpinBox;
+    glial_pop3_std_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop2_std_process_length_SpinBox->setRange(0, 100);
+    glial_pop3_std_process_length_SpinBox->setRange(0, 100);
     glial_pop2_std_process_length_SpinBox->setSingleStep(1);
+    glial_pop3_std_process_length_SpinBox->setSingleStep(1);
     glial_pop2_std_process_length_SpinBox->setValue(15);
+    glial_pop3_std_process_length_SpinBox->setValue(15);
 
 
     glial_pop1_nbr_primary_processes_SpinBox = new QDoubleSpinBox;
@@ -796,9 +930,13 @@ void Window::initParameters()
     glial_pop1_nbr_primary_processes_SpinBox->setValue(10);
 
     glial_pop2_nbr_primary_processes_SpinBox = new QDoubleSpinBox;
+    glial_pop3_nbr_primary_processes_SpinBox = new QDoubleSpinBox;
     glial_pop2_nbr_primary_processes_SpinBox->setRange(1, 20);
+    glial_pop3_nbr_primary_processes_SpinBox->setRange(1, 20);
     glial_pop2_nbr_primary_processes_SpinBox->setSingleStep(1);
+    glial_pop3_nbr_primary_processes_SpinBox->setSingleStep(1);
     glial_pop2_nbr_primary_processes_SpinBox->setValue(10);
+    glial_pop3_nbr_primary_processes_SpinBox->setValue(10);
 
     axons_icvf_SpinBox = new QDoubleSpinBox;
     axons_icvf_SpinBox->setRange(0, 100);
@@ -817,6 +955,35 @@ void Window::initParameters()
     blood_vessels_processes_icvf_SpinBox->setSingleStep(1);
     blood_vessels_processes_icvf_SpinBox->setValue(0);
 
+    // 0 means "no padding, same box as Voxel Edge Length"; matches
+    // voxel_size_SpinBox's own range/step/default so leaving it untouched
+    // reproduces today's behavior exactly.
+    blood_vessel_voxel_size_SpinBox = new QDoubleSpinBox;
+    blood_vessel_voxel_size_SpinBox->setRange(0, 1000);
+    blood_vessel_voxel_size_SpinBox->setSingleStep(1);
+    blood_vessel_voxel_size_SpinBox->setValue(30);
+
+    blood_vessel_mean_radius_SpinBox = new QDoubleSpinBox;
+    blood_vessel_mean_radius_SpinBox->setRange(0, 20);
+    blood_vessel_mean_radius_SpinBox->setSingleStep(0.1);
+    blood_vessel_mean_radius_SpinBox->setValue(6);
+
+    blood_vessel_std_radius_SpinBox = new QDoubleSpinBox;
+    blood_vessel_std_radius_SpinBox->setRange(0, 20);
+    blood_vessel_std_radius_SpinBox->setSingleStep(0.1);
+    blood_vessel_std_radius_SpinBox->setValue(1);
+
+    blood_vessel_capillary_radius_SpinBox = new QDoubleSpinBox;
+    blood_vessel_capillary_radius_SpinBox->setRange(0, 10);
+    blood_vessel_capillary_radius_SpinBox->setSingleStep(0.1);
+    blood_vessel_capillary_radius_SpinBox->setValue(1);
+
+    blood_vessel_max_generations_SpinBox = new QDoubleSpinBox;
+    blood_vessel_max_generations_SpinBox->setRange(1, 20);
+    blood_vessel_max_generations_SpinBox->setSingleStep(1);
+    blood_vessel_max_generations_SpinBox->setDecimals(0);
+    blood_vessel_max_generations_SpinBox->setValue(7);
+
     glial_pop1_soma_icvf_SpinBox = new QDoubleSpinBox;
     glial_pop1_soma_icvf_SpinBox->setRange(0, 100);
     glial_pop1_soma_icvf_SpinBox->setSingleStep(1);
@@ -826,12 +993,18 @@ void Window::initParameters()
     glial_pop1_processes_icvf_SpinBox->setSingleStep(1);
 
     glial_pop2_soma_icvf_SpinBox = new QDoubleSpinBox;
+    glial_pop3_soma_icvf_SpinBox = new QDoubleSpinBox;
     glial_pop2_soma_icvf_SpinBox->setRange(0, 100);
+    glial_pop3_soma_icvf_SpinBox->setRange(0, 100);
     glial_pop2_soma_icvf_SpinBox->setSingleStep(1);
+    glial_pop3_soma_icvf_SpinBox->setSingleStep(1);
 
     glial_pop2_processes_icvf_SpinBox = new QDoubleSpinBox;
+    glial_pop3_processes_icvf_SpinBox = new QDoubleSpinBox;
     glial_pop2_processes_icvf_SpinBox->setRange(0, 100);
+    glial_pop3_processes_icvf_SpinBox->setRange(0, 100);
     glial_pop2_processes_icvf_SpinBox->setSingleStep(1);
+    glial_pop3_processes_icvf_SpinBox->setSingleStep(1);
 
     nbr_threads_SpinBox = new QDoubleSpinBox;
     nbr_threads_SpinBox->setRange(1, 1000);
@@ -863,14 +1036,22 @@ void Window::initParameters()
     glial_pop1_radius_std_SpinBox->setValue(0.5);
 
     glial_pop2_radius_mean_SpinBox = new QDoubleSpinBox;
+    glial_pop3_radius_mean_SpinBox = new QDoubleSpinBox;
     glial_pop2_radius_mean_SpinBox->setRange(0, 10);
+    glial_pop3_radius_mean_SpinBox->setRange(0, 10);
     glial_pop2_radius_mean_SpinBox->setSingleStep(0.1);
+    glial_pop3_radius_mean_SpinBox->setSingleStep(0.1);
     glial_pop2_radius_mean_SpinBox->setValue(5);
+    glial_pop3_radius_mean_SpinBox->setValue(5);
 
     glial_pop2_radius_std_SpinBox = new QDoubleSpinBox;
+    glial_pop3_radius_std_SpinBox = new QDoubleSpinBox;
     glial_pop2_radius_std_SpinBox->setRange(0, 10);
+    glial_pop3_radius_std_SpinBox->setRange(0, 10);
     glial_pop2_radius_std_SpinBox->setSingleStep(0.1);
+    glial_pop3_radius_std_SpinBox->setSingleStep(0.1);
     glial_pop2_radius_std_SpinBox->setValue(0.5);
+    glial_pop3_radius_std_SpinBox->setValue(0.5);
 
     k1_SpinBox = new QDoubleSpinBox;
     k1_SpinBox->setRange(0, 10);
@@ -934,8 +1115,13 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop1_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
     glial_pop2_soma_icvf_qlabel = new QLabel(tr("Glial Cell somas ICVF (%):"));
     glial_pop2_processes_icvf_qlabel = new QLabel(tr("Glial Cell processes ICVF (%):"));
-    blood_vessels_icvf_qlabel = new QLabel(tr("Blood Vessels ICVF (%):"));
-    blood_vessels_processes_icvf_qlabel = new QLabel(tr("Blood Vessel Branches ICVF (%):"));
+    blood_vessels_icvf_qlabel = new QLabel(tr("Arteriole ICVF (%):"));
+    blood_vessels_processes_icvf_qlabel = new QLabel(tr("Capillaries ICVF (%):"));
+    blood_vessel_voxel_size_qlabel = new QLabel(tr("Blood Vessel Voxel Edge Length (μm):"));
+    blood_vessel_mean_radius_qlabel = new QLabel(tr("Arteriole Radius Mean (μm):"));
+    blood_vessel_std_radius_qlabel = new QLabel(tr("Arteriole Radius Standard Deviation (μm):"));
+    blood_vessel_capillary_radius_qlabel = new QLabel(tr("Capillary Radius (μm):"));
+    blood_vessel_max_generations_qlabel = new QLabel(tr("Max Capillary Generations:"));
     voxel_size_qlabel = new QLabel(tr("Voxel Edge Length (μm):"));
     minimum_radius_qlabel = new QLabel(tr("Minimum Sphere Radius (μm):"));
     nbr_threads_qlabel = new QLabel(tr("Number of Threads:"));
@@ -1046,6 +1232,35 @@ QGroupBox* Window::createControls(const QString &title)
     blood_vessels_processes_icvf_SpinBox->setRange(0, 100);
     blood_vessels_processes_icvf_SpinBox->setSingleStep(1);
     blood_vessels_processes_icvf_SpinBox->setValue(0);
+
+    // 0 means "no padding, same box as Voxel Edge Length"; matches
+    // voxel_size_SpinBox's own range/step/default so leaving it untouched
+    // reproduces today's behavior exactly.
+    blood_vessel_voxel_size_SpinBox = new QDoubleSpinBox;
+    blood_vessel_voxel_size_SpinBox->setRange(0, 1000);
+    blood_vessel_voxel_size_SpinBox->setSingleStep(1);
+    blood_vessel_voxel_size_SpinBox->setValue(30);
+
+    blood_vessel_mean_radius_SpinBox = new QDoubleSpinBox;
+    blood_vessel_mean_radius_SpinBox->setRange(0, 20);
+    blood_vessel_mean_radius_SpinBox->setSingleStep(0.1);
+    blood_vessel_mean_radius_SpinBox->setValue(6);
+
+    blood_vessel_std_radius_SpinBox = new QDoubleSpinBox;
+    blood_vessel_std_radius_SpinBox->setRange(0, 20);
+    blood_vessel_std_radius_SpinBox->setSingleStep(0.1);
+    blood_vessel_std_radius_SpinBox->setValue(1);
+
+    blood_vessel_capillary_radius_SpinBox = new QDoubleSpinBox;
+    blood_vessel_capillary_radius_SpinBox->setRange(0, 10);
+    blood_vessel_capillary_radius_SpinBox->setSingleStep(0.1);
+    blood_vessel_capillary_radius_SpinBox->setValue(1);
+
+    blood_vessel_max_generations_SpinBox = new QDoubleSpinBox;
+    blood_vessel_max_generations_SpinBox->setRange(1, 20);
+    blood_vessel_max_generations_SpinBox->setSingleStep(1);
+    blood_vessel_max_generations_SpinBox->setDecimals(0);
+    blood_vessel_max_generations_SpinBox->setValue(7);
 
     glial_pop1_soma_icvf_SpinBox = new QDoubleSpinBox;
     glial_pop1_soma_icvf_SpinBox->setRange(0, 100);
@@ -1278,10 +1493,17 @@ void Window::onSaveButtonClicked()
     parameters.axons_w_myelin_icvf = axons_w_myelin_icvf_SpinBox->value()/100.0;
     parameters.blood_vessels_icvf = blood_vessels_icvf_SpinBox->value()/100.0;
     parameters.blood_vessels_processes_icvf = blood_vessels_processes_icvf_SpinBox->value()/100.0;
+    parameters.blood_vessels_voxel_size = blood_vessel_voxel_size_SpinBox->value();
+    parameters.mean_vessel_rad = blood_vessel_mean_radius_SpinBox->value();
+    parameters.std_vessel_rad = blood_vessel_std_radius_SpinBox->value();
+    parameters.capillary_radius = blood_vessel_capillary_radius_SpinBox->value();
+    parameters.max_generations = blood_vessel_max_generations_SpinBox->value();
     parameters.glial_pop1_soma_icvf = glial_pop1_soma_icvf_SpinBox->value()/100.0;
     parameters.glial_pop1_processes_icvf = glial_pop1_processes_icvf_SpinBox->value()/100.0;
     parameters.glial_pop2_soma_icvf = glial_pop2_soma_icvf_SpinBox->value()/100.0;
     parameters.glial_pop2_processes_icvf = glial_pop2_processes_icvf_SpinBox->value()/100.0;
+    parameters.glial_pop3_soma_icvf = glial_pop3_soma_icvf_SpinBox->value()/100.0;
+    parameters.glial_pop3_processes_icvf = glial_pop3_processes_icvf_SpinBox->value()/100.0;
 
     parameters.c1 = k1_SpinBox->value();
     parameters.c2 = k2_SpinBox->value();
@@ -1300,6 +1522,8 @@ void Window::onSaveButtonClicked()
     parameters.std_glial_pop1_process_length = glial_pop1_std_process_length_SpinBox->value();
     parameters.mean_glial_pop2_process_length = glial_pop2_mean_process_length_SpinBox->value();
     parameters.std_glial_pop2_process_length = glial_pop2_std_process_length_SpinBox->value();
+    parameters.mean_glial_pop3_process_length = glial_pop3_mean_process_length_SpinBox->value();
+    parameters.std_glial_pop3_process_length = glial_pop3_std_process_length_SpinBox->value();
 
     parameters.epsilon = epsilon_SpinBox->value();
     parameters.alpha = alpha_SpinBox->value();
@@ -1309,10 +1533,14 @@ void Window::onSaveButtonClicked()
     parameters.glial_pop1_radius_std = glial_pop1_radius_std_SpinBox->value();
     parameters.glial_pop2_radius_mean = glial_pop2_radius_mean_SpinBox->value();
     parameters.glial_pop2_radius_std = glial_pop2_radius_std_SpinBox->value();
+    parameters.glial_pop3_radius_mean = glial_pop3_radius_mean_SpinBox->value();
+    parameters.glial_pop3_radius_std = glial_pop3_radius_std_SpinBox->value();
     parameters.glial_pop1_nbr_primary_processes = glial_pop1_nbr_primary_processes_SpinBox->value();
     parameters.glial_pop2_nbr_primary_processes = glial_pop2_nbr_primary_processes_SpinBox->value();
+    parameters.glial_pop3_nbr_primary_processes = glial_pop3_nbr_primary_processes_SpinBox->value();
     parameters.glial_pop1_branching = glial_pop1_branching_checkbox->isChecked();
     parameters.glial_pop2_branching = glial_pop2_branching_checkbox->isChecked();
+    parameters.glial_pop3_branching = glial_pop3_branching_checkbox->isChecked();
 
     parameters.crossing_fibers_type = 0;
 
@@ -1379,7 +1607,7 @@ void Window::ReadAxonsFromCSV(const QString& fileName){
         }
 
 
-        if (!(iss >> type >> id_cell >> component >> component_id >> x >> y >> z >> radius_in >> radius_out)) {
+        if (!(iss >> type >> id_cell >> component >> component_id >> parent >> x >> y >> z >> radius_in >> radius_out)) {
             QMessageBox::warning(this, tr("Error"), tr("Invalid CSV file format for Axons."));
             return;
         }
@@ -1547,7 +1775,7 @@ void Window::ReadGlialCellsFromCSV(const QString& fileName){
 
         double x, y, z, radius_in, parent, radius_out;
 
-        if (!(iss >> type >> id_cell >> component >> component_id >> x >> y >> z >> radius_in >> radius_out)) {
+        if (!(iss >> type >> id_cell >> component >> component_id >> parent >> x >> y >> z >> radius_in >> radius_out)) {
             QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format for Glial Cells."));
             return;
         }
@@ -1691,7 +1919,7 @@ void Window::ReadBloodVesselsFromFile(const QString& fileName){
 
     std::ifstream swcFile(fileName.toStdString());
     if (!swcFile.is_open()) {
-        QMessageBox::warning(this, tr("Error"), tr("Could not open the SWC file."));
+        QMessageBox::warning(this, tr("Error"), tr("Could not open the CSV file."));
         return;
     }
 
@@ -1700,28 +1928,28 @@ void Window::ReadBloodVesselsFromFile(const QString& fileName){
     std::vector<double> z_ = {};
     std::vector<double> r_ = {};
 
+    double old_cell_id = -1;
+
     std::string line;
     while (std::getline(swcFile, line)) {
-        std::istringstream iss(line);
-        int id_branch;
-        double id_cell, id_sphere;
-        std::string type;
-        double x, y, z, radius_in, parent, radius_out;
-
         //skip first line
-        if (line[0] == 'i'|| line[0] == 'a') {
+        if (line[0] == 'c') {
             continue;
         }
 
-        if (!(iss >> id_cell >> id_sphere >> id_branch >> type >> x >> y >> z >> radius_in >> radius_out >> parent)) {
-            QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format for Axons."));
+        std::istringstream iss(line);
+        double id_cell, component_id, parent;
+        std::string type, component;
+        double x, y, z, radius_in, radius_out;
+
+        if (!(iss >> type >> id_cell >> component >> component_id >> parent >> x >> y >> z >> radius_in >> radius_out)) {
+            QMessageBox::warning(this, tr("Error"), tr("Invalid CSV file format for Blood Vessels."));
             return;
         }
-        
+
         if (type == "blood_vessel") {
-            
-            if (id_sphere == 0) {
-                if (x_.size() > 0) {
+            if (id_cell != old_cell_id) {
+                if (old_cell_id != -1 && x_.size() > 0) {
                     X_blood_vessels.push_back(x_);
                     Y_blood_vessels.push_back(y_);
                     Z_blood_vessels.push_back(z_);
@@ -1731,20 +1959,15 @@ void Window::ReadBloodVesselsFromFile(const QString& fileName){
                 y_.clear();
                 z_.clear();
                 r_.clear();
-                x_.push_back(x);
-                y_.push_back(y);
-                z_.push_back(z);
-                r_.push_back(radius_out);
+                old_cell_id = id_cell;
             }
-            else {
-                x_.push_back(x);
-                y_.push_back(y);
-                z_.push_back(z);
-                r_.push_back(radius_out);
-            }
+            x_.push_back(x);
+            y_.push_back(y);
+            z_.push_back(z);
+            r_.push_back(radius_out);
         }
     }
-    // Add the last axon
+    // Add the last vessel
     if (x_.size() > 0) {
         X_blood_vessels.push_back(x_);
         Y_blood_vessels.push_back(y_);
@@ -1797,6 +2020,7 @@ void Window::StartSimulation(){
     X_axons.clear(); Y_axons.clear(); Z_axons.clear(); R_axons.clear();
     X_glial_pop1.clear(); Y_glial_pop1.clear(); Z_glial_pop1.clear(); R_glial_pop1.clear(); Branch_glial_pop1.clear();
     X_glial_pop2.clear(); Y_glial_pop2.clear(); Z_glial_pop2.clear(); R_glial_pop2.clear(); Branch_glial_pop2.clear();
+    X_glial_pop3.clear(); Y_glial_pop3.clear(); Z_glial_pop3.clear(); R_glial_pop3.clear(); Branch_glial_pop3.clear();
     X_blood_vessels.clear(); Y_blood_vessels.clear(); Z_blood_vessels.clear(); R_blood_vessels.clear();
 
     layerProgressBar->setValue(0);
@@ -1822,13 +2046,16 @@ void Window::StartSimulation(){
                                        Q_ARG(double, current_icvf), Q_ARG(double, target_icvf));
         };
 
-        auto [axons, blood_vessels, glial_pop1, glial_pop2] =
+        auto [axons, blood_vessels, glial_pop1, glial_pop2, glial_pop3, voxel_min, voxel_max] =
             CoreLogic::runSimulation(localParams, growthCb, swellCb);
 
         this->pendingAxons = std::move(axons);
         this->pendingBloodVessels = std::move(blood_vessels);
         this->pendingGlialPop1 = std::move(glial_pop1);
         this->pendingGlialPop2 = std::move(glial_pop2);
+        this->pendingGlialPop3 = std::move(glial_pop3);
+        this->pendingVoxelMin = voxel_min;
+        this->pendingVoxelMax = voxel_max;
 
         QMetaObject::invokeMethod(this, "onGrowthFinished", Qt::QueuedConnection);
     });
@@ -1847,6 +2074,14 @@ void Window::onGrowthFinished(){
     auto &blood_vessels = pendingBloodVessels;
     auto &glial_pop1 = pendingGlialPop1;
     auto &glial_pop2 = pendingGlialPop2;
+    auto &glial_pop3 = pendingGlialPop3;
+
+    // Real (small) voxel's actual grown placement (see PlaceSmallVoxel) --
+    // not necessarily an origin-anchored box, e.g. once blood vessels are
+    // involved (its own face-seeded plane can put it anywhere inside the
+    // padded blood-vessel voxel). Used below for the 3D view's wireframe box.
+    voxelBoundsMin = QVector3D(pendingVoxelMin[0], pendingVoxelMin[1], pendingVoxelMin[2]);
+    voxelBoundsMax = QVector3D(pendingVoxelMax[0], pendingVoxelMax[1], pendingVoxelMax[2]);
 
     Eigen::Vector3d min_l = {0,0,0};
     Eigen::Vector3d max_l ={parameters.voxel_size, parameters.voxel_size, parameters.voxel_size};
@@ -1988,6 +2223,59 @@ void Window::onGrowthFinished(){
         b_.clear();
     }
 
+    for (unsigned i=0; i< glial_pop3.size(); ++i){
+        std::vector<double> x_;
+        std::vector<double> y_;
+        std::vector<double> z_;
+        std::vector<double> r_;
+        std::vector<int> b_;
+
+        double _x_ = glial_pop3[i].soma.center[0];
+        double _y_ = glial_pop3[i].soma.center[1];
+        double _z_ = glial_pop3[i].soma.center[2];
+        double _r_ = glial_pop3[i].soma.radius;
+
+        //if (check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
+        x_.push_back(_x_);
+        y_.push_back(_y_);
+        z_.push_back(_z_);
+        r_.push_back(_r_);
+        b_.push_back(0);
+        //}
+
+
+        for (unsigned j=0; j< glial_pop3[i].ramification_spheres.size(); ++j){
+
+            for (unsigned k=0; k< glial_pop3[i].ramification_spheres[j].size(); ++k){
+
+                double _x_ = glial_pop3[i].ramification_spheres[j][k].center[0];
+                double _y_ = glial_pop3[i].ramification_spheres[j][k].center[1];
+                double _z_ = glial_pop3[i].ramification_spheres[j][k].center[2];
+                double _r_ = glial_pop3[i].ramification_spheres[j][k].radius;
+
+                //if (!check_borders(min_l, max_l, {_x_, _y_, _z_}, 0.0)) {
+                //    continue;
+                //}
+                x_.push_back(_x_);
+                y_.push_back(_y_);
+                z_.push_back(_z_);
+                r_.push_back(_r_);
+                b_.push_back(j);
+            }
+        }
+
+        X_glial_pop3.push_back(x_);
+        Y_glial_pop3.push_back(y_);
+        Z_glial_pop3.push_back(z_);
+        R_glial_pop3.push_back(r_);
+        Branch_glial_pop3.push_back(b_);
+        x_.clear();
+        y_.clear();
+        z_.clear();
+        r_.clear();
+        b_.clear();
+    }
+
     for (unsigned i=0; i< blood_vessels.size(); ++i){
         std::vector<double> x_;
         std::vector<double> y_;
@@ -2023,7 +2311,7 @@ void Window::onGrowthFinished(){
 
     if (visualise_voxel) {
         // After simulation completes, call PlotCells to display the data
-        PlotCells(true, true, true, true);
+        PlotCells(true, true, true, true, true);
     }
     else{
         // Display a message box to inform the user that the simulation is complete
@@ -2286,75 +2574,91 @@ void Window::plotTortuosityDistribution()
 
 void Window::ShollAnalysis() {
 
-    if (X_glial_pop1.size() == 0) {
+    size_t total_cells = X_glial_pop1.size() + X_glial_pop2.size() + X_glial_pop3.size();
+    if (total_cells == 0) {
         QMessageBox::warning(this, "Error", "No Glial cells to plot!");
         return;
     }
 
     // Radii for Sholl analysis
     std::vector<double> sphere_around_soma_radii = {5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 80};
-    std::vector<double> mean_intersections(sphere_around_soma_radii.size(), 0);
 
-    for (unsigned long i = 0; i < X_glial_pop1.size(); ++i) {
-        // Soma position of the current glial_pop1
-        Eigen::Vector3d soma_position = {X_glial_pop1[i][0], Y_glial_pop1[i][0], Z_glial_pop1[i][0]};
-        std::vector<double> intersections_list(sphere_around_soma_radii.size(), 0);
-        std::vector<int> branches_list;
+    // Computes one population's mean Sholl curve and opens its own dialog --
+    // called once per population below, and skipped entirely for any
+    // population with no cells, so (e.g.) growing only pop1 doesn't pop up
+    // empty/meaningless windows for pop2 and pop3.
+    auto plot_population = [&](const std::vector<std::vector<double>> &X,
+                                const std::vector<std::vector<double>> &Y,
+                                const std::vector<std::vector<double>> &Z,
+                                const std::vector<std::vector<double>> &R,
+                                const std::vector<std::vector<int>> &Branch,
+                                const QString &title) {
+        if (X.empty()) return;
 
-        // Iterate through all spheres (excluding the soma) to compute intersections
-        for (unsigned long r = 0; r < sphere_around_soma_radii.size(); ++r) {
-            for (unsigned long j = 1; j < X_glial_pop1[i].size(); ++j) {
-                Eigen::Vector3d position = {X_glial_pop1[i][j], Y_glial_pop1[i][j], Z_glial_pop1[i][j]};
-                double distance = (position - soma_position).norm();
-                
-                if (distance < sphere_around_soma_radii[r] + R_glial_pop1[i][j] && distance > sphere_around_soma_radii[r] - R_glial_pop1[i][j]) {
-                    if (std::find(branches_list.begin(), branches_list.end(), Branch_glial_pop1[i][j]) == branches_list.end()) {
-                        intersections_list[r] += 1;
-                        branches_list.push_back(Branch_glial_pop1[i][j]);
+        std::vector<double> mean_intersections(sphere_around_soma_radii.size(), 0);
+
+        for (unsigned long i = 0; i < X.size(); ++i) {
+            Eigen::Vector3d soma_position = {X[i][0], Y[i][0], Z[i][0]};
+            std::vector<double> intersections_list(sphere_around_soma_radii.size(), 0);
+            std::vector<int> branches_list;
+
+            // Iterate through all spheres (excluding the soma) to compute intersections
+            for (unsigned long r = 0; r < sphere_around_soma_radii.size(); ++r) {
+                for (unsigned long j = 1; j < X[i].size(); ++j) {
+                    Eigen::Vector3d position = {X[i][j], Y[i][j], Z[i][j]};
+                    double distance = (position - soma_position).norm();
+
+                    if (distance < sphere_around_soma_radii[r] + R[i][j] && distance > sphere_around_soma_radii[r] - R[i][j]) {
+                        if (std::find(branches_list.begin(), branches_list.end(), Branch[i][j]) == branches_list.end()) {
+                            intersections_list[r] += 1;
+                            branches_list.push_back(Branch[i][j]);
+                        }
                     }
                 }
+                branches_list.clear();
             }
-            branches_list.clear();
+
+            for (size_t r = 0; r < sphere_around_soma_radii.size(); ++r) {
+                mean_intersections[r] += intersections_list[r];
+            }
         }
 
-        // Accumulate values for mean calculation
-        for (size_t r = 0; r < sphere_around_soma_radii.size(); ++r) {
-            mean_intersections[r] += intersections_list[r];
+        for (size_t r = 0; r < mean_intersections.size(); ++r) {
+            mean_intersections[r] /= X.size();
         }
-    }
 
-    // Compute mean intersections
-    for (size_t r = 0; r < mean_intersections.size(); ++r) {
-        mean_intersections[r] /= X_glial_pop1.size();
-    }
+        // Create QCustomPlot for mean Sholl analysis
+        QCustomPlot *customPlot = new QCustomPlot;
 
-    // Create QCustomPlot for mean Sholl analysis
-    QCustomPlot *customPlot = new QCustomPlot;
+        // Convert the data to QVector for QCustomPlot
+        QVector<double> x = QVector<double>::fromStdVector(sphere_around_soma_radii);
+        QVector<double> y = QVector<double>::fromStdVector(mean_intersections);
 
-    // Convert the data to QVector for QCustomPlot
-    QVector<double> x = QVector<double>::fromStdVector(sphere_around_soma_radii);
-    QVector<double> y = QVector<double>::fromStdVector(mean_intersections);
+        // Create a graph and set the data
+        customPlot->addGraph();
+        customPlot->graph(0)->setData(x, y);
+        customPlot->graph(0)->setLineStyle(QCPGraph::lsLine);
+        customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
 
-    // Create a graph and set the data
-    customPlot->addGraph();
-    customPlot->graph(0)->setData(x, y);
-    customPlot->graph(0)->setLineStyle(QCPGraph::lsLine);
-    customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
+        // Set axis labels
+        customPlot->xAxis->setLabel("Distance to Soma (μm)");
+        customPlot->yAxis->setLabel("Mean Number of Intersections");
 
-    // Set axis labels
-    customPlot->xAxis->setLabel("Distance to Soma (μm)");
-    customPlot->yAxis->setLabel("Mean Number of Intersections");
+        // Set axis ranges
+        customPlot->xAxis->setRange(0, *std::max_element(sphere_around_soma_radii.begin(), sphere_around_soma_radii.end()));
+        customPlot->yAxis->setRange(0, *std::max_element(mean_intersections.begin(), mean_intersections.end()));
 
-    // Set axis ranges
-    customPlot->xAxis->setRange(0, *std::max_element(sphere_around_soma_radii.begin(), sphere_around_soma_radii.end()));
-    customPlot->yAxis->setRange(0, *std::max_element(mean_intersections.begin(), mean_intersections.end()));
+        // Display the plot in a dialog window
+        QDialog *dialog = new QDialog(this);
+        dialog->resize(800, 600);
+        QVBoxLayout *layout = new QVBoxLayout;
+        layout->addWidget(customPlot);
+        dialog->setLayout(layout);
+        dialog->setWindowTitle(title);
+        dialog->exec();
+    };
 
-    // Display the plot in a dialog window
-    QDialog *dialog = new QDialog(this);
-    dialog->resize(800, 600);
-    QVBoxLayout *layout = new QVBoxLayout;
-    layout->addWidget(customPlot);
-    dialog->setLayout(layout);
-    dialog->setWindowTitle("Mean Sholl Analysis for glial_pop1");
-    dialog->exec();
+    plot_population(X_glial_pop1, Y_glial_pop1, Z_glial_pop1, R_glial_pop1, Branch_glial_pop1, "Mean Sholl Analysis - Glial Population 1");
+    plot_population(X_glial_pop2, Y_glial_pop2, Z_glial_pop2, R_glial_pop2, Branch_glial_pop2, "Mean Sholl Analysis - Glial Population 2");
+    plot_population(X_glial_pop3, Y_glial_pop3, Z_glial_pop3, R_glial_pop3, Branch_glial_pop3, "Mean Sholl Analysis - Glial Population 3");
 }

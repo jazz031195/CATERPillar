@@ -102,6 +102,6 @@ Eigen::Vector3d CellGrowth::apply_bias_toward_target(const Eigen::Vector3d &poin
 }
 
 
-bool CellGrowth::canSpherebePlaced(Sphere &sph, bool check_collision_with_branches){
-    return sphere_grid->canSpherebePlaced(sph, check_collision_with_branches);
+bool CellGrowth::canSpherebePlaced(Sphere &sph, bool check_collision_with_branches, int extra_excluded_branch_id){
+    return sphere_grid->canSpherebePlaced(sph, check_collision_with_branches, extra_excluded_branch_id);
 }

@@ -71,9 +71,17 @@ public:
      *         already in the grid, other than spheres belonging to the same object
      *         (matched by object_type + object_id, i.e. Sphere::object_type/object_id).
      *  \param sph the candidate sphere
-     *  \param tolerance extra clearance required between surfaces (e.g. barrier_tickness)
+     *  \param check_collision_with_branches when true, only the candidate's own branch
+     *         (branch_id) is excluded from the same-object exemption; when false, every
+     *         branch of the same object is exempt (used sparingly -- see
+     *         extra_excluded_branch_id for a narrower alternative).
+     *  \param extra_excluded_branch_id an additional branch_id (of the same object) to
+     *         also exempt on top of the candidate's own, e.g. a new branch's direct
+     *         parent, which it's expected to touch at its point of attachment without
+     *         that counting as a collision, while still checking every *other* branch.
+     *         -1 (default) adds no extra exemption.
      */
-    bool canSpherebePlaced(const Sphere &sph, bool check_collision_with_branches = true) const;
+    bool canSpherebePlaced(const Sphere &sph, bool check_collision_with_branches = true, int extra_excluded_branch_id = -1) const;
 
     /*!
      *  \brief Finds the neighbor causing the deepest overlap with a candidate sphere of

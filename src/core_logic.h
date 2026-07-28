@@ -3,6 +3,7 @@
 #include "../src/Axon.h"
 #include "../src/Blood_Vessel.h"
 #include "../src/Glial.h"
+#include "Eigen/Core"
 #include <functional>
 #include <string>
 #include <tuple>
@@ -10,10 +11,19 @@
 
 class CoreLogic {
 public:
+    // Trailing Eigen::Vector3d pair is the real (small) voxel's actual final
+    // placement -- min_limits/max_limits, see CaterpillarGrowth::PlaceSmallVoxel
+    // -- which can land anywhere inside the (padded) blood-vessel voxel, not
+    // necessarily at the origin. Callers that only care about cell/vessel
+    // geometry (e.g. drawing a bounding wireframe) must use these rather than
+    // assuming an origin-anchored box of edge Parameters::voxel_size.
     using SimResult = std::tuple<std::vector<Axon>,
                                     std::vector<Blood_Vessel>,
                                     std::vector<Glial>,
-                                    std::vector<Glial>>;
+                                    std::vector<Glial>,
+                                    std::vector<Glial>,
+                                    Eigen::Vector3d,
+                                    Eigen::Vector3d>;
     using ProgressCallback = std::function<void(double, double)>;
 
     // This function reads the JSON, fills the struct, and calls runSimulation()

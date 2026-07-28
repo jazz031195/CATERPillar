@@ -8,9 +8,11 @@
         "NumberOfThreads": 4
     },
     "AxonParameters": {
-        "AxonsICVF": 20.0,
+        "AxonsICVF": 10.0,
         "AxonsWithMyelinICVF": 0.0,
-        "BloodVesselsICVF": 0.0,
+        "ArterioleICVF": 0.0,
+        "CapillariesICVF": 0.0,
+        "CapillaryRadius": 1.0,
         "NumberOfPopulations": 1,
         "CrossingFibersType": 0,
         "Alpha": 4.0,
@@ -29,8 +31,8 @@
         "UndulationFactor": 5
     },
     "GlialParameters": {
-        "Pop1SomaICVF": 0.0,
-        "Pop1ProcessesICVF": 0.0,
+        "Pop1SomaICVF": 1.0,
+        "Pop1ProcessesICVF": 2.0,
         "Pop1SomaRadiusMean": 6.0,
         "Pop1SomaRadiusStd": 0.5,
         "Pop1MeanProcessLength": 15.0,
@@ -45,6 +47,15 @@
         "Pop2MeanProcessLength": 10.0,
         "Pop2StdProcessLength": 1.5,
         "Pop2NbrPrimaryProcesses": 3,
-        "Pop2Branching": false
+        "Pop2Branching": false,
+
+        "Pop3SomaICVF": 0.0,
+        "Pop3ProcessesICVF": 0.0,
+        "Pop3SomaRadiusMean": 3.0,
+        "Pop3SomaRadiusStd": 0.2,
+        "Pop3MeanProcessLength": 8.0,
+        "Pop3StdProcessLength": 1.0,
+        "Pop3NbrPrimaryProcesses": 3,
+        "Pop3Branching": false
     }
 }

@@ -35,6 +35,7 @@ class Glial : public Obstacle
     double volume_processes;                                  /*!< Volume of processes of glial */
     double minimum_radius;
     bool allow_branching;                          /*!< Allow branching of glial */
+    int next_sphere_id;                             /*!< Monotonic counter handing out the id of the next sphere added anywhere in this cell (soma excluded), so ids stay unique within the cell regardless of overlap factor -- parent_id links and branch-parent lookups rely on that uniqueness. */
     Glial();
 
     ~Glial();
@@ -47,6 +48,7 @@ class Glial : public Obstacle
         volume_processes = 0.0;
         minimum_radius = soma.radius/20.0;
         allow_branching = allow_branching_;
+        next_sphere_id = soma.id + 1; // soma occupies id soma.id; branch spheres must not collide with it
 
         ramification_spheres.clear();
         attractors.clear();
@@ -66,7 +68,8 @@ class Glial : public Obstacle
             attractors = other.attractors;
             lengths_branches = other.lengths_branches;
             allow_branching = other.allow_branching;
-            
+            next_sphere_id = other.next_sphere_id;
+
         }
         return *this;
     }

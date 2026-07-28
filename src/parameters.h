@@ -30,6 +30,8 @@ public:
     double glial_pop1_processes_icvf = 0.0;
     double glial_pop2_soma_icvf = 0.0;
     double glial_pop2_processes_icvf = 0.0;
+    double glial_pop3_soma_icvf = 0.0;
+    double glial_pop3_processes_icvf = 0.0;
     int nbr_axons_populations = 1;
     int crossing_fibers_type = 0;
 
@@ -51,6 +53,9 @@ public:
     double std_vessel_rad = 1;
 
     double blood_vessels_processes_icvf = 0.0;
+    double capillary_radius = 1.0; // fixed radius for every capillary sphere (no decay)
+    int max_generations = 7; // deepest allowed capillary branching depth from the arteriole
+    double blood_vessels_voxel_size = 0.0; // 0 (or <= voxel_size) means "no padding, same box as voxel_size"
 
     double swelling_factor = 1.0;     
 
@@ -64,18 +69,24 @@ public:
 
     int glial_pop1_nbr_primary_processes = 5;
     int glial_pop2_nbr_primary_processes = 5;
+    int glial_pop3_nbr_primary_processes = 5;
 
     double std_glial_pop1_process_length;
     double mean_glial_pop1_process_length;
     double std_glial_pop2_process_length;
     double mean_glial_pop2_process_length;
+    double std_glial_pop3_process_length;
+    double mean_glial_pop3_process_length;
 
     bool glial_pop1_branching = true;
     bool glial_pop2_branching = true;
+    bool glial_pop3_branching = true;
     double glial_pop1_radius_mean = 0.5;
     double glial_pop1_radius_std = 0.1;
     double glial_pop2_radius_mean = 0.5;
     double glial_pop2_radius_std = 0.1;
+    double glial_pop3_radius_mean = 0.5;
+    double glial_pop3_radius_std = 0.1;
 
 };
 

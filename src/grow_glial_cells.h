@@ -40,7 +40,14 @@ class GlialCellGrowth : public CellGrowth
         void add_spheres(Sphere &sph, const Sphere &last_sphere, const bool &check_collision_with_branches, const int &factor, const int &index_ram_spheres);
         bool AddOneSphere(const double &radius_, const bool &create_sphere, int &grow_straight, const int &i, const bool &check_collision_with_branches, const int &parent, const int &factor);
         void find_next_center_straight(double distance, Sphere &s, const std::vector<Sphere> &spheres);
-        void find_next_center(Sphere &s,  double dist_, const std::vector<Sphere> &spheres, const Eigen::Vector3d &target);
+        /*!
+         *  \param std_override When >= 0, used in place of the class's own
+         *         epsilon as the angular spread for this call's direction
+         *         sample -- lets AddOneSphere widen the search on later
+         *         retries (see its own doc comment) instead of resampling
+         *         the same narrow, attractor-biased cone every time.
+         */
+        void find_next_center(Sphere &s,  double dist_, const std::vector<Sphere> &spheres, const Eigen::Vector3d &target, double std_override = -1.0);
         void growFirstPrimaryBranches(const int &number_ramification_points, int &nbr_spheres, const double &mean_process_length, const double &std_process_length, const int &factor);
         bool growPrimaryBranch(int &nbr_spheres, const double &mean_primary_process_length, const double &std_primary_process_length, const int &factor);
         bool growSecondaryBranch(int &nbr_spheres, const double &mean_process_length, const double &std_process_length, const int &factor);
