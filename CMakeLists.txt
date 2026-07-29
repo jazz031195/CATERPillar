@@ -29,7 +29,7 @@ target_include_directories(CATERPillar-cli PRIVATE
 
 # --- GUI target: full CATERPillar application ---
 if(BUILD_GUI)
-    find_package(Qt5 COMPONENTS Widgets PrintSupport DataVisualization REQUIRED)
+    find_package(Qt5 COMPONENTS Widgets Charts DataVisualization REQUIRED)
     find_package(OpenGL REQUIRED)
 
     file(GLOB_RECURSE GUI_SOURCES
@@ -53,7 +53,7 @@ if(BUILD_GUI)
         ${CMAKE_CURRENT_SOURCE_DIR}/GUI
     )
 
-    target_link_libraries(CATERPillar PRIVATE Qt5::Widgets Qt5::PrintSupport Qt5::DataVisualization OpenGL::GL)
+    target_link_libraries(CATERPillar PRIVATE Qt5::Widgets Qt5::Charts Qt5::DataVisualization OpenGL::GL)
 
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/logo_catrepillar.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endif()
