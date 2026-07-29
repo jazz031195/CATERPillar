@@ -1,6 +1,6 @@
 {
     "GeneralParameters": {
-        "OutputDirectory": "/home/localadmin/Documents/CATERPillar/output/",
+        "OutputDirectory": "output/",
         "Filename": "run_001",
         "VoxelEdgeLength": 50.0,
         "Repetitions": 1,
