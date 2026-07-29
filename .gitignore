@@ -9,7 +9,6 @@
 /run.sh
 /build
 __pycache__/
-/GUI/qcustomplot-source
 /GUI/New Folder
 /GUI/.gitignore
 /compiler.sh

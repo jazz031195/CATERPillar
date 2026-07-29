@@ -20,7 +20,14 @@
 #include <QComboBox>
 #include <QFontComboBox>
 #include <QThread>
-#include "qcustomplot-source/qcustomplot.h"
+#include <QtCharts/QChartView>
+#include <QtCharts/QBarSeries>
+#include <QtCharts/QBarSet>
+#include <QtCharts/QBarCategoryAxis>
+#include <QtCharts/QValueAxis>
+#include <QtCharts/QLineSeries>
+
+QT_CHARTS_USE_NAMESPACE
 
 Window::Window(QWidget *parent)
     : QWidget(parent)
@@ -2424,29 +2431,43 @@ void Window::plotRadiusDistribution()
         bins[binIndex]++;
     }
 
-    // Create QCustomPlot and QCPBars for the histogram
-    QCustomPlot *customPlot = new QCustomPlot;
+    // Create the histogram as a bar chart: one category per bin, labelled
+    // with that bin's center value.
+    QBarSet *barSet = new QBarSet("Count");
+    QStringList categories;
+    for (int i = 0; i < binCount; ++i) {
+        *barSet << bins[i];
+        categories << QString::number(tickPositions[i], 'f', 2);
+    }
 
-    // Prepare the bars for the histogram
-    QCPBars *histogram = new QCPBars(customPlot->xAxis, customPlot->yAxis);
+    QBarSeries *series = new QBarSeries();
+    series->append(barSet);
 
-    // Set data for the histogram
-    histogram->setData(tickPositions, bins);
+    QChart *chart = new QChart();
+    chart->addSeries(series);
+    chart->setTitle("Mean Radius Distribution");
+    chart->legend()->hide();
 
-    // Set the width of each bar to match the bin width
-    histogram->setWidth(binWidth);  // Use the binWidth for the bar width
+    QBarCategoryAxis *axisX = new QBarCategoryAxis();
+    axisX->append(categories);
+    axisX->setTitleText("Mean Radius");
+    axisX->setLabelsAngle(-90);
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
 
-    // Configure axis labels and ranges
-    customPlot->xAxis->setLabel("Mean Radius");
-    customPlot->yAxis->setLabel("Count");
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Count");
+    axisY->setRange(0, *std::max_element(bins.begin(), bins.end()));
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
 
-    customPlot->xAxis->setRange(minRadius, maxRadius);
-    customPlot->yAxis->setRange(0, *std::max_element(bins.begin(), bins.end()));
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
 
     // Display the plot in a dialog window
     QDialog *dialog = new QDialog(this);
     QVBoxLayout *layout = new QVBoxLayout;
-    layout->addWidget(customPlot);
+    layout->addWidget(chartView);
     dialog->setLayout(layout);
     dialog->setWindowTitle("Mean Radius Distribution");
     dialog->exec();
@@ -2543,29 +2564,42 @@ void Window::plotTortuosityDistribution()
         tickPositions[i] = minTortuosity + binWidth * (i + 0.5);  // Center of each bin
     }
 
-    // Create QCustomPlot and QCPBars for the histogram
-    QCustomPlot *customPlot = new QCustomPlot;
+    // Create the histogram as a bar chart: one category per bin, labelled
+    // with that bin's center value.
+    QBarSet *barSet = new QBarSet("Count");
+    QStringList categories;
+    for (int i = 0; i < binCount; ++i) {
+        *barSet << bins[i];
+        categories << QString::number(tickPositions[i], 'f', 2);
+    }
 
-    // Prepare the bars for the histogram
-    QCPBars *histogram = new QCPBars(customPlot->xAxis, customPlot->yAxis);
+    QBarSeries *series = new QBarSeries();
+    series->append(barSet);
 
-    // Set data for the histogram
-    histogram->setData(tickPositions, bins);
+    QChart *chart = new QChart();
+    chart->addSeries(series);
+    chart->setTitle("Tortuosity Distribution");
+    chart->legend()->hide();
 
-    // Set the width of each bar to match the bin width
-    histogram->setWidth(binWidth);  // Use the binWidth for the bar width
+    QBarCategoryAxis *axisX = new QBarCategoryAxis();
+    axisX->append(categories);
+    axisX->setTitleText("Tortuosity");
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
 
-    // Configure axis labels and ranges
-    customPlot->xAxis->setLabel("Tortuosity");
-    customPlot->yAxis->setLabel("Count");
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Count");
+    axisY->setRange(0, *std::max_element(bins.begin(), bins.end()));
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
 
-    customPlot->xAxis->setRange(minTortuosity, maxTortuosity);
-    customPlot->yAxis->setRange(0, *std::max_element(bins.begin(), bins.end()));
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
 
     // Display the plot in a dialog window
     QDialog *dialog = new QDialog(this);
     QVBoxLayout *layout = new QVBoxLayout;
-    layout->addWidget(customPlot);
+    layout->addWidget(chartView);
     dialog->setLayout(layout);
     dialog->setWindowTitle("Tortuosity Distribution");
     dialog->exec();
@@ -2627,32 +2661,38 @@ void Window::ShollAnalysis() {
             mean_intersections[r] /= X.size();
         }
 
-        // Create QCustomPlot for mean Sholl analysis
-        QCustomPlot *customPlot = new QCustomPlot;
+        // Create a line series (with markers at each point) for the mean Sholl curve
+        QLineSeries *series = new QLineSeries();
+        for (size_t r = 0; r < sphere_around_soma_radii.size(); ++r) {
+            series->append(sphere_around_soma_radii[r], mean_intersections[r]);
+        }
+        series->setPointsVisible(true);
 
-        // Convert the data to QVector for QCustomPlot
-        QVector<double> x = QVector<double>::fromStdVector(sphere_around_soma_radii);
-        QVector<double> y = QVector<double>::fromStdVector(mean_intersections);
+        QChart *chart = new QChart();
+        chart->addSeries(series);
+        chart->setTitle(title);
+        chart->legend()->hide();
 
-        // Create a graph and set the data
-        customPlot->addGraph();
-        customPlot->graph(0)->setData(x, y);
-        customPlot->graph(0)->setLineStyle(QCPGraph::lsLine);
-        customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));
+        QValueAxis *axisX = new QValueAxis();
+        axisX->setTitleText("Distance to Soma (μm)");
+        axisX->setRange(0, *std::max_element(sphere_around_soma_radii.begin(), sphere_around_soma_radii.end()));
+        chart->addAxis(axisX, Qt::AlignBottom);
+        series->attachAxis(axisX);
 
-        // Set axis labels
-        customPlot->xAxis->setLabel("Distance to Soma (μm)");
-        customPlot->yAxis->setLabel("Mean Number of Intersections");
+        QValueAxis *axisY = new QValueAxis();
+        axisY->setTitleText("Mean Number of Intersections");
+        axisY->setRange(0, *std::max_element(mean_intersections.begin(), mean_intersections.end()));
+        chart->addAxis(axisY, Qt::AlignLeft);
+        series->attachAxis(axisY);
 
-        // Set axis ranges
-        customPlot->xAxis->setRange(0, *std::max_element(sphere_around_soma_radii.begin(), sphere_around_soma_radii.end()));
-        customPlot->yAxis->setRange(0, *std::max_element(mean_intersections.begin(), mean_intersections.end()));
+        QChartView *chartView = new QChartView(chart);
+        chartView->setRenderHint(QPainter::Antialiasing);
 
         // Display the plot in a dialog window
         QDialog *dialog = new QDialog(this);
         dialog->resize(800, 600);
         QVBoxLayout *layout = new QVBoxLayout;
-        layout->addWidget(customPlot);
+        layout->addWidget(chartView);
         dialog->setLayout(layout);
         dialog->setWindowTitle(title);
         dialog->exec();

@@ -62,22 +62,15 @@ This builds the full interactive application, in addition to the headless binary
 
 **1. Install prerequisites**
 
-You'll need everything from Option A, plus Qt5's Widgets, PrintSupport, and DataVisualization modules, and OpenGL:
+You'll need everything from Option A, plus Qt5's Widgets, Charts, and DataVisualization modules, and OpenGL:
 
 ```bash
 # Ubuntu / Debian
 sudo apt update
-sudo apt install cmake qtbase5-dev libqt5datavisualization5-dev
+sudo apt install cmake qtbase5-dev libqt5datavisualization5-dev libqt5charts5-dev
 
 # macOS (Homebrew)
 brew install cmake qt5
-```
-
-You'll also need [QCustomPlot](https://www.qcustomplot.com/index.php/download), used for the GUI's histogram/plot widgets. It's GPL/commercially licensed, so it isn't bundled in this repository — download the "full" source package and copy `qcustomplot.h` and `qcustomplot.cpp` into `GUI/qcustomplot-source/` (create the folder if it doesn't exist):
-
-```bash
-mkdir -p GUI/qcustomplot-source
-# copy qcustomplot.h and qcustomplot.cpp from the downloaded package into GUI/qcustomplot-source/
 ```
 
 **2. Build**
