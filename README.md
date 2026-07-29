@@ -73,6 +73,13 @@ sudo apt install cmake qtbase5-dev libqt5datavisualization5-dev
 brew install cmake qt5
 ```
 
+You'll also need [QCustomPlot](https://www.qcustomplot.com/index.php/download), used for the GUI's histogram/plot widgets. It's GPL/commercially licensed, so it isn't bundled in this repository — download the "full" source package and copy `qcustomplot.h` and `qcustomplot.cpp` into `GUI/qcustomplot-source/` (create the folder if it doesn't exist):
+
+```bash
+mkdir -p GUI/qcustomplot-source
+# copy qcustomplot.h and qcustomplot.cpp from the downloaded package into GUI/qcustomplot-source/
+```
+
 **2. Build**
 
 ```bash
