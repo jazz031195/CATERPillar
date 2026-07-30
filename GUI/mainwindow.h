@@ -47,6 +47,17 @@ public:
     void HideAxons();
     void ShowAllCells();
     bool check_borders(const Eigen::Vector3d&  min_l, const Eigen::Vector3d&  max_l, const Eigen::Vector3d& pos, const double& distance_to_border);
+    /*!
+     *  \brief Parses one data line of a CATERPillar substrate CSV, tolerating both the
+     *         current 10-token format (with parent_component_id) and the older 9-token
+     *         format that predates it. For the 9-token case, parent is set equal to
+     *         component_id, matching how the writer already fills that column for
+     *         objects with no distinct parent (e.g. axons).
+     *  \return false if the line doesn't have exactly 9 or 10 whitespace-separated tokens.
+     */
+    bool parseSubstrateCsvLine(const std::string &line, std::string &type, double &id_cell,
+                                std::string &component, double &component_id, double &parent,
+                                double &x, double &y, double &z, double &radius_in, double &radius_out);
 
 private slots:
     void onSaveButtonClicked();
