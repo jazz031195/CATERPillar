@@ -905,7 +905,7 @@ void Window::initParameters()
     glial_pop1_mean_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop1_mean_process_length_SpinBox->setRange(0, 100);
     glial_pop1_mean_process_length_SpinBox->setSingleStep(1);
-    glial_pop1_mean_process_length_SpinBox->setValue(10);
+    glial_pop1_mean_process_length_SpinBox->setValue(30);
 
     glial_pop1_std_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop1_std_process_length_SpinBox->setRange(0, 100);
@@ -918,8 +918,8 @@ void Window::initParameters()
     glial_pop3_mean_process_length_SpinBox->setRange(0, 100);
     glial_pop2_mean_process_length_SpinBox->setSingleStep(1);
     glial_pop3_mean_process_length_SpinBox->setSingleStep(1);
-    glial_pop2_mean_process_length_SpinBox->setValue(10);
-    glial_pop3_mean_process_length_SpinBox->setValue(10);
+    glial_pop2_mean_process_length_SpinBox->setValue(30);
+    glial_pop3_mean_process_length_SpinBox->setValue(30);
 
     glial_pop2_std_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop3_std_process_length_SpinBox = new QDoubleSpinBox;
@@ -1035,7 +1035,7 @@ void Window::initParameters()
     glial_pop1_radius_mean_SpinBox = new QDoubleSpinBox;
     glial_pop1_radius_mean_SpinBox->setRange(0, 10);
     glial_pop1_radius_mean_SpinBox->setSingleStep(0.1);
-    glial_pop1_radius_mean_SpinBox->setValue(5);
+    glial_pop1_radius_mean_SpinBox->setValue(3);
 
     glial_pop1_radius_std_SpinBox = new QDoubleSpinBox;
     glial_pop1_radius_std_SpinBox->setRange(0, 10);
@@ -1048,8 +1048,8 @@ void Window::initParameters()
     glial_pop3_radius_mean_SpinBox->setRange(0, 10);
     glial_pop2_radius_mean_SpinBox->setSingleStep(0.1);
     glial_pop3_radius_mean_SpinBox->setSingleStep(0.1);
-    glial_pop2_radius_mean_SpinBox->setValue(5);
-    glial_pop3_radius_mean_SpinBox->setValue(5);
+    glial_pop2_radius_mean_SpinBox->setValue(3);
+    glial_pop3_radius_mean_SpinBox->setValue(3);
 
     glial_pop2_radius_std_SpinBox = new QDoubleSpinBox;
     glial_pop3_radius_std_SpinBox = new QDoubleSpinBox;
@@ -1195,7 +1195,7 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop1_mean_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop1_mean_process_length_SpinBox->setRange(0, 100);
     glial_pop1_mean_process_length_SpinBox->setSingleStep(1);
-    glial_pop1_mean_process_length_SpinBox->setValue(0);
+    glial_pop1_mean_process_length_SpinBox->setValue(30);
 
     glial_pop1_std_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop1_std_process_length_SpinBox->setRange(0, 100);
@@ -1205,7 +1205,7 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop2_mean_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop2_mean_process_length_SpinBox->setRange(0, 100);
     glial_pop2_mean_process_length_SpinBox->setSingleStep(1);
-    glial_pop2_mean_process_length_SpinBox->setValue(0);
+    glial_pop2_mean_process_length_SpinBox->setValue(30);
 
     glial_pop2_std_process_length_SpinBox = new QDoubleSpinBox;
     glial_pop2_std_process_length_SpinBox->setRange(0, 100);
@@ -1307,7 +1307,7 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop1_radius_mean_SpinBox = new QDoubleSpinBox;
     glial_pop1_radius_mean_SpinBox->setRange(0, 10);
     glial_pop1_radius_mean_SpinBox->setSingleStep(0.1);
-    glial_pop1_radius_mean_SpinBox->setValue(5);
+    glial_pop1_radius_mean_SpinBox->setValue(3);
 
     glial_pop1_radius_std_SpinBox = new QDoubleSpinBox;
     glial_pop1_radius_std_SpinBox->setRange(0, 10);
@@ -1317,7 +1317,7 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop2_radius_mean_SpinBox = new QDoubleSpinBox;
     glial_pop2_radius_mean_SpinBox->setRange(0, 10);
     glial_pop2_radius_mean_SpinBox->setSingleStep(0.1);
-    glial_pop2_radius_mean_SpinBox->setValue(5);
+    glial_pop2_radius_mean_SpinBox->setValue(3);
 
     glial_pop2_radius_std_SpinBox = new QDoubleSpinBox;
     glial_pop2_radius_std_SpinBox->setRange(0, 10);
@@ -1577,6 +1577,42 @@ void Window::ReadAxonsFromFile(const QString& fileName){
         QMessageBox::warning(this, tr("Error"), tr("Unsupported file format. Please select a CSV or SWC file."));
     }
 }
+bool Window::parseSubstrateCsvLine(const std::string &line, std::string &type, double &id_cell,
+                                    std::string &component, double &component_id, double &parent,
+                                    double &x, double &y, double &z, double &radius_in, double &radius_out) {
+    std::istringstream iss(line);
+    std::vector<std::string> tokens;
+    std::string tok;
+    while (iss >> tok) {
+        tokens.push_back(tok);
+    }
+
+    size_t n = tokens.size();
+    if (n != 9 && n != 10) {
+        return false;
+    }
+
+    size_t idx = 0;
+    type = tokens[idx++];
+    id_cell = std::stod(tokens[idx++]);
+    component = tokens[idx++];
+    component_id = std::stod(tokens[idx++]);
+    if (n == 10) {
+        parent = std::stod(tokens[idx++]);
+    } else {
+        // Pre-parent_component_id format: treat as having no distinct
+        // parent, matching how the writer fills that column today for
+        // objects like axons (parent_component_id = component_id).
+        parent = component_id;
+    }
+    x = std::stod(tokens[idx++]);
+    y = std::stod(tokens[idx++]);
+    z = std::stod(tokens[idx++]);
+    radius_in = std::stod(tokens[idx++]);
+    radius_out = std::stod(tokens[idx++]);
+    return true;
+}
+
 void Window::ReadAxonsFromCSV(const QString& fileName){
     X_axons.clear();
     Y_axons.clear();
@@ -1603,7 +1639,6 @@ void Window::ReadAxonsFromCSV(const QString& fileName){
 
     std::string line;
     while (std::getline(swcFile, line)) {
-        std::istringstream iss(line);
         double id_cell, component_id;
         std::string type, component;
         double x, y, z, radius_in, parent, radius_out;
@@ -1614,11 +1649,11 @@ void Window::ReadAxonsFromCSV(const QString& fileName){
         }
 
 
-        if (!(iss >> type >> id_cell >> component >> component_id >> parent >> x >> y >> z >> radius_in >> radius_out)) {
+        if (!parseSubstrateCsvLine(line, type, id_cell, component, component_id, parent, x, y, z, radius_in, radius_out)) {
             QMessageBox::warning(this, tr("Error"), tr("Invalid CSV file format for Axons."));
             return;
         }
-        
+
         if (type == "axon") {
             
             if (old_cell_id != id_cell) {
@@ -1776,13 +1811,12 @@ void Window::ReadGlialCellsFromCSV(const QString& fileName){
             continue;
         }
 
-        std::istringstream iss(line);
         double component_id, id_cell;
         std::string type, component;
 
         double x, y, z, radius_in, parent, radius_out;
 
-        if (!(iss >> type >> id_cell >> component >> component_id >> parent >> x >> y >> z >> radius_in >> radius_out)) {
+        if (!parseSubstrateCsvLine(line, type, id_cell, component, component_id, parent, x, y, z, radius_in, radius_out)) {
             QMessageBox::warning(this, tr("Error"), tr("Invalid SWC file format for Glial Cells."));
             return;
         }
@@ -1944,12 +1978,11 @@ void Window::ReadBloodVesselsFromFile(const QString& fileName){
             continue;
         }
 
-        std::istringstream iss(line);
         double id_cell, component_id, parent;
         std::string type, component;
         double x, y, z, radius_in, radius_out;
 
-        if (!(iss >> type >> id_cell >> component >> component_id >> parent >> x >> y >> z >> radius_in >> radius_out)) {
+        if (!parseSubstrateCsvLine(line, type, id_cell, component, component_id, parent, x, y, z, radius_in, radius_out)) {
             QMessageBox::warning(this, tr("Error"), tr("Invalid CSV file format for Blood Vessels."));
             return;
         }
