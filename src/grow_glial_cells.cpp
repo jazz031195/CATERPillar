@@ -313,8 +313,13 @@ bool GlialCellGrowth::growPrimaryBranch(int &nbr_spheres, const double &mean_pri
     Eigen::Vector3d attractor = Eigen::Vector3d(0, 0, 0);
     // t=0 here means "at the branch's own start", i.e. the true initial_radius
     // with no decay yet -- passing initial_radius itself as t (a radius value
-    // used as if it were a distance-along-branch) was a bug.
-    double first_radius = compute_radius(0.0);
+    // used as if it were a distance-along-branch) was a bug. Clamped to
+    // minimum_radius same as every later sphere on this branch (see the R_
+    // clamp below): initial_radius = soma.radius/3 can itself end up below
+    // minimum_radius when the soma didn't fully reach its own target (see
+    // SwellGlialSomas' partial-credit swelling), which otherwise let the very
+    // first sphere of a branch slip under the configured floor.
+    double first_radius = std::max(compute_radius(0.0), glial_cell_to_grow.minimum_radius);
     bool first_sphere_created = GenerateFirstSphereinProcess(first_sphere, attractor, first_radius, glial_cell_to_grow.soma, vector_to_prev_center, nbr_spheres, nbr_spheres_between, glial_cell_to_grow.id, j, true);
 
     if (!first_sphere_created) {
@@ -565,7 +570,12 @@ bool GlialCellGrowth::growSecondaryBranch(int &nbr_spheres, const double &mean_p
     Eigen::Vector3d vector_to_prev_sphere = (random_sphere.center - glial_cell_to_grow.ramification_spheres[random_branch][random_sphere_ind - 1].center).normalized();
     Sphere first_sphere;
     Eigen::Vector3d attractor = Eigen::Vector3d(0, 0, 0);
-    double initial_radius = random_sphere.radius;
+    // Clamped to minimum_radius, same reasoning as growPrimaryBranch's
+    // first_radius: random_sphere (the parent branch's own sphere at the
+    // attachment point) can itself be right at (or, before this clamp,
+    // theoretically below) the floor, which otherwise let a secondary
+    // branch's very first sphere start under the configured minimum.
+    double initial_radius = std::max(random_sphere.radius, glial_cell_to_grow.minimum_radius);
     //cout << "Initial radius for new branch: " << initial_radius << endl;
     bool first_sphere_created = GenerateFirstSphereinProcess(first_sphere, attractor, initial_radius, random_sphere, vector_to_prev_sphere, nbr_spheres, nbr_spheres_between, glial_cell_to_grow.id, nbr_branches, false);
     //cout << "First sphere created at position: " << first_sphere.center.transpose() << " with radius: " << first_sphere.radius << endl;

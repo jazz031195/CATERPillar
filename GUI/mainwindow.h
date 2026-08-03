@@ -178,6 +178,9 @@ private:
     QLabel *glial_pop2_radius_std_qlabel;
     QLabel *glial_pop3_radius_mean_qlabel;
     QLabel *glial_pop3_radius_std_qlabel;
+    QLabel *glial_pop1_minimum_process_radius_qlabel;
+    QLabel *glial_pop2_minimum_process_radius_qlabel;
+    QLabel *glial_pop3_minimum_process_radius_qlabel;
     QLabel *glial_pop1_nbr_primary_processes_qlabel;
     QLabel *glial_pop2_nbr_primary_processes_qlabel;
     QLabel *glial_pop3_nbr_primary_processes_qlabel;
@@ -231,6 +234,9 @@ private:
     QDoubleSpinBox *glial_pop2_radius_std_SpinBox;
     QDoubleSpinBox *glial_pop3_radius_mean_SpinBox;
     QDoubleSpinBox *glial_pop3_radius_std_SpinBox;
+    QDoubleSpinBox *glial_pop1_minimum_process_radius_SpinBox;
+    QDoubleSpinBox *glial_pop2_minimum_process_radius_SpinBox;
+    QDoubleSpinBox *glial_pop3_minimum_process_radius_SpinBox;
     QDoubleSpinBox *glial_pop1_nbr_primary_processes_SpinBox;
     QDoubleSpinBox *glial_pop2_nbr_primary_processes_SpinBox;
     QDoubleSpinBox *glial_pop3_nbr_primary_processes_SpinBox;

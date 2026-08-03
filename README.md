@@ -122,7 +122,7 @@ The GUI allows you to configure biophysical parameters and generate realistic nu
 
 ### **Glial Cell Parameters:**
 
-*(Note: Two different populations of glial cells can co-exist in a voxel. The GUI provides independent parameter boxes for each population.)*
+*(Note: Three different populations of glial cells can co-exist in a voxel. The GUI provides independent parameter boxes for each population.)*
 
   * **Somas ICVF (%):** Defines the volume fraction occupied by astrocyte somas within the substrate.
   * **Processes ICVF (%):** Specifies the volume fraction of astrocyte processes, contributing to the extracellular microstructure.
@@ -130,6 +130,7 @@ The GUI allows you to configure biophysical parameters and generate realistic nu
   * **Soma Radius Standard Deviation (μm):** The standard deviation used for the normal distribution of the soma radius.
   * **Mean Process Length (μm):** Represents the average length of processes within the substrate, measured from the soma to the tip of the process. Secondary processes (branching from primary ones) will have a shorter length, as the algorithm accounts for the distance already grown before the bifurcation.
   * **Standard Deviation for Process Length (μm):** Defines the variability in process lengths, contributing to the heterogeneity of the substrate.
+  * **Minimum Process Radius (μm):** The floor a process's radius tapers toward as it grows away from the soma — no sphere along any process (primary or secondary) is ever placed below this radius. Defaults to **0.15**.
   * **Number of Primary Processes:** The number of processes that emerge directly from the soma.
   * **Can glial cell population have branching:** If ticked, the glial cell can grow higher-order (secondary/tertiary) processes. If unticked, only primary processes will be present. If the target ICVF for processes cannot be reached with the selected number of primary processes, the system will automatically grow more of them.
 
@@ -155,6 +156,11 @@ Upon completion, the following output files are automatically saved in your sele
 
 1.  **`<filename>.csv`** – Contains precise spatial and morphological data for the substrate, with each line defining a single sphere's properties.
 2.  **`<filename>_growth_info.txt`** – Provides metadata, summary statistics, and a record of the exact parameters used during the simulation.
+
+When a run is started from the **GUI** (always saved under the filename `Voxel`), two further files are saved alongside the pair above:
+
+3.  **`<filename>.json`** – A config file recording the exact parameters behind that run, in the same format `CATERPillar-cli --config` accepts — so a substrate grown in the GUI can be reproduced or batch-rerun headlessly later.
+4.  **`<filename>.log`** – The full console output produced during growth (progress, warnings, collision checks, etc.).
 
 The **`<filename>.csv`** file is a space-delimited file structured with the following columns for external analysis or Monte Carlo integration:
 

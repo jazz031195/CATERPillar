@@ -194,6 +194,7 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     params.std_glial_pop1_process_length = data["GlialParameters"]["Pop1StdProcessLength"];
     params.glial_pop1_nbr_primary_processes = data["GlialParameters"]["Pop1NbrPrimaryProcesses"];
     params.glial_pop1_branching = data["GlialParameters"]["Pop1Branching"];
+    params.glial_pop1_minimum_process_radius = data["GlialParameters"].value("Pop1MinimumProcessRadius", 0.15);
 
     // Population 2
     params.glial_pop2_soma_icvf = double(data["GlialParameters"]["Pop2SomaICVF"]) / 100.0;
@@ -204,16 +205,18 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     params.std_glial_pop2_process_length = data["GlialParameters"]["Pop2StdProcessLength"];
     params.glial_pop2_nbr_primary_processes = data["GlialParameters"]["Pop2NbrPrimaryProcesses"];
     params.glial_pop2_branching = data["GlialParameters"]["Pop2Branching"];
+    params.glial_pop2_minimum_process_radius = data["GlialParameters"].value("Pop2MinimumProcessRadius", 0.15);
 
     // Population 3 (optional -- defaults keep older config files without it working unchanged)
     params.glial_pop3_soma_icvf = data["GlialParameters"].value("Pop3SomaICVF", 0.0) / 100.0;
     params.glial_pop3_processes_icvf = data["GlialParameters"].value("Pop3ProcessesICVF", 0.0) / 100.0;
-    params.glial_pop3_radius_mean = data["GlialParameters"].value("Pop3SomaRadiusMean", 0.5);
+    params.glial_pop3_radius_mean = data["GlialParameters"].value("Pop3SomaRadiusMean", 3.0);
     params.glial_pop3_radius_std = data["GlialParameters"].value("Pop3SomaRadiusStd", 0.1);
-    params.mean_glial_pop3_process_length = data["GlialParameters"].value("Pop3MeanProcessLength", 10.0);
+    params.mean_glial_pop3_process_length = data["GlialParameters"].value("Pop3MeanProcessLength", 30.0);
     params.std_glial_pop3_process_length = data["GlialParameters"].value("Pop3StdProcessLength", 15.0);
     params.glial_pop3_nbr_primary_processes = data["GlialParameters"].value("Pop3NbrPrimaryProcesses", 5);
     params.glial_pop3_branching = data["GlialParameters"].value("Pop3Branching", true);
+    params.glial_pop3_minimum_process_radius = data["GlialParameters"].value("Pop3MinimumProcessRadius", 0.15);
 
     // ==========================================
     // Run the math!
@@ -221,4 +224,77 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     runSimulation(params);
 
 
+}
+
+void CoreLogic::writeParametersToJson(const Parameters& params, const std::string& jsonFilePath) {
+    nlohmann::json data;
+
+    data["GeneralParameters"]["OutputDirectory"] = params.data_directory;
+    data["GeneralParameters"]["Filename"] = params.filename;
+    data["GeneralParameters"]["VoxelEdgeLength"] = params.voxel_size;
+    data["GeneralParameters"]["Repetitions"] = params.repetitions;
+    data["GeneralParameters"]["OverlappingFactor"] = params.spheres_overlap_factor;
+    data["GeneralParameters"]["NumberOfThreads"] = params.nbr_threads;
+
+    data["AxonParameters"]["AxonsICVF"] = params.axons_wo_myelin_icvf * 100.0;
+    data["AxonParameters"]["AxonsWithMyelinICVF"] = params.axons_w_myelin_icvf * 100.0;
+    data["AxonParameters"]["ArterioleICVF"] = params.blood_vessels_icvf * 100.0;
+    data["AxonParameters"]["CapillariesICVF"] = params.blood_vessels_processes_icvf * 100.0;
+    data["AxonParameters"]["CapillaryRadius"] = params.capillary_radius;
+    data["AxonParameters"]["MaxGenerations"] = params.max_generations;
+    data["AxonParameters"]["BloodVesselsVoxelEdgeLength"] = params.blood_vessels_voxel_size;
+    data["AxonParameters"]["NumberOfPopulations"] = params.nbr_axons_populations;
+    data["AxonParameters"]["CrossingFibersType"] = params.crossing_fibers_type;
+    data["AxonParameters"]["Alpha"] = params.alpha;
+    data["AxonParameters"]["Beta"] = params.beta;
+    data["AxonParameters"]["MinRadius"] = params.min_rad;
+    data["AxonParameters"]["Tortuosity_Epsilon"] = params.epsilon;
+    data["AxonParameters"]["FODF_c2"] = params.cosPhiSquared;
+    data["AxonParameters"]["BeadingAmplitude"] = params.beading_amplitude;
+    data["AxonParameters"]["BeadingStd"] = params.beading_std;
+    data["AxonParameters"]["K1"] = params.c1;
+    data["AxonParameters"]["K2"] = params.c2;
+    data["AxonParameters"]["K3"] = params.c3;
+    data["AxonParameters"]["Tortuous"] = params.tortuous;
+    data["AxonParameters"]["CanShrink"] = params.axon_can_shrink;
+    data["AxonParameters"]["RegrowThreshold"] = params.regrow_thr;
+    data["AxonParameters"]["UndulationFactor"] = params.undulation_factor;
+    data["AxonParameters"]["SwellingFactor"] = params.swelling_factor;
+
+    data["GlialParameters"]["Pop1SomaICVF"] = params.glial_pop1_soma_icvf * 100.0;
+    data["GlialParameters"]["Pop1ProcessesICVF"] = params.glial_pop1_processes_icvf * 100.0;
+    data["GlialParameters"]["Pop1SomaRadiusMean"] = params.glial_pop1_radius_mean;
+    data["GlialParameters"]["Pop1SomaRadiusStd"] = params.glial_pop1_radius_std;
+    data["GlialParameters"]["Pop1MeanProcessLength"] = params.mean_glial_pop1_process_length;
+    data["GlialParameters"]["Pop1StdProcessLength"] = params.std_glial_pop1_process_length;
+    data["GlialParameters"]["Pop1NbrPrimaryProcesses"] = params.glial_pop1_nbr_primary_processes;
+    data["GlialParameters"]["Pop1Branching"] = params.glial_pop1_branching;
+    data["GlialParameters"]["Pop1MinimumProcessRadius"] = params.glial_pop1_minimum_process_radius;
+
+    data["GlialParameters"]["Pop2SomaICVF"] = params.glial_pop2_soma_icvf * 100.0;
+    data["GlialParameters"]["Pop2ProcessesICVF"] = params.glial_pop2_processes_icvf * 100.0;
+    data["GlialParameters"]["Pop2SomaRadiusMean"] = params.glial_pop2_radius_mean;
+    data["GlialParameters"]["Pop2SomaRadiusStd"] = params.glial_pop2_radius_std;
+    data["GlialParameters"]["Pop2MeanProcessLength"] = params.mean_glial_pop2_process_length;
+    data["GlialParameters"]["Pop2StdProcessLength"] = params.std_glial_pop2_process_length;
+    data["GlialParameters"]["Pop2NbrPrimaryProcesses"] = params.glial_pop2_nbr_primary_processes;
+    data["GlialParameters"]["Pop2Branching"] = params.glial_pop2_branching;
+    data["GlialParameters"]["Pop2MinimumProcessRadius"] = params.glial_pop2_minimum_process_radius;
+
+    data["GlialParameters"]["Pop3SomaICVF"] = params.glial_pop3_soma_icvf * 100.0;
+    data["GlialParameters"]["Pop3ProcessesICVF"] = params.glial_pop3_processes_icvf * 100.0;
+    data["GlialParameters"]["Pop3SomaRadiusMean"] = params.glial_pop3_radius_mean;
+    data["GlialParameters"]["Pop3SomaRadiusStd"] = params.glial_pop3_radius_std;
+    data["GlialParameters"]["Pop3MeanProcessLength"] = params.mean_glial_pop3_process_length;
+    data["GlialParameters"]["Pop3StdProcessLength"] = params.std_glial_pop3_process_length;
+    data["GlialParameters"]["Pop3NbrPrimaryProcesses"] = params.glial_pop3_nbr_primary_processes;
+    data["GlialParameters"]["Pop3Branching"] = params.glial_pop3_branching;
+    data["GlialParameters"]["Pop3MinimumProcessRadius"] = params.glial_pop3_minimum_process_radius;
+
+    std::ofstream out(jsonFilePath);
+    if (!out) {
+        std::cerr << "Error opening output file : " << jsonFilePath << std::endl;
+        return;
+    }
+    out << data.dump(4);
 }

@@ -105,6 +105,9 @@ CaterpillarGrowth::CaterpillarGrowth(const Parameters &params, const Eigen::Vect
     glial_pop1_branching = params.glial_pop1_branching;
     glial_pop2_branching = params.glial_pop2_branching;
     glial_pop3_branching = params.glial_pop3_branching;
+    glial_pop1_minimum_process_radius = params.glial_pop1_minimum_process_radius;
+    glial_pop2_minimum_process_radius = params.glial_pop2_minimum_process_radius;
+    glial_pop3_minimum_process_radius = params.glial_pop3_minimum_process_radius;
 
     // blood vessels
     epsilon_blood_vessels = params.epsilon_blood_vessels;
@@ -677,38 +680,35 @@ double interpolate(double x, const std::vector<double>& xs, const std::vector<do
     return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
 }
 
-// Numerical integration using the trapezoidal rule
-double integrate(std::function<double(double)> f, double a, double b, int n = 1000) {
-    double h = (b - a) / n; // Step size
-    double sum = 0.5 * (f(a) + f(b)); // Endpoints contribution
-    for (int i = 1; i < n; ++i) {
-        sum += f(a + i * h);
+// Cumulative trapezoidal integral of exp(t^2) from 0 to sqrt(kappa) -- the
+// same integral build_watson_cdf_table computes for its CDF table. Shared
+// here so c2_of_kappa's kappa<->c2 calibration is numerically consistent
+// with (and exactly as accurate as) the CDF actually used for sampling,
+// instead of a separate, cruder erfi()-based approximation.
+static double watson_total_integral(double kappa, int n_points = 2000) {
+    if (kappa <= 0.0) return 1.0;
+    const double rt = std::sqrt(kappa);
+    const double h = rt / n_points;
+    double total = 0.0;
+    double prev_f = 1.0; // exp(0^2)
+    for (int j = 1; j <= n_points; ++j) {
+        double t = j * h;
+        double f = std::exp(t * t);
+        total += 0.5 * (prev_f + f) * h;
+        prev_f = f;
     }
-    return sum * h;
+    return total; // = integral_0^sqrt(kappa) exp(t^2) dt
 }
-
-// Helper function to compute erfi (imaginary error function)
-double erfi(double x) {
-    auto erf_integrand = [](double t) { return std::exp(t * t); };
-    double integral_value = integrate(erf_integrand, 0, x, 1000); // Numerical integration
-    return (2 / std::sqrt(M_PI)) * integral_value;
-}
-
 
 // Computes c2(kappa) for the axial Watson distribution (kappa >= 0).
 // Safe across kappa=0 and large kappa.
 static inline double c2_of_kappa(double kappa) {
     if (kappa <= 0.0) return 1.0/3.0;
     const double rt = std::sqrt(kappa);
+    const double total = watson_total_integral(kappa);
 
-    // F = (sqrt(pi)/2) * e^{-kappa} * erfi(sqrt(kappa))
-    // so that 1/(2*sqrt(kappa)*F) = e^{kappa}/(sqrt(pi)*erfi(sqrt(kappa))*sqrt(kappa))
-    const double erfi_rt = erfi(rt);               // assume you have a stable erfi
-    const double emk     = std::exp(-kappa);
-    const double F       = 0.5 * std::sqrt(M_PI) * emk * erfi_rt;
-
-    // c2 = 1/(2*sqrt(kappa)*F) - 1/(2*kappa)
-    const double term1 = 1.0 / (2.0 * rt * F);
+    // c2 = exp(kappa)/(2*sqrt(kappa)*total) - 1/(2*kappa)
+    const double term1 = std::exp(kappa) / (2.0 * rt * total);
     const double term2 = 1.0 / (2.0 * kappa);
     return term1 - term2;
 }
@@ -1120,52 +1120,61 @@ void CaterpillarGrowth::GrowAllAxons(){
         growAxonsLayered(radii, has_myelin, angles);
 
         ICVF(axons, glial_pop1, glial_pop2, glial_pop3, blood_vessels);
-
-        if (beading_amplitude == 0 || beading_std == 0){
-            return;
-        }
-
-        cout << "ICVF axons :" << axons_icvf << endl;
-
-        // Non-uniform final swelling: each sphere grows to its own local
-        // maximum (via bisection, bounded by its true target radius) in
-        // one shot per round, instead of every sphere being offered the
-        // same percentage and failing outright if that doesn't fit -- a
-        // tightly-pinched sphere no longer has to wait for the whole
-        // population's growth rate to shrink down to its own limit before
-        // it gets any growth at all.
-        SwellAxons();
-        cout << "new ICVF " << axons_icvf << endl;
-
-        // Post-swelling cleanup: independent per-sphere growth (especially
-        // the uncapped/push-assisted paths) can leave a sphere entirely
-        // inside a neighbor along the same axon's own chain. checkNoCollisions
-        // never catches this -- it deliberately skips same-object comparisons,
-        // since a branch is supposed to touch its own trunk -- but such a
-        // sphere presents no obstacle surface of its own (anything that could
-        // touch it would already have touched the bigger neighbor containing
-        // it first), so it's just dead weight in the output. Drop it and
-        // recompute volume/ICVF for any axon that changed.
-        int total_engulfed = 0;
-        bool any_axon_changed = false;
-        for (auto &ax : axons) {
-            std::vector<Sphere> removed;
-            ax.removeEngulfedSpheres(removed);
-            if (!removed.empty()) {
-                for (const auto &sph : removed) {
-                    sphere_grid.remove(sph);
-                }
-                ax.update_Volume(spheres_overlap_factor, min_limits, max_limits);
-                total_engulfed += static_cast<int>(removed.size());
-                any_axon_changed = true;
-            }
-        }
-        if (any_axon_changed) {
-            ICVF(axons, glial_pop1, glial_pop2, glial_pop3, blood_vessels);
-        }
-        cout << "Removed " << total_engulfed << " fully-engulfed sphere(s) after swelling; ICVF now " << axons_icvf << endl;
     }
 
+}
+
+void CaterpillarGrowth::SwellAllAxons(){
+    // Mirrors GrowAllAxons' own "nothing to do" guards -- split out so
+    // createSubstrate can run glial soma swelling in between thin (just
+    // seeded + layer-grown) axons and this final swelling pass, giving
+    // somas real room to grow into before axons claim it via swelling.
+    if (radii.size() == 0) {
+        return;
+    }
+    if (beading_amplitude == 0 || beading_std == 0){
+        return;
+    }
+
+    cout << "ICVF axons :" << axons_icvf << endl;
+
+    // Non-uniform final swelling: each sphere grows to its own local
+    // maximum (via bisection, bounded by its true target radius) in
+    // one shot per round, instead of every sphere being offered the
+    // same percentage and failing outright if that doesn't fit -- a
+    // tightly-pinched sphere no longer has to wait for the whole
+    // population's growth rate to shrink down to its own limit before
+    // it gets any growth at all.
+    SwellAxons();
+    cout << "new ICVF " << axons_icvf << endl;
+
+    // Post-swelling cleanup: independent per-sphere growth (especially
+    // the uncapped/push-assisted paths) can leave a sphere entirely
+    // inside a neighbor along the same axon's own chain. checkNoCollisions
+    // never catches this -- it deliberately skips same-object comparisons,
+    // since a branch is supposed to touch its own trunk -- but such a
+    // sphere presents no obstacle surface of its own (anything that could
+    // touch it would already have touched the bigger neighbor containing
+    // it first), so it's just dead weight in the output. Drop it and
+    // recompute volume/ICVF for any axon that changed.
+    int total_engulfed = 0;
+    bool any_axon_changed = false;
+    for (auto &ax : axons) {
+        std::vector<Sphere> removed;
+        ax.removeEngulfedSpheres(removed);
+        if (!removed.empty()) {
+            for (const auto &sph : removed) {
+                sphere_grid.remove(sph);
+            }
+            ax.update_Volume(spheres_overlap_factor, min_limits, max_limits);
+            total_engulfed += static_cast<int>(removed.size());
+            any_axon_changed = true;
+        }
+    }
+    if (any_axon_changed) {
+        ICVF(axons, glial_pop1, glial_pop2, glial_pop3, blood_vessels);
+    }
+    cout << "Removed " << total_engulfed << " fully-engulfed sphere(s) after swelling; ICVF now " << axons_icvf << endl;
 }
 
 
@@ -1605,6 +1614,145 @@ void CaterpillarGrowth::SwellAxons(){
     }
 }
 
+void CaterpillarGrowth::SwellGlialSomas(int population_nbr) {
+
+    std::vector<Glial> *pop = nullptr;
+    double *live_icvf = nullptr;
+    double target_icvf = 0.0;
+    double radius_mean = 0.0, radius_std = 0.0, minimum_process_radius = 0.0;
+    bool branching = true;
+
+    switch (population_nbr) {
+        case 1: pop = &glial_pop1; live_icvf = &glial_pop1_soma_icvf; target_icvf = target_glial_pop1_soma_icvf;
+                radius_mean = glial_pop1_radius_mean; radius_std = glial_pop1_radius_std;
+                minimum_process_radius = glial_pop1_minimum_process_radius; branching = glial_pop1_branching; break;
+        case 2: pop = &glial_pop2; live_icvf = &glial_pop2_soma_icvf; target_icvf = target_glial_pop2_soma_icvf;
+                radius_mean = glial_pop2_radius_mean; radius_std = glial_pop2_radius_std;
+                minimum_process_radius = glial_pop2_minimum_process_radius; branching = glial_pop2_branching; break;
+        case 3: pop = &glial_pop3; live_icvf = &glial_pop3_soma_icvf; target_icvf = target_glial_pop3_soma_icvf;
+                radius_mean = glial_pop3_radius_mean; radius_std = glial_pop3_radius_std;
+                minimum_process_radius = glial_pop3_minimum_process_radius; branching = glial_pop3_branching; break;
+        default: return;
+    }
+    if (target_icvf <= 0.0) {
+        return;
+    }
+
+    // *live_icvf may still reflect PlaceGlialCells' seed-radius-derived
+    // placeholder (or a stale value from a prior population's call) --
+    // refresh against real current geometry before comparing to target_icvf.
+    ICVF(axons, glial_pop1, glial_pop2, glial_pop3, blood_vessels);
+
+    std::normal_distribution<> dis_radius(radius_mean, radius_std);
+    auto draw_positive_radius = [&]() {
+        double r;
+        do { r = dis_radius(gen); } while (r <= 0.0);
+        return r;
+    };
+    std::uniform_real_distribution<> base_x(min_limits[0] - expanded_for_glial_space, max_limits[0] + expanded_for_glial_space);
+    std::uniform_real_distribution<> base_y(min_limits[1] - expanded_for_glial_space, max_limits[1] + expanded_for_glial_space);
+    std::uniform_real_distribution<> base_z(min_limits[2] - expanded_for_glial_space, max_limits[2] + expanded_for_glial_space);
+
+    // object_id must stay globally unique across all 3 glial populations
+    // (they share object_type == glial_cell_constant, and SphereGrid skips
+    // collision checks between two spheres sharing both) -- see the same
+    // fix in PlaceGlialCells.
+    int next_glial_id = 0;
+    for (const auto &g : glial_pop1) next_glial_id = std::max(next_glial_id, g.id + 1);
+    for (const auto &g : glial_pop2) next_glial_id = std::max(next_glial_id, g.id + 1);
+    for (const auto &g : glial_pop3) next_glial_id = std::max(next_glial_id, g.id + 1);
+
+    const int max_new_somas = 100000; // defensive backstop against runaway iteration
+    int new_somas_added = 0;
+
+    while (*live_icvf < target_icvf) {
+        // --- Phase 1: grow every existing soma toward its own target ---
+        // Sequential, not parallel across the population (unlike SwellAxons'
+        // per-axon thread-pool dispatch): a soma is a single sphere, so
+        // there's no per-object internal work worth parallelizing -- and
+        // computing different somas' candidate radii in parallel against the
+        // same pre-round grid snapshot let two adjacent somas each look
+        // individually valid but collide once both were applied (observed in
+        // practice: "Final collision check failed" on somas grown this way).
+        // Sequential apply means every soma's own candidate is checked
+        // against every change already committed this round, exactly like
+        // SwellAxons' axon-by-axon loop.
+        int nbr_attempts = 0;
+        double percentage_swelling = 0.1;
+        const double minimum_percentage_swelling = 1e-6;
+        while (*live_icvf < target_icvf && nbr_attempts < 1000) {
+            double old_icvf = *live_icvf;
+            bool any_changed = false;
+
+            for (auto &g : *pop) {
+                double new_radius = ComputeSwollenRadius(g.soma, percentage_swelling, g.target_soma_radius);
+                if (new_radius > g.soma.radius) {
+                    Sphere old_soma = g.soma;
+                    g.soma.radius = new_radius;
+                    sphere_grid.remove(old_soma);
+                    sphere_grid.insert(g.soma);
+                    any_changed = true;
+                }
+            }
+
+            if (any_changed) {
+                ICVF(axons, glial_pop1, glial_pop2, glial_pop3, blood_vessels);
+            }
+
+            if ((*live_icvf - old_icvf) < 1e-5 && percentage_swelling >= minimum_percentage_swelling) {
+                percentage_swelling /= 3;
+            } else if (percentage_swelling < minimum_percentage_swelling) {
+                break;
+            }
+            ++nbr_attempts;
+        }
+
+        if (*live_icvf >= target_icvf || new_somas_added >= max_new_somas) {
+            break;
+        }
+
+        // --- Phase 2: existing somas are stuck (stalled short of target) --
+        // rather than keep pushing on cells that have nowhere left to grow,
+        // place a brand new one, seeded small and drawn fresh from the same
+        // radius distribution, wherever room actually exists post-growth
+        // (mirrors PlaceGlialCells' own seed-then-swell placement loop).
+        // A placement failure after a real search means the environment is
+        // genuinely saturated -- retrying immediately wouldn't change that,
+        // so give up gracefully rather than looping forever.
+        bool placed = false;
+        for (int attempt = 0; attempt < 10000 && !placed; ++attempt) {
+            double rad = draw_positive_radius();
+            double seed_rad = rad * kSomaSeedFraction;
+            Eigen::Vector3d center{ base_x(gen), base_y(gen), base_z(gen) };
+            Sphere s(0, next_glial_id, glial_cell_constant, center, seed_rad);
+            if (sphere_grid.canSpherebePlaced(s)) {
+                Glial glial_cell(s.object_id, s, branching);
+                glial_cell.target_soma_radius = rad;
+                glial_cell.minimum_radius = minimum_process_radius;
+                glial_cell.addToGrid(sphere_grid);
+                pop->push_back(glial_cell);
+                ++next_glial_id;
+                ++new_somas_added;
+                placed = true;
+            }
+        }
+
+        if (!placed) {
+            break; // no room left anywhere -- accept whatever ICVF was reached
+        }
+        ICVF(axons, glial_pop1, glial_pop2, glial_pop3, blood_vessels);
+    }
+
+    // volume_soma is frozen at Glial construction time (see Glial ctor) from
+    // whatever radius soma had *then* -- the small seed. Refresh it now that
+    // swelling is done. (minimum_radius is a fixed, independently-configured
+    // per-population value set explicitly above/in PlaceGlialCells -- not
+    // derived from soma.radius, so it needs no refresh here.)
+    for (auto &g : *pop) {
+        g.volume_soma = M_PI * pow(g.soma.radius, 3) * 4.0 / 3.0;
+    }
+}
+
 // Growing substrate
 void CaterpillarGrowth::createSubstrate()
 {
@@ -1621,8 +1769,22 @@ void CaterpillarGrowth::createSubstrate()
     PlaceGlialCells();
     cout << "Grow all Axons" << endl;
     GrowAllAxons();
+
+    // Somas swell into whatever room thin (just seeded + layer-grown, not
+    // yet swollen) axons left, before axons themselves swell to their final
+    // target ICVF and claim the rest -- gives somas real room to reach their
+    // own target size instead of axon swelling grabbing it first.
+    cout << "Swell Glial Somas" << endl;
+    SwellGlialSomas(1);
+    SwellGlialSomas(2);
+    SwellGlialSomas(3);
+
+    cout << "Swell All Axons" << endl;
+    SwellAllAxons();
+
     cout << "Grow Myelin" << endl;
     add_Myelin();
+
     ICVF(axons, glial_pop1, glial_pop2, glial_pop3, blood_vessels);
     cout << "GrowAllGlialCells" << endl;
     GrowAllGlialCells();
@@ -2309,6 +2471,14 @@ void CaterpillarGrowth::PlaceGlialCells() {
         return (4.0 * M_PI * r * r * r) / 3.0;
     };
 
+    // Somas across all 3 populations share object_type == glial_cell_constant,
+    // and SphereGrid::canSpherebePlaced skips collision checks between two
+    // spheres that share both object_type and object_id -- so a single
+    // shared counter (rather than each population separately re-using
+    // static_cast<int>(glial_popN.size())) is required for a pop-N soma to
+    // ever be collision-checked against a same-indexed pop-M soma.
+    int next_glial_id = 0;
+
     // Expand the sampling window to allow placements outside the bounds.
     // If you want a different expansion per population, split this.
     expanded_for_glial_space = std::max(0.0, glial_pop1_radius_mean*3);
@@ -2329,21 +2499,31 @@ void CaterpillarGrowth::PlaceGlialCells() {
         bool placed = false;
         bool fully_inside = false;
         bool fully_outside = false;
+        double rad = 0.0;
 
         for (int attempt = 0; attempt < 10000; ++attempt) {
-            const double rad = draw_positive_radius(dis_radius_pop1);
+            rad = draw_positive_radius(dis_radius_pop1);
+            // Seed small (see SwellGlialSomas) rather than placing at the
+            // full target radius: somas placed at full size before axon
+            // growth even starts create enough fixed clutter to badly stall
+            // axon packing at high ICVF targets. Placement/collision-checking
+            // here uses only the small seed; classification below still
+            // needs the true target-size footprint.
+            const double seed_rad = rad * kSomaSeedFraction;
+            const Eigen::Vector3d center{ base_x1(gen), base_y1(gen), base_z1(gen) };
 
             s = Sphere(
-                /*object_id*/ 0,                        // keep your ID scheme if needed
-                /*index*/ static_cast<int>(glial_pop1.size()),
+                /*id*/ 0,
+                /*object_id*/ next_glial_id,
                 /*type*/ glial_cell_constant,
-                { base_x1(gen), base_y1(gen), base_z1(gen) },
-                rad
+                center,
+                seed_rad
             );
 
             if (sphere_grid.canSpherebePlaced(s)) {
-                fully_inside = (signed_box_margin(s) >= 0.0);
-                fully_outside = fully_outside_box(s);
+                Sphere target_probe(s.id, s.object_id, s.object_type, center, rad);
+                fully_inside = (signed_box_margin(target_probe) >= 0.0);
+                fully_outside = fully_outside_box(target_probe);
                 placed = true;
                 break;
             }
@@ -2353,18 +2533,24 @@ void CaterpillarGrowth::PlaceGlialCells() {
             ++global_fail_count_1;
             continue; // try placing another cell; loop terminates via MAX_GLOBAL_FAILS_1
         }
+        ++next_glial_id;
 
         // Always add to the population
         Glial glial_cell = Glial(s.object_id, s, glial_pop1_branching);
+        glial_cell.target_soma_radius = rad;
+        glial_cell.minimum_radius = glial_pop1_minimum_process_radius;
         glial_cell.addToGrid(sphere_grid);
         glial_pop1.push_back(glial_cell);
 
-        // Count ICVF only if fully inside
+        // Count ICVF against the TARGET radius (what the soma is meant to
+        // reach once swollen), not the seed just placed -- otherwise this
+        // loop keeps placing far more somas than intended.
         if (fully_inside) {
-            glial_icvf_1 += soma_volume(glial_cell.soma.radius) / total_volume;
+            glial_icvf_1 += soma_volume(rad) / total_volume;
         }
         else if (!fully_outside) {
-            glial_icvf_1 += glial_cell.soma.sphereBoxIntersectionVolume(min_limits, max_limits, /*eps_rel=*/1e-6) / total_volume;
+            Sphere target_probe(s.id, s.object_id, s.object_type, s.center, rad);
+            glial_icvf_1 += target_probe.sphereBoxIntersectionVolume(min_limits, max_limits, /*eps_rel=*/1e-6) / total_volume;
         }
     }
 
@@ -2386,6 +2572,7 @@ void CaterpillarGrowth::PlaceGlialCells() {
         for (int i = 0; i < 10; i++) {
 
             const double rad = draw_positive_radius(dis_radius_pop1);
+            const double seed_rad = rad * kSomaSeedFraction;
 
             std::uniform_real_distribution<> base_z1(0, 2*(expanded_for_glial_space-rad));
 
@@ -2395,20 +2582,23 @@ void CaterpillarGrowth::PlaceGlialCells() {
             z = transform(z, rad);
 
             s = Sphere(
-                        /*object_id*/ 0,                        // keep your ID scheme if needed
-                        /*index*/ static_cast<int>(glial_pop1.size()),
+                        /*id*/ 0,
+                        /*object_id*/ next_glial_id,
                         /*type*/ glial_cell_constant,
                         {x,y,z},
-                        rad
+                        seed_rad
                     );
             if (sphere_grid.canSpherebePlaced(s)) {
+                ++next_glial_id;
                 Glial glial_cell = Glial(s.object_id, s, glial_pop1_branching);
+                glial_cell.target_soma_radius = rad;
+                glial_cell.minimum_radius = glial_pop1_minimum_process_radius;
                 glial_cell.addToGrid(sphere_grid);
                 glial_pop1.push_back(glial_cell);
             }
         }
     }
-    
+
 
     glial_pop1_soma_icvf = glial_icvf_1;
 
@@ -2428,21 +2618,25 @@ void CaterpillarGrowth::PlaceGlialCells() {
         bool placed = false;
         bool fully_inside = false;
         bool fully_outside = false;
+        double rad = 0.0;
 
         for (int attempt = 0; attempt < 10000; ++attempt) {
-            const double rad = draw_positive_radius(dis_radius_pop2);
+            rad = draw_positive_radius(dis_radius_pop2);
+            const double seed_rad = rad * kSomaSeedFraction;
+            const Eigen::Vector3d center{ base_x2(gen), base_y2(gen), base_z2(gen) };
 
             s = Sphere(
-                /*object_id*/ 0,
-                /*index*/ static_cast<int>(glial_pop2.size()),
+                /*id*/ 0,
+                /*object_id*/ next_glial_id,
                 /*type*/ glial_cell_constant,
-                { base_x2(gen), base_y2(gen), base_z2(gen) },
-                rad
+                center,
+                seed_rad
             );
 
             if (sphere_grid.canSpherebePlaced(s)) {
-                fully_inside = (signed_box_margin(s) >= 0.0);
-                fully_outside = fully_outside_box(s);
+                Sphere target_probe(s.id, s.object_id, s.object_type, center, rad);
+                fully_inside = (signed_box_margin(target_probe) >= 0.0);
+                fully_outside = fully_outside_box(target_probe);
                 placed = true;
                 break;
             }
@@ -2452,18 +2646,21 @@ void CaterpillarGrowth::PlaceGlialCells() {
             ++global_fail_count_2;
             continue;
         }
+        ++next_glial_id;
 
         // Always add to the population
         Glial glial_cell = Glial(s.object_id, s); // pop2 ctor (no branching arg)
+        glial_cell.target_soma_radius = rad;
+        glial_cell.minimum_radius = glial_pop2_minimum_process_radius;
         glial_cell.addToGrid(sphere_grid);
         glial_pop2.push_back(glial_cell);
 
-        // Count ICVF only if fully inside
         if (fully_inside) {
-            glial_icvf_2 += soma_volume(glial_cell.soma.radius) / total_volume;
+            glial_icvf_2 += soma_volume(rad) / total_volume;
         }
         else if (!fully_outside) {
-            glial_icvf_2 += glial_cell.soma.sphereBoxIntersectionVolume(min_limits, max_limits, /*eps_rel=*/1e-6) / total_volume;
+            Sphere target_probe(s.id, s.object_id, s.object_type, s.center, rad);
+            glial_icvf_2 += target_probe.sphereBoxIntersectionVolume(min_limits, max_limits, /*eps_rel=*/1e-6) / total_volume;
         }
     }
 
@@ -2476,6 +2673,7 @@ void CaterpillarGrowth::PlaceGlialCells() {
         for (int i = 0; i < 10; i++) {
 
             const double rad = draw_positive_radius(dis_radius_pop2);
+            const double seed_rad = rad * kSomaSeedFraction;
 
             std::uniform_real_distribution<> base_z2(0, 2*(expanded_for_glial_space-rad));
 
@@ -2485,14 +2683,17 @@ void CaterpillarGrowth::PlaceGlialCells() {
             z = transform(z, rad);
 
             s = Sphere(
-                        /*object_id*/ 0,                        // keep your ID scheme if needed
-                        /*index*/ static_cast<int>(glial_pop2.size()),
+                        /*id*/ 0,
+                        /*object_id*/ next_glial_id,
                         /*type*/ glial_cell_constant,
                         {x,y,z},
-                        rad
+                        seed_rad
                     );
             if (sphere_grid.canSpherebePlaced(s)) {
+                ++next_glial_id;
                 Glial glial_cell = Glial(s.object_id, s, glial_pop2_branching);
+                glial_cell.target_soma_radius = rad;
+                glial_cell.minimum_radius = glial_pop2_minimum_process_radius;
                 glial_cell.addToGrid(sphere_grid);
                 glial_pop2.push_back(glial_cell);
             }
@@ -2515,21 +2716,25 @@ void CaterpillarGrowth::PlaceGlialCells() {
         bool placed = false;
         bool fully_inside = false;
         bool fully_outside = false;
+        double rad = 0.0;
 
         for (int attempt = 0; attempt < 10000; ++attempt) {
-            const double rad = draw_positive_radius(dis_radius_pop3);
+            rad = draw_positive_radius(dis_radius_pop3);
+            const double seed_rad = rad * kSomaSeedFraction;
+            const Eigen::Vector3d center{ base_x3(gen), base_y3(gen), base_z3(gen) };
 
             s = Sphere(
-                /*object_id*/ 0,
-                /*index*/ static_cast<int>(glial_pop3.size()),
+                /*id*/ 0,
+                /*object_id*/ next_glial_id,
                 /*type*/ glial_cell_constant,
-                { base_x3(gen), base_y3(gen), base_z3(gen) },
-                rad
+                center,
+                seed_rad
             );
 
             if (sphere_grid.canSpherebePlaced(s)) {
-                fully_inside = (signed_box_margin(s) >= 0.0);
-                fully_outside = fully_outside_box(s);
+                Sphere target_probe(s.id, s.object_id, s.object_type, center, rad);
+                fully_inside = (signed_box_margin(target_probe) >= 0.0);
+                fully_outside = fully_outside_box(target_probe);
                 placed = true;
                 break;
             }
@@ -2539,18 +2744,21 @@ void CaterpillarGrowth::PlaceGlialCells() {
             ++global_fail_count_3;
             continue;
         }
+        ++next_glial_id;
 
         // Always add to the population
         Glial glial_cell = Glial(s.object_id, s, glial_pop3_branching);
+        glial_cell.target_soma_radius = rad;
+        glial_cell.minimum_radius = glial_pop3_minimum_process_radius;
         glial_cell.addToGrid(sphere_grid);
         glial_pop3.push_back(glial_cell);
 
-        // Count ICVF only if fully inside
         if (fully_inside) {
-            glial_icvf_3 += soma_volume(glial_cell.soma.radius) / total_volume;
+            glial_icvf_3 += soma_volume(rad) / total_volume;
         }
         else if (!fully_outside) {
-            glial_icvf_3 += glial_cell.soma.sphereBoxIntersectionVolume(min_limits, max_limits, /*eps_rel=*/1e-6) / total_volume;
+            Sphere target_probe(s.id, s.object_id, s.object_type, s.center, rad);
+            glial_icvf_3 += target_probe.sphereBoxIntersectionVolume(min_limits, max_limits, /*eps_rel=*/1e-6) / total_volume;
         }
     }
 
@@ -2563,6 +2771,7 @@ void CaterpillarGrowth::PlaceGlialCells() {
         for (int i = 0; i < 10; i++) {
 
             const double rad = draw_positive_radius(dis_radius_pop3);
+            const double seed_rad = rad * kSomaSeedFraction;
 
             std::uniform_real_distribution<> base_z3(0, 2*(expanded_for_glial_space-rad));
 
@@ -2572,14 +2781,17 @@ void CaterpillarGrowth::PlaceGlialCells() {
             z = transform(z, rad);
 
             s = Sphere(
-                        /*object_id*/ 0,                        // keep your ID scheme if needed
-                        /*index*/ static_cast<int>(glial_pop3.size()),
+                        /*id*/ 0,
+                        /*object_id*/ next_glial_id,
                         /*type*/ glial_cell_constant,
                         {x,y,z},
-                        rad
+                        seed_rad
                     );
             if (sphere_grid.canSpherebePlaced(s)) {
+                ++next_glial_id;
                 Glial glial_cell = Glial(s.object_id, s, glial_pop3_branching);
+                glial_cell.target_soma_radius = rad;
+                glial_cell.minimum_radius = glial_pop3_minimum_process_radius;
                 glial_cell.addToGrid(sphere_grid);
                 glial_pop3.push_back(glial_cell);
             }
@@ -3396,6 +3608,7 @@ void CaterpillarGrowth::simulation_file(std::ostream &out, const std::chrono::se
     // it's left at its default origin-anchored placement and the list is empty).
     out << "Small voxel min limits " << min_limits[0] << " " << min_limits[1] << " " << min_limits[2] << std::endl;
     out << "Small voxel max limits " << max_limits[0] << " " << max_limits[1] << " " << max_limits[2] << std::endl;
+    out << "Big voxel min limits " << bv_min_limits[0] << " " << bv_min_limits[1] << " " << bv_min_limits[2] << std::endl;
     out << "Big voxel max limits " << bv_max_limits[0] << " " << bv_max_limits[1] << " " << bv_max_limits[2] << std::endl;
     out << "Number of vessels intersecting small voxel " << intersecting_vessel_ids.size() << std::endl;
     for (size_t v = 0; v < intersecting_vessel_ids.size(); ++v) {
@@ -3442,6 +3655,7 @@ void CaterpillarGrowth::simulation_file(std::ostream &out, const std::chrono::se
     out << "std_glial_pop1_process_length " << std_glial_pop1_process_length << std::endl;
     out << "glial_pop1_radius_mean " << glial_pop1_radius_mean << std::endl;
     out << "glial_pop1_radius_std " << glial_pop1_radius_std << std::endl;
+    out << "glial_pop1_minimum_process_radius " << glial_pop1_minimum_process_radius << std::endl;
 
     // --- Glial Population 2 Parameters ---
     out << "glial_pop2_nbr_primary_processes " << glial_pop2_nbr_primary_processes << std::endl;
@@ -3450,6 +3664,7 @@ void CaterpillarGrowth::simulation_file(std::ostream &out, const std::chrono::se
     out << "std_glial_pop2_process_length " << std_glial_pop2_process_length << std::endl;
     out << "glial_pop2_radius_mean " << glial_pop2_radius_mean << std::endl;
     out << "glial_pop2_radius_std " << glial_pop2_radius_std << std::endl;
+    out << "glial_pop2_minimum_process_radius " << glial_pop2_minimum_process_radius << std::endl;
 
     // --- Glial Population 3 Parameters ---
     out << "glial_pop3_nbr_primary_processes " << glial_pop3_nbr_primary_processes << std::endl;
@@ -3458,6 +3673,7 @@ void CaterpillarGrowth::simulation_file(std::ostream &out, const std::chrono::se
     out << "std_glial_pop3_process_length " << std_glial_pop3_process_length << std::endl;
     out << "glial_pop3_radius_mean " << glial_pop3_radius_mean << std::endl;
     out << "glial_pop3_radius_std " << glial_pop3_radius_std << std::endl;
+    out << "glial_pop3_minimum_process_radius " << glial_pop3_minimum_process_radius << std::endl;
 }
 
 std::vector<Eigen::Vector3d> equallySpacedPoints(const Eigen::Vector3d &point1, const Eigen::Vector3d &point2, int n)

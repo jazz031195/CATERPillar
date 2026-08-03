@@ -34,6 +34,7 @@ class Glial : public Obstacle
     double volume_soma;                                  /*!< Volume of glial */
     double volume_processes;                                  /*!< Volume of processes of glial */
     double minimum_radius;
+    double target_soma_radius;                      /*!< Soma radius this cell's soma is meant to reach once fully swollen (see PlaceGlialCells/SwellGlialSomas); defaults to soma.radius for callers that construct a Glial already at full size */
     bool allow_branching;                          /*!< Allow branching of glial */
     int next_sphere_id;                             /*!< Monotonic counter handing out the id of the next sphere added anywhere in this cell (soma excluded), so ids stay unique within the cell regardless of overlap factor -- parent_id links and branch-parent lookups rely on that uniqueness. */
     Glial();
@@ -47,6 +48,7 @@ class Glial : public Obstacle
         volume_soma = M_PI*pow(soma.radius, 3)*4/3;
         volume_processes = 0.0;
         minimum_radius = soma.radius/20.0;
+        target_soma_radius = soma.radius;
         allow_branching = allow_branching_;
         next_sphere_id = soma.id + 1; // soma occupies id soma.id; branch spheres must not collide with it
 
@@ -65,6 +67,7 @@ class Glial : public Obstacle
             volume_soma = other.volume_soma;
             volume_processes = other.volume_processes;
             minimum_radius = other.minimum_radius;
+            target_soma_radius = other.target_soma_radius;
             attractors = other.attractors;
             lengths_branches = other.lengths_branches;
             allow_branching = other.allow_branching;

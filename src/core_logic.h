@@ -29,6 +29,13 @@ public:
     // This function reads the JSON, fills the struct, and calls runSimulation()
     static void runSimulationFromJson(const std::string& jsonFilePath);
 
+    // Inverse of runSimulationFromJson's parsing: writes params back out as a
+    // config JSON with the exact same keys/sections, so the file this
+    // produces can itself be fed back in via --config. Used by the GUI to
+    // save a record of the exact parameters behind each run, alongside its
+    // .log (see Window::StartSimulation).
+    static void writeParametersToJson(const Parameters& params, const std::string& jsonFilePath);
+
     // on_growth_progress: (depth travelled, total box depth), fired once per
     // depth layer. on_swelling_progress: (current axon ICVF, target axon
     // ICVF), fired once per swelling round. Both optional -- left unset

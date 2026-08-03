@@ -42,6 +42,8 @@ const int glial_cell_constant = 1;
 const int inner_axon_constant = 2;
 const int blood_constant = 3;
 
+const double kSomaSeedFraction = 0.5;   /*!< Fraction of a glial soma's target radius used for its initial placement seed (see PlaceGlialCells/SwellGlialSomas) */
+
 #ifdef _WIN64
 typedef unsigned int ulong;
 typedef unsigned int uint;
