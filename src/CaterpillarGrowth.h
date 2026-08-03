@@ -74,6 +74,9 @@ public:
     bool glial_pop1_branching;               /*!< If true, the glial_pop1 can branch */
     bool glial_pop2_branching;               /*!< If true, the glial_pop2 can branch */
     bool glial_pop3_branching;               /*!< If true, the glial_pop3 can branch */
+    double glial_pop1_minimum_process_radius; /*!< Floor/taper target radius for glial_pop1 processes */
+    double glial_pop2_minimum_process_radius; /*!< Floor/taper target radius for glial_pop2 processes */
+    double glial_pop3_minimum_process_radius; /*!< Floor/taper target radius for glial_pop3 processes */
 
     double target_axons_w_myelin_icvf;        /*!< Intracellular Compartment Volume Fraction of axons with myelin */
     double target_axons_wo_myelin_icvf;         /*!< Intracellular Compartment Volume Fraction of axons without myelin */
@@ -369,6 +372,14 @@ public:
     void GrowAllAxons();
 
     /*!
+     *  \brief The swelling half of what used to be GrowAllAxons' own tail end,
+     *         split out so createSubstrate can run SwellGlialSomas in between
+     *         thin (just seeded + layer-grown) axons and this final swelling
+     *         pass -- somas get real room to grow into before axons claim it.
+     */
+    void SwellAllAxons();
+
+    /*!
      *  \brief Gradually, non-uniformly swells every axon's spheres back
      *         toward their own true target radius (cap = radius/swelling_factor,
      *         or itself for the seed sphere), each as far as its own local
@@ -409,6 +420,16 @@ public:
     */
 
     bool SwellAxonWithPush(Axon &ax, const double &percentage, const std::vector<double> &caps, ThreadPool &pool);
+
+    /*!
+     *  \brief Gradually swells every soma in glial population population_nbr (1, 2, or 3)
+     *         toward its own target_soma_radius, using the same partial-credit,
+     *         percentage-shrink-on-stall schedule as SwellAxons' in-place phase -- no
+     *         push-assisted fallback (somas are independent spheres, no chain continuity
+     *         to protect). Refreshes minimum_radius/volume_soma for every cell in the
+     *         population once swelling stops (converged or stalled).
+    */
+    void SwellGlialSomas(int population_nbr);
 
     /*!
      *  \brief Read-only: like ComputeSwollenRadius, but if growing sph in place can't reach

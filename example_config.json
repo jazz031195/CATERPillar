@@ -33,19 +33,19 @@
     "GlialParameters": {
         "Pop1SomaICVF": 1.0,
         "Pop1ProcessesICVF": 2.0,
-        "Pop1SomaRadiusMean": 6.0,
+        "Pop1SomaRadiusMean": 3.0,
         "Pop1SomaRadiusStd": 0.5,
-        "Pop1MeanProcessLength": 15.0,
-        "Pop1StdProcessLength": 2.0,
+        "Pop1MeanProcessLength": 30.0,
+        "Pop1StdProcessLength": 15.0,
         "Pop1NbrPrimaryProcesses": 4,
         "Pop1Branching": true,
 
         "Pop2SomaICVF": 0.0,
         "Pop2ProcessesICVF": 0.0,
-        "Pop2SomaRadiusMean": 4.0,
+        "Pop2SomaRadiusMean": 3.0,
         "Pop2SomaRadiusStd": 0.3,
-        "Pop2MeanProcessLength": 10.0,
-        "Pop2StdProcessLength": 1.5,
+        "Pop2MeanProcessLength": 30.0,
+        "Pop2StdProcessLength": 15.0,
         "Pop2NbrPrimaryProcesses": 3,
         "Pop2Branching": false,
 
@@ -53,8 +53,8 @@
         "Pop3ProcessesICVF": 0.0,
         "Pop3SomaRadiusMean": 3.0,
         "Pop3SomaRadiusStd": 0.2,
-        "Pop3MeanProcessLength": 8.0,
-        "Pop3StdProcessLength": 1.0,
+        "Pop3MeanProcessLength": 30.0,
+        "Pop3StdProcessLength": 15.0,
         "Pop3NbrPrimaryProcesses": 3,
         "Pop3Branching": false
     }

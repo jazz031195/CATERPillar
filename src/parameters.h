@@ -88,6 +88,12 @@ public:
     double glial_pop3_radius_mean = 0.5;
     double glial_pop3_radius_std = 0.1;
 
+    // Floor/taper target for glial process radii -- previously always
+    // soma_radius/20, now independently configurable per population.
+    double glial_pop1_minimum_process_radius = 0.15;
+    double glial_pop2_minimum_process_radius = 0.15;
+    double glial_pop3_minimum_process_radius = 0.15;
+
 };
 
 #endif // PARAMETERS_H
