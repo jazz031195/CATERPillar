@@ -102,6 +102,20 @@ public:
                           int self_object_type, int self_object_id,
                           Eigen::Vector3d &blocker_center, double &blocker_radius) const;
 
+    /*!
+     *  \brief Finds the neighbor whose center is nearest to the given point, excluding
+     *         spheres belonging to the same object (matching findWorstOverlap's
+     *         exclusion). Iterates voxels/entries directly instead of going through
+     *         query(), for the same reason findWorstOverlap does.
+     *  \param center point to search around
+     *  \param search_radius how far out to scan for candidates
+     *  \return true if an external neighbor was found within search_radius;
+     *          nearest_center/nearest_radius are only set when true.
+     */
+    bool findNearest(const Eigen::Vector3d &center, double search_radius,
+                      int self_object_type, int self_object_id,
+                      Eigen::Vector3d &nearest_center, double &nearest_radius) const;
+
 private:
 
     Eigen::Vector3d min_limits;

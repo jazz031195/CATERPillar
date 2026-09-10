@@ -100,7 +100,12 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
         assert(false); // or return false;
     }
 
-    if (axon_to_grow.outer_spheres.size() > (max_limits-min_limits).norm()*factor/(axon_to_grow.radius)*100) {
+    // `factor` used to belong here because outer_spheres.size() counted
+    // `factor` gap-filling spheres per real hop; growth is backbone-only
+    // now (see the call site below), so size() already IS the real hop
+    // count and the old *factor would just make this cap `factor` times
+    // more permissive than intended.
+    if (axon_to_grow.outer_spheres.size() > (max_limits-min_limits).norm()/(axon_to_grow.radius)*100) {
         finished = true;
         return false; // Axon has grown too long
     }
@@ -110,9 +115,17 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
     bool is_allowed_to_stop_early = axon_to_grow.outside_voxel;
 
 
-    // If the last sphere's center is beyond extended_max_limits, the axon is considered fully grown
+    // If the last sphere is beyond extended_max_limits, the axon is considered fully grown.
+    // Must match hasReachedTrueWall's (and the check at line ~319 below's) center+radius
+    // test, not center alone -- once extended_max_limits == the true wall (once the
+    // depth-layer cap has grown past the box), a center-only test can report "finished"
+    // here while hasReachedTrueWall still says "not actually at the wall" for the very
+    // same sphere, since a sphere can have center < limit but center+radius > limit.
+    // The caller then keeps this axon in next_active forever -- neither done nor
+    // stuck -- re-entering this same immediate-return path every subsequent layer with
+    // zero growth, a real livelock only bounded by growAxonsLayered's max_layers backstop.
     Sphere last_sphere = axon_to_grow.outer_spheres.back();
-    if (last_sphere.center[axon_to_grow.growth_axis] >= extended_max_limits[axon_to_grow.growth_axis] && !is_allowed_to_stop_early) {
+    if (last_sphere.center[axon_to_grow.growth_axis] + last_sphere.radius > extended_max_limits[axon_to_grow.growth_axis] && !is_allowed_to_stop_early) {
         finished = true;
 
         return true; // Axon is done
@@ -156,25 +169,21 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
     // nothing overlaps, or if the only overlap is directly along
     // growth_axis (no lateral escape direction).
     auto findPush = [&](const Eigen::Vector3d &center, Eigen::Vector3d &push) -> bool {
-        auto candidates = sphere_grid->query(center, radius_ + max_radius_);
-        double worst_overlap = 0.0;
-        bool found = false;
+        // Non-allocating, same as canSpherebePlaced and FindSwellPush (the
+        // swelling-phase equivalent of this exact search): query() would
+        // heap-allocate a fresh std::vector and copy in every candidate
+        // before any of them are even checked, and this runs inside
+        // AddOneSphere's retry loop -- the hottest path in growth,
+        // especially at high packing density where pushes fire often.
         Eigen::Vector3d blocker_center = Eigen::Vector3d::Zero();
-        for (const auto &entry : candidates) {
-            if (entry.object_id == axon_constant && entry.cell_id == axon_to_grow.id) {
-                continue; // this axon's own spheres
-            }
-            double d = (entry.center - center).norm();
-            double overlap = (radius_ + entry.radius) - d;
-            if (overlap > worst_overlap) {
-                worst_overlap = overlap;
-                blocker_center = entry.center;
-                found = true;
-            }
-        }
+        double blocker_radius = 0.0;
+        bool found = sphere_grid->findWorstOverlap(center, radius_, radius_ + max_radius_,
+                                                     axon_constant, axon_to_grow.id,
+                                                     blocker_center, blocker_radius);
         if (!found) {
             return false;
         }
+        double worst_overlap = (radius_ + blocker_radius) - (blocker_center - center).norm();
         Eigen::Vector3d away = center - blocker_center;
         away[axon_to_grow.growth_axis] = 0.0;
         double away_norm = away.norm();
@@ -241,8 +250,22 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
                 probe_center = center + push;
                 probe_inside = check_borders(extended_min_limits, extended_max_limits, probe_center, radius_) || is_allowed_to_stop_early;
                 if (probe_inside) {
+                    // A push is lateral (findPush zeroes the growth_axis
+                    // component), so it always moves the candidate FURTHER
+                    // from the previous sphere: |probe - prev| =
+                    // sqrt(d^2 + |push|^2) > d. canSpherebePlaced only ever
+                    // tests against *other* objects -- this axon's own
+                    // spheres are deliberately excluded -- so nothing here
+                    // notices the candidate drifting out of contact with its
+                    // own predecessor, exactly the blind spot that lets a
+                    // stranded shrink-fallback sever the chain. Require
+                    // continuity explicitly, mirroring the
+                    // still_touches_neighbor guard ComputeSwollenSphere
+                    // already applies to the swelling-phase push.
                     Sphere pushed_candidate(s.id, s.object_id, s.object_type, probe_center, radius_);
-                    if (canSpherebePlaced(pushed_candidate)) {
+                    const bool touches_prev =
+                        (probe_center - last_sphere.center).norm() <= radius_ + last_sphere.radius;
+                    if (touches_prev && canSpherebePlaced(pushed_candidate)) {
                         s.center = probe_center;
                         can_grow_ = true;
                         break;
@@ -284,6 +307,75 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
     // 6) If a full-radius fit was never found this way, fall back to the
     // position saved with minimum shrinkage.
     if (!can_grow_ && have_fallback) {
+        // The step out to fallback_center was committed from `distance`
+        // above -- i.e. sized for the radius this sphere WANTED to be, before
+        // any shrinking was considered. Placing a shrunken sphere there
+        // strands it: staying joined to the previous sphere needs
+        // d < r_new + r_prev, and d was reserved for an r_new this sphere no
+        // longer has. For a myelinated axon `distance` is the axon-level
+        // inner_radius, so a sphere bisected down to a fraction of that
+        // cannot reach back at all -- and a run of such spheres severs the
+        // axon into disconnected pieces (measured on the 70% set: necks
+        // collapsing to r=0.0007 while the stride stayed at a constant
+        // 0.072, leaving 1.55% of axons in several fragments).
+        // So shorten the stride to match the radius actually achieved: pull
+        // the centre back along the line from the previous sphere until the
+        // step is max(r_new, r_prev), which guarantees overlap because
+        // max(a,b) < a+b for positive a,b. Moving toward an already-placed,
+        // already-collision-free neighbour is the safe direction, but it is
+        // still re-checked, and if the fully-pulled position does not fit we
+        // bisect back toward the original centre and take the closest spot
+        // that does.
+        const Eigen::Vector3d prev_center = last_sphere.center;
+        Eigen::Vector3d dir = fallback_center - prev_center;
+        const double cur_d = dir.norm();
+        const double want_d = std::max(fallback_radius, last_sphere.radius);
+        if (cur_d > want_d && cur_d > 1e-9) {
+            dir /= cur_d;
+            double lo_d = want_d;   // closest (guarantees overlap), may collide
+            double hi_d = cur_d;    // original (fits, but may leave a gap)
+            Eigen::Vector3d best_center = fallback_center;
+            Sphere pulled(s.id, s.object_id, s.object_type, prev_center + dir * lo_d, fallback_radius);
+            if (canSpherebePlaced(pulled)) {
+                best_center = pulled.center;
+            } else {
+                for (int iter = 0; iter < 12; ++iter) {
+                    double mid_d = (lo_d + hi_d) / 2.0;
+                    Sphere trial(s.id, s.object_id, s.object_type, prev_center + dir * mid_d, fallback_radius);
+                    if (canSpherebePlaced(trial)) {
+                        best_center = trial.center;
+                        hi_d = mid_d;   // fits -- try to come closer still
+                    } else {
+                        lo_d = mid_d;
+                    }
+                }
+            }
+            fallback_center = best_center;
+        }
+        // Final continuity requirement. The pull above is best-effort: if the
+        // fully-pulled position and every bisected position between it and the
+        // original both collide, best_center stays at the ORIGINAL centre --
+        // which, when that centre came from a lateral push, can sit far beyond
+        // reach of the previous sphere (measured: a stride of 2.23um where
+        // max(r, r_prev) was 0.98um, leaving a 0.79um hole). Placing the
+        // sphere anyway is what actually severs the axon during growth.
+        // There is no valid position here, so refuse the step rather than
+        // commit a disconnected chain: returning false lets growthThread spend
+        // its retry/jostle budget and, failing that, hand the axon to the
+        // relocate-and-retry machinery, which is the designed response to
+        // "this axon cannot continue from here".
+        //
+        // The bar here is contact (d <= r_new + r_prev), not the full growth
+        // stride `distance`. Requiring the stride was tried and does keep the
+        // chain tighter, but it rejects so many fallback steps that
+        // abandonment roughly doubles (55 -> 114 axons on the 40um/60%/c2=0.6
+        // benchmark), and abandonment is size-biased -- it preferentially
+        // drops the large axons, narrowing the achieved radius distribution
+        // against the target Gamma. Contact is what actually distinguishes a
+        // connected axon from a severed one, so that is what is enforced.
+        if ((fallback_center - last_sphere.center).norm() > fallback_radius + last_sphere.radius) {
+            return false;
+        }
         s.center = fallback_center;
         s.radius = fallback_radius;
         can_grow_ = true;
@@ -298,7 +390,13 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
     // If can_grow_ == true
     if (create_sphere) {
         s.parent_id = last_sphere.id;
-        add_spheres(s, last_sphere, factor);
+        // Backbone-only during growth: no gap-filling spheres are inserted
+        // here anymore (see CaterpillarGrowth::InterpolateAllAxons, run once
+        // after every axon has finished growing AND swelling). Consecutive
+        // backbone spheres are already spaced about one radius apart (see
+        // `distance` above), close enough that other axons still growing
+        // don't need infill to detect them via sphere_grid.
+        axon_to_grow.add_sphere(s);
         // Update volume if within the stricter [min_limits, max_limits]
         Sphere newly_added = axon_to_grow.outer_spheres.back(); // s with final coords
         if (check_borders(min_limits, max_limits, newly_added.center, newly_added.radius)) {
@@ -321,113 +419,14 @@ bool AxonGrowth::AddOneSphere(double radius_, bool create_sphere, int grow_strai
 }
 
 
-void AxonGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const int &factor){
-    
-    // nbr of spheres to add in between
-    int nbr_spheres = factor - 1;
-    int last_id = last_sphere.id;
-
-    if (factor > 1){
-        // distance between two consecutive spheres
-        double distance = (sph.center - last_sphere.center).norm();
-        Eigen::Vector3d vector = (sph.center - last_sphere.center).normalized();
-        double distance_between_spheres = distance/(nbr_spheres+1);
-        int id_;
-        for (int i = 0 ; i < nbr_spheres; i++){
-            Eigen::Vector3d position = last_sphere.center + vector*distance_between_spheres*(i+1);
-            //double length_axon = axon_length(axon_to_grow);
-            //double rad = radius_variation(axon_to_grow, length_axon, factor, beading_period, min_radius);
-            double rad = last_sphere.radius + (sph.radius - last_sphere.radius)*(i+1)/(nbr_spheres+1);
-            id_ = last_id+ 1;
-            Sphere s(id_, sph.object_id, sph.object_type, position, rad, sph.branch_id, sph.parent_id);
-
-            bool can_grow_ = canSpherebePlaced(s);
-
-            // Dropping this point outright (as before) would leave its
-            // neighbors twice as far apart as distance_between_spheres --
-            // more than their radius sum wherever radii are locally small
-            // (e.g. a beading trough), opening a real hole in the chain.
-            // Shrink it via bisection instead, so *something* always sits
-            // at this fixed spacing; only give up (and warn) if even a
-            // near-zero radius still collides.
-            if (!can_grow_) {
-                double lo = 0.0, hi = rad;
-                double best = 0.0;
-                for (int iter = 0; iter < 20; ++iter) {
-                    double mid = (lo + hi) / 2.0;
-                    Sphere trial(id_, sph.object_id, sph.object_type, position, mid, sph.branch_id, sph.parent_id);
-                    if (canSpherebePlaced(trial)) {
-                        best = mid;
-                        lo = mid;
-                    } else {
-                        hi = mid;
-                    }
-                }
-                if (best > 0.0) {
-                    s.radius = best;
-                    can_grow_ = true;
-                } else {
-                    // Even a near-zero radius collides here: the fixed
-                    // interpolated position itself sits inside another
-                    // object's sphere, so no shrink can fix it. Push the
-                    // position laterally away from whichever neighbor is
-                    // responsible (same mechanism AddOneSphere's own findPush
-                    // and the swelling phase's FindSwellPush already use),
-                    // then retry the same shrink-to-fit search there --
-                    // zeroing the growth_axis component keeps the push from
-                    // fighting this layer's depth-cap accounting.
-                    Eigen::Vector3d blocker_center;
-                    double blocker_radius = 0.0;
-                    double search_radius = std::max(rad, distance_between_spheres) * 2.0;
-                    if (sphere_grid->findWorstOverlap(position, rad, search_radius,
-                                                       sph.object_type, sph.object_id,
-                                                       blocker_center, blocker_radius)) {
-                        Eigen::Vector3d away = position - blocker_center;
-                        away[axon_to_grow.growth_axis] = 0.0;
-                        double away_norm = away.norm();
-                        if (away_norm > 1e-9) {
-                            away /= away_norm;
-                            double overlap = (rad + blocker_radius) - (blocker_center - position).norm();
-                            Eigen::Vector3d pushed_position = position + away * (overlap + 1e-3 * rad);
-
-                            double lo2 = 0.0, hi2 = rad;
-                            double best2 = 0.0;
-                            for (int iter = 0; iter < 20; ++iter) {
-                                double mid = (lo2 + hi2) / 2.0;
-                                Sphere trial(id_, sph.object_id, sph.object_type, pushed_position, mid, sph.branch_id, sph.parent_id);
-                                if (canSpherebePlaced(trial)) {
-                                    best2 = mid;
-                                    lo2 = mid;
-                                } else {
-                                    hi2 = mid;
-                                }
-                            }
-                            if (best2 > 0.0) {
-                                s.center = pushed_position;
-                                s.radius = best2;
-                                can_grow_ = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if(can_grow_){
-                last_id = s.id;
-                axon_to_grow.add_sphere(s);
-                //cout <<"sphere : " << s.id << " axon : "<< s.object_id << " can be placed as interpolated" << endl;
-            } else {
-                std::cerr << "Warning: axon " << axon_to_grow.id
-                          << " interpolated sphere " << id_
-                          << " could not be placed even at minimal radius or after a push -- possible discontinuity" << std::endl;
-            }
-        }
-    }
-    sph.id = last_id + 1;
-    axon_to_grow.add_sphere(sph);
-    //cout <<"sphere : " << sph.id << " axon : "<< sph.object_id << " can be placed as last" << endl;
-    
-}
+// add_spheres (growth-time gap-filling between consecutive backbone
+// spheres) used to live here. Growth is backbone-only now -- see the
+// comment at its call site in AddOneSphere -- and the same lerp-position/
+// lerp-radius/bisection-shrink interpolation is done once, after every
+// axon has finished growing AND swelling, by
+// CaterpillarGrowth::InterpolateAllAxons (CaterpillarGrowth.cpp), which
+// needs direct mutable sphere_grid access (to insert the new spheres) that
+// this class's const SphereGrid* deliberately doesn't have.
 
 
 Eigen::Vector3d AxonGrowth::find_next_center(const double dist_,
@@ -658,21 +657,14 @@ void AxonGrowth::growthThread(
             bool jostled = false;
             if (jostle_rounds < max_jostle_rounds && !axon_to_grow.outer_spheres.empty()) {
                 const Sphere &tip = axon_to_grow.outer_spheres.back();
-                auto candidates = sphere_grid->query(tip.center, axon_to_grow.radius * 3.0);
-                double best_dist = std::numeric_limits<double>::max();
+                // Non-allocating (see findPush above for the same
+                // reasoning): this fallback is rarer than findPush, but
+                // still no reason to pay query()'s heap allocation for it.
                 Eigen::Vector3d blocker_center = Eigen::Vector3d::Zero();
-                bool found_blocker = false;
-                for (const auto &entry : candidates) {
-                    if (entry.object_id == axon_constant && entry.cell_id == axon_to_grow.id) {
-                        continue; // this axon's own spheres
-                    }
-                    double d = (entry.center - tip.center).norm();
-                    if (d < best_dist) {
-                        best_dist = d;
-                        blocker_center = entry.center;
-                        found_blocker = true;
-                    }
-                }
+                double blocker_radius = 0.0;
+                bool found_blocker = sphere_grid->findNearest(tip.center, axon_to_grow.radius * 3.0,
+                                                                axon_constant, axon_to_grow.id,
+                                                                blocker_center, blocker_radius);
                 if (found_blocker) {
                     Eigen::Vector3d away = tip.center - blocker_center;
                     away[axon_to_grow.growth_axis] = 0.0; // steer within the cross-section only

@@ -4,6 +4,20 @@ project(CATERPillar VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Default to an optimised build. Without this, a plain `cmake ..` leaves
+# CMAKE_BUILD_TYPE empty, which means NO -O flag at all (i.e. -O0) -- and
+# nothing here or in the toolchain file supplies one. That is not a marginal
+# difference for this workload: the same 40um/60%-ICVF substrate takes 19
+# seconds at -O3 and had not finished after 48 minutes unoptimised, roughly a
+# 150x gap. A whole dictionary was generated (and its runtime repeatedly
+# analysed) on an unoptimised binary before this was noticed, so make the
+# optimised build the thing you get by default and require an explicit
+# -DCMAKE_BUILD_TYPE=Debug to opt out.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type (Release/Debug/RelWithDebInfo)" FORCE)
+    message(STATUS "CMAKE_BUILD_TYPE not set -- defaulting to Release (-O3)")
+endif()
+
 option(BUILD_GUI "Build the Qt Widgets GUI application (CATERPillar)" ON)
 
 # Eigen is vendored at src/Eigen -- already on the include path below, no system

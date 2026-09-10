@@ -18,8 +18,8 @@ class BloodVesselGrowth : public CellGrowth
 {
 public:
     Blood_Vessel& bv_to_grow;  /*!< Reference to the Blood_Vessel being grown */
-    double capillary_radius;  /*!< Fixed radius every capillary (branch_id >= 1) sphere is grown at -- unused by main-vessel-only growth (GrowBloodVessels), which never calls growBranch. */
-    int max_generations;      /*!< Deepest allowed capillary branching depth from the arteriole -- same scope as capillary_radius. */
+    double gamma;              /*!< Murray's law generation exponent: a capillary branch's own (fixed, no-decay) radius is r0 * 2^(-g/gamma), r0 = this vessel's own arteriole trunk radius, g = the branch's generation -- unused by main-vessel-only growth (GrowBloodVessels), which never calls growBranch. */
+    int max_generations;      /*!< Deepest allowed capillary branching depth from the arteriole -- same scope as gamma. */
 
     BloodVesselGrowth() = delete;
 
@@ -31,7 +31,7 @@ public:
                        const Eigen::Vector3d &max_limits_,
                        const double &epsilon_,
                        const double &min_radius_,
-                       const double &capillary_radius_ = 0.0,
+                       const double &gamma_ = 3.0,
                        const int &max_generations_ = 7);
 
 

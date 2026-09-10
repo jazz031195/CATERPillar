@@ -6,6 +6,8 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <filesystem>
+#include <cmath>
+#include <cstdlib>
 
 
 CoreLogic::SimResult CoreLogic::runSimulation(const Parameters& params,
@@ -151,9 +153,14 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     // the branches that emerge from it. Renamed to match the new two-tier model.
     params.blood_vessels_icvf = double(data["AxonParameters"]["ArterioleICVF"]) / 100.0;
     params.blood_vessels_processes_icvf = data["AxonParameters"].value("CapillariesICVF", 0.0) / 100.0;
-    params.capillary_radius = data["AxonParameters"].value("CapillaryRadius", 1.0);
+    params.blood_vessel_gamma = data["AxonParameters"].value("CapillaryGamma", 3.0);
     params.max_generations = data["AxonParameters"].value("MaxGenerations", 7);
     params.blood_vessels_voxel_size = data["AxonParameters"].value("BloodVesselsVoxelEdgeLength", 0.0);
+    // Arteriole trunk radius -- previously GUI-only; now also the sole input
+    // driving every capillary's own radius (see CapillaryGamma), so it needs
+    // to be settable headlessly too.
+    params.mean_vessel_rad = data["AxonParameters"].value("ArterioleRadiusMean", 6.0);
+    params.std_vessel_rad = data["AxonParameters"].value("ArterioleRadiusStd", 1.0);
 
     params.nbr_axons_populations = data["AxonParameters"]["NumberOfPopulations"];
     params.crossing_fibers_type = data["AxonParameters"]["CrossingFibersType"];
@@ -161,6 +168,11 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     // Axon morphology
     params.alpha = data["AxonParameters"]["Alpha"];
     params.beta = data["AxonParameters"]["Beta"];
+    // Myelinated axons draw from their own Gamma(alpha,beta) instead of
+    // sharing the non-myelinated one above -- optional, for configs written
+    // before this split existed.
+    params.alpha_myelin = data["AxonParameters"].value("AlphaMyelin", 2.0);
+    params.beta_myelin = data["AxonParameters"].value("BetaMyelin", 0.25);
     params.min_rad = data["AxonParameters"]["MinRadius"];
     params.epsilon = data["AxonParameters"]["Tortuosity_Epsilon"];
     params.cosPhiSquared = data["AxonParameters"]["FODF_c2"];
@@ -179,7 +191,31 @@ void CoreLogic::runSimulationFromJson(const std::string& jsonFilePath) {
     params.axon_can_shrink = data["AxonParameters"].value("CanShrink", true);
     params.regrow_thr = data["AxonParameters"].value("RegrowThreshold", 10);
     params.undulation_factor = data["AxonParameters"].value("UndulationFactor", 5);
-    params.swelling_factor = data["AxonParameters"].value("SwellingFactor", 1.0);
+
+    // SwellingFactor is not a user-set parameter -- it's derived entirely
+    // from the target axon ICVF (any "SwellingFactor" key in the input
+    // JSON, e.g. left over from an older config, is ignored). Below
+    // kEasyPackingICVF, growing directly at full target radius doesn't
+    // create meaningful congestion, so there's nothing for shrink-then-
+    // swell to buy. Above it, shrink axons during growth by just enough
+    // that growing at the shrunk radius lands back at that same "easy"
+    // density, not further -- since ICVF scales with radius^2, that's
+    // sqrt(kEasyPackingICVF / target_axons_icvf). Any more shrinkage than
+    // that buys no extra room during growth, it just makes the swelling
+    // pass close a bigger gap afterward for nothing (empirically: a flat
+    // 0.5 left a ~3x ICVF gap for a 0.6 target, most of it pure wasted
+    // swelling rounds through already-uncontested space). TEMP: overridable
+    // via EASY_PACKING_ICVF for A/B testing; defaults to 0.50.
+    {
+        double kEasyPackingICVF = 0.50;
+        if (const char *env_val = std::getenv("EASY_PACKING_ICVF")) {
+            kEasyPackingICVF = std::atof(env_val);
+        }
+        double target_axons_icvf = params.axons_wo_myelin_icvf + params.axons_w_myelin_icvf;
+        params.swelling_factor = (target_axons_icvf <= kEasyPackingICVF)
+            ? 1.0
+            : std::sqrt(kEasyPackingICVF / target_axons_icvf);
+    }
 
     // ==========================================
     // 3. Glial Parameters
@@ -240,13 +276,17 @@ void CoreLogic::writeParametersToJson(const Parameters& params, const std::strin
     data["AxonParameters"]["AxonsWithMyelinICVF"] = params.axons_w_myelin_icvf * 100.0;
     data["AxonParameters"]["ArterioleICVF"] = params.blood_vessels_icvf * 100.0;
     data["AxonParameters"]["CapillariesICVF"] = params.blood_vessels_processes_icvf * 100.0;
-    data["AxonParameters"]["CapillaryRadius"] = params.capillary_radius;
+    data["AxonParameters"]["CapillaryGamma"] = params.blood_vessel_gamma;
     data["AxonParameters"]["MaxGenerations"] = params.max_generations;
+    data["AxonParameters"]["ArterioleRadiusMean"] = params.mean_vessel_rad;
+    data["AxonParameters"]["ArterioleRadiusStd"] = params.std_vessel_rad;
     data["AxonParameters"]["BloodVesselsVoxelEdgeLength"] = params.blood_vessels_voxel_size;
     data["AxonParameters"]["NumberOfPopulations"] = params.nbr_axons_populations;
     data["AxonParameters"]["CrossingFibersType"] = params.crossing_fibers_type;
     data["AxonParameters"]["Alpha"] = params.alpha;
     data["AxonParameters"]["Beta"] = params.beta;
+    data["AxonParameters"]["AlphaMyelin"] = params.alpha_myelin;
+    data["AxonParameters"]["BetaMyelin"] = params.beta_myelin;
     data["AxonParameters"]["MinRadius"] = params.min_rad;
     data["AxonParameters"]["Tortuosity_Epsilon"] = params.epsilon;
     data["AxonParameters"]["FODF_c2"] = params.cosPhiSquared;
@@ -259,7 +299,11 @@ void CoreLogic::writeParametersToJson(const Parameters& params, const std::strin
     data["AxonParameters"]["CanShrink"] = params.axon_can_shrink;
     data["AxonParameters"]["RegrowThreshold"] = params.regrow_thr;
     data["AxonParameters"]["UndulationFactor"] = params.undulation_factor;
-    data["AxonParameters"]["SwellingFactor"] = params.swelling_factor;
+    // SwellingFactor deliberately not written back out: it's derived, not
+    // settable (see where it's computed above), so a saved config
+    // shouldn't carry a value that looks editable but silently has no
+    // effect on reload. The value actually used for a given run is still
+    // recorded in that run's growth_info.txt.
 
     data["GlialParameters"]["Pop1SomaICVF"] = params.glial_pop1_soma_icvf * 100.0;
     data["GlialParameters"]["Pop1ProcessesICVF"] = params.glial_pop1_processes_icvf * 100.0;

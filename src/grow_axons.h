@@ -39,10 +39,6 @@
                       const int& factor,
                       bool axon_can_shrink);
 
-    void add_spheres(Sphere& sph,
-                     const Sphere& last_sphere,
-                     const int& factor);
-
     // Positioning
     Eigen::Vector3d find_next_center_straight(const double distance,
                                    const std::vector<Sphere>& spheres);

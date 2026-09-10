@@ -2,6 +2,7 @@
 #include "constants.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 SphereGrid::SphereGrid()
     : min_limits(Eigen::Vector3d::Zero()), max_limits(Eigen::Vector3d::Zero()), voxel_size(1.0), nx(1), ny(1), nz(1)
@@ -191,6 +192,39 @@ bool SphereGrid::findWorstOverlap(const Eigen::Vector3d &center, double radius, 
                         worst_overlap = overlap;
                         blocker_center = entry.center;
                         blocker_radius = entry.radius;
+                        found = true;
+                    }
+                }
+            }
+        }
+    }
+    return found;
+}
+
+bool SphereGrid::findNearest(const Eigen::Vector3d &center, double search_radius,
+                              int self_object_type, int self_object_id,
+                              Eigen::Vector3d &nearest_center, double &nearest_radius) const
+{
+    Eigen::Vector3d search_vec(search_radius, search_radius, search_radius);
+    Eigen::Vector3i min_idx = clampedVoxelIndex(center - search_vec);
+    Eigen::Vector3i max_idx = clampedVoxelIndex(center + search_vec);
+
+    double best_dist = std::numeric_limits<double>::max();
+    bool found = false;
+
+    for (int ix = min_idx[0]; ix <= max_idx[0]; ++ix) {
+        for (int iy = min_idx[1]; iy <= max_idx[1]; ++iy) {
+            for (int iz = min_idx[2]; iz <= max_idx[2]; ++iz) {
+                const auto &voxel = voxels[linearIndex(ix, iy, iz)];
+                for (const auto &entry : voxel) {
+                    if (entry.object_id == self_object_type && entry.cell_id == self_object_id) {
+                        continue; // this object's own spheres
+                    }
+                    double d = (entry.center - center).norm();
+                    if (d < best_dist) {
+                        best_dist = d;
+                        nearest_center = entry.center;
+                        nearest_radius = entry.radius;
                         found = true;
                     }
                 }

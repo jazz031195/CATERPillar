@@ -27,6 +27,7 @@ public:
     std::vector<Sphere> inner_spheres;              /*!< inner spheres in axon */
     double radius;                                  /*!< radius of axon */
     double inner_radius;                            /*!< inner radius of axon */
+    double target_radius = 0.0;                     /*!< True, un-swelling_factor-shrunk target radius this axon aims to reach when swelling (set once in PlaceAxon from seed_radius) -- distinct from radius, which can be smaller (growth_radius) while the axon is still thin and growing. Used to cap the axon's own mean radius after swelling (see SwellAxons). */
     Eigen::Vector3d begin;                          /*!< position of first sphere */
     Eigen::Vector3d end;                            /*!< target position to grow towards */
     int growth_attempts;                            /*!< Number of attempts to grow axon in a row*/
@@ -60,6 +61,7 @@ public:
         end = end_;
         radius = radius_;
         inner_radius = radius_;
+        target_radius = radius_; // default; PlaceAxon overrides with the true un-shrunk seed_radius
         inner_spheres.clear();
         outer_spheres.clear();
         growth_attempts = 0;
@@ -106,6 +108,7 @@ public:
             angle = ax.angle;
             outside_voxel = ax.outside_voxel;
             inner_radius = ax.inner_radius;
+            target_radius = ax.target_radius;
 
         }
         return *this;
