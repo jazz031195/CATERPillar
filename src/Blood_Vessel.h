@@ -120,24 +120,31 @@ public:
     bool findSphereById(const int &sphere_id, int &out_branch, int &out_index) const;
 
     /*!
-     *  \brief Enforces Murray's law (R_parent^3 = r1^3 + r2^3) at every branching point,
-     *         once this vessel (main vessel and all its branches) is fully grown. At each
-     *         junction, the parent's continuation downstream of the junction and the
-     *         branch that emerges there are rescaled by the same factor so their radii
-     *         cubes sum to the parent's radius cube at the junction, splitting evenly
-     *         when both start out equal to the parent's radius (the default when a branch
-     *         is created). Junctions are processed from the trunk outward (branch_id
-     *         increasing), so a correction cascades correctly to branches further downstream.
-     *         Before committing a junction's split, both sides are predicted: the child's
-     *         resulting tip radius (a branch decays monotonically, so its tip is always
-     *         the weakest link), and the parent's own downstream continuation (scanned for
-     *         its true minimum, since the trunk can "bead" and isn't necessarily
+     *  \brief Enforces Murray's law (R_parent^3 = r_continuation^3 + r_child^3) at every
+     *         branching point, once this vessel (main vessel and all its branches) is
+     *         fully grown -- for every parent branch, the arteriole (branch 0) and every
+     *         capillary alike, not just junctions directly off the arteriole. Each
+     *         branch's own radius is otherwise fixed (no decay along its length),
+     *         assigned once at growth time from its generation (see
+     *         BloodVesselGrowth::growBranch, r(g) = r0 * 2^(-g/gamma)) -- what this
+     *         corrects is solely the *parent's* downstream continuation past each
+     *         junction, solved for so its cube plus the (unchanged) child's cube equals
+     *         the parent's own radius cube at that point. Junctions are processed from
+     *         the trunk outward (branch_id increasing) and, within a parent, most
+     *         upstream junction first, so a correction cascades correctly to junctions
+     *         further downstream on the same branch (including a parent's later
+     *         siblings, which see an already-reduced local budget from earlier ones).
+     *         Before committing a junction's split, both sides are predicted: the
+     *         child's own radius, and the parent's own downstream continuation (scanned
+     *         for its true minimum, since it can "bead" and isn't necessarily
      *         monotonic). If either would drop below minimum_radius, the split would only
      *         end up truncating something anyway (likely losing the voxel-plane crossing a
      *         branch was grown to reach) -- so the child is discarded outright instead and
      *         the split is skipped entirely, leaving the parent's radius untouched, as
      *         though the branch had never been created, rather than needlessly thinning a
-     *         parent for a branch that doesn't survive.
+     *         parent for a branch that doesn't survive. This is also what naturally caps
+     *         how many children a single parent can support before its local
+     *         cross-section budget runs out.
      */
     void enforceMurraysLaw();
 

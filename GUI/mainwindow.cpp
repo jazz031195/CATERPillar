@@ -344,8 +344,8 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
     QGroupBox *axonsGroup = new QGroupBox("Axon Parameters");
     QFormLayout *axonsLayout = new QFormLayout;
     for (size_t i = 0; i < axons_labels.size(); i++) {
-        if (i == axons_labels.size() - 2) { 
-            QLabel *gammaLabel = new QLabel("<b>Gamma Distribution parameters for inner radii:</b>");
+        if (i == axons_labels.size() - 2) {
+            QLabel *gammaLabel = new QLabel("<b>Gamma Distribution parameters for non-myelinated inner radii:</b>");
             axonsLayout->addRow(gammaLabel);
         }
         axonsLayout->addRow(axons_labels[i], axons_spinBoxes[i]);
@@ -357,9 +357,20 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
     QGroupBox *myelinGroup = new QGroupBox("Myelinated Axon Parameters");
     QGridLayout *myelinLayout = new QGridLayout;
     int mRow = 0;
-    QLabel *inheritLabel = new QLabel("<i>Note: Geometry (α, β, beading) is inherited from the Axons tab.</i>");
+    QLabel *inheritLabel = new QLabel("<i>Note: Beading is inherited from the Axons tab. Myelinated axons draw "
+                                       "their radii from their own Gamma distribution below, independent of the "
+                                       "non-myelinated one on the Axons tab.</i>");
+    inheritLabel->setWordWrap(true);
     myelinLayout->addWidget(inheritLabel, mRow++, 0, 1, 6);
-    myelinLayout->addWidget(myelin_labels[0], mRow, 0); 
+
+    QLabel *myelinGammaLabel = new QLabel("<b>Gamma Distribution parameters for myelinated inner radii:</b>");
+    myelinLayout->addWidget(myelinGammaLabel, mRow++, 0, 1, 6);
+    myelinLayout->addWidget(alpha_myelin_qlabel, mRow, 0);
+    myelinLayout->addWidget(alpha_myelin_SpinBox, mRow, 1);
+    myelinLayout->addWidget(beta_myelin_qlabel, mRow, 2);
+    myelinLayout->addWidget(beta_myelin_SpinBox, mRow++, 3);
+
+    myelinLayout->addWidget(myelin_labels[0], mRow, 0);
     myelinLayout->addWidget(myelin_spinBoxes[0], mRow++, 1);
 
     myelinLayout->addWidget(myelin_labels[1], mRow, 0); // K1
@@ -416,7 +427,7 @@ void Window::buildParameterStack(QVBoxLayout *wmLayout)
     bloodLayout->addRow(blood_vessel_voxel_size_qlabel, blood_vessel_voxel_size_SpinBox);
     bloodLayout->addRow(blood_vessel_mean_radius_qlabel, blood_vessel_mean_radius_SpinBox);
     bloodLayout->addRow(blood_vessel_std_radius_qlabel, blood_vessel_std_radius_SpinBox);
-    bloodLayout->addRow(blood_vessel_capillary_radius_qlabel, blood_vessel_capillary_radius_SpinBox);
+    bloodLayout->addRow(blood_vessel_gamma_qlabel, blood_vessel_gamma_SpinBox);
     bloodLayout->addRow(blood_vessel_max_generations_qlabel, blood_vessel_max_generations_SpinBox);
     bloodVesselGroup->setLayout(bloodLayout);
     cellParamsStack->addWidget(bloodVesselGroup);
@@ -829,7 +840,7 @@ void Window::initParameters()
     blood_vessel_voxel_size_qlabel = new QLabel(tr("Blood Vessel Voxel Edge Length (μm):"));
     blood_vessel_mean_radius_qlabel = new QLabel(tr("Arteriole Radius Mean (μm):"));
     blood_vessel_std_radius_qlabel = new QLabel(tr("Arteriole Radius Standard Deviation (μm):"));
-    blood_vessel_capillary_radius_qlabel = new QLabel(tr("Capillary Radius (μm):"));
+    blood_vessel_gamma_qlabel = new QLabel(tr("Capillary Branching Exponent (γ):"));
     blood_vessel_max_generations_qlabel = new QLabel(tr("Max Capillary Generations:"));
     voxel_size_qlabel = new QLabel(tr("Voxel Edge Length (μm):"));
     minimum_radius_qlabel = new QLabel(tr("Minimum Sphere Radius (μm):"));
@@ -848,6 +859,8 @@ void Window::initParameters()
     glial_pop3_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
     alpha_qlabel = new QLabel(tr("α:"));
     beta_qlabel = new QLabel(tr("β:"));
+    alpha_myelin_qlabel = new QLabel(tr("α (myelinated):"));
+    beta_myelin_qlabel = new QLabel(tr("β (myelinated):"));
     glial_pop1_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
     glial_pop1_radius_std_qlabel = new QLabel(tr("Glial Cell Soma Radius Standard Deviation:"));
     glial_pop2_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
@@ -899,6 +912,16 @@ void Window::initParameters()
     beta_SpinBox->setRange(0, 10);
     beta_SpinBox->setSingleStep(0.001);
     beta_SpinBox->setValue(0.25);
+
+    alpha_myelin_SpinBox = new QDoubleSpinBox;
+    alpha_myelin_SpinBox->setRange(0, 10);
+    alpha_myelin_SpinBox->setSingleStep(0.1);
+    alpha_myelin_SpinBox->setValue(2);
+
+    beta_myelin_SpinBox = new QDoubleSpinBox;
+    beta_myelin_SpinBox->setRange(0, 10);
+    beta_myelin_SpinBox->setSingleStep(0.001);
+    beta_myelin_SpinBox->setValue(0.25);
 
     epsilon_SpinBox = new QDoubleSpinBox;
     epsilon_SpinBox->setRange(0, 2);
@@ -983,10 +1006,10 @@ void Window::initParameters()
     blood_vessel_std_radius_SpinBox->setSingleStep(0.1);
     blood_vessel_std_radius_SpinBox->setValue(1);
 
-    blood_vessel_capillary_radius_SpinBox = new QDoubleSpinBox;
-    blood_vessel_capillary_radius_SpinBox->setRange(0, 10);
-    blood_vessel_capillary_radius_SpinBox->setSingleStep(0.1);
-    blood_vessel_capillary_radius_SpinBox->setValue(1);
+    blood_vessel_gamma_SpinBox = new QDoubleSpinBox;
+    blood_vessel_gamma_SpinBox->setRange(0.5, 10);
+    blood_vessel_gamma_SpinBox->setSingleStep(0.1);
+    blood_vessel_gamma_SpinBox->setValue(3);
 
     blood_vessel_max_generations_SpinBox = new QDoubleSpinBox;
     blood_vessel_max_generations_SpinBox->setRange(1, 20);
@@ -1144,7 +1167,7 @@ QGroupBox* Window::createControls(const QString &title)
     blood_vessel_voxel_size_qlabel = new QLabel(tr("Blood Vessel Voxel Edge Length (μm):"));
     blood_vessel_mean_radius_qlabel = new QLabel(tr("Arteriole Radius Mean (μm):"));
     blood_vessel_std_radius_qlabel = new QLabel(tr("Arteriole Radius Standard Deviation (μm):"));
-    blood_vessel_capillary_radius_qlabel = new QLabel(tr("Capillary Radius (μm):"));
+    blood_vessel_gamma_qlabel = new QLabel(tr("Capillary Branching Exponent (γ):"));
     blood_vessel_max_generations_qlabel = new QLabel(tr("Max Capillary Generations:"));
     voxel_size_qlabel = new QLabel(tr("Voxel Edge Length (μm):"));
     minimum_radius_qlabel = new QLabel(tr("Minimum Sphere Radius (μm):"));
@@ -1161,6 +1184,8 @@ QGroupBox* Window::createControls(const QString &title)
     glial_pop2_std_process_length_qlabel = new QLabel(tr("Standard Deviation Process Length (μm):"));
     alpha_qlabel = new QLabel(tr("α:"));
     beta_qlabel = new QLabel(tr("β:"));
+    alpha_myelin_qlabel = new QLabel(tr("α (myelinated):"));
+    beta_myelin_qlabel = new QLabel(tr("β (myelinated):"));
     glial_pop1_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
     glial_pop1_radius_std_qlabel = new QLabel(tr("Glial Cell Soma Radius Standard Deviation:"));
     glial_pop2_radius_mean_qlabel = new QLabel(tr("Glial Cell Soma Radius Mean:"));
@@ -1205,6 +1230,16 @@ QGroupBox* Window::createControls(const QString &title)
     beta_SpinBox->setRange(0, 10);
     beta_SpinBox->setSingleStep(0.001);
     beta_SpinBox->setValue(0.25);
+
+    alpha_myelin_SpinBox = new QDoubleSpinBox;
+    alpha_myelin_SpinBox->setRange(0, 10);
+    alpha_myelin_SpinBox->setSingleStep(0.1);
+    alpha_myelin_SpinBox->setValue(2);
+
+    beta_myelin_SpinBox = new QDoubleSpinBox;
+    beta_myelin_SpinBox->setRange(0, 10);
+    beta_myelin_SpinBox->setSingleStep(0.001);
+    beta_myelin_SpinBox->setValue(0.25);
 
     epsilon_SpinBox = new QDoubleSpinBox;
     epsilon_SpinBox->setRange(0, 2);
@@ -1277,10 +1312,10 @@ QGroupBox* Window::createControls(const QString &title)
     blood_vessel_std_radius_SpinBox->setSingleStep(0.1);
     blood_vessel_std_radius_SpinBox->setValue(1);
 
-    blood_vessel_capillary_radius_SpinBox = new QDoubleSpinBox;
-    blood_vessel_capillary_radius_SpinBox->setRange(0, 10);
-    blood_vessel_capillary_radius_SpinBox->setSingleStep(0.1);
-    blood_vessel_capillary_radius_SpinBox->setValue(1);
+    blood_vessel_gamma_SpinBox = new QDoubleSpinBox;
+    blood_vessel_gamma_SpinBox->setRange(0.5, 10);
+    blood_vessel_gamma_SpinBox->setSingleStep(0.1);
+    blood_vessel_gamma_SpinBox->setValue(3);
 
     blood_vessel_max_generations_SpinBox = new QDoubleSpinBox;
     blood_vessel_max_generations_SpinBox->setRange(1, 20);
@@ -1532,7 +1567,7 @@ void Window::onSaveButtonClicked()
     parameters.blood_vessels_voxel_size = blood_vessel_voxel_size_SpinBox->value();
     parameters.mean_vessel_rad = blood_vessel_mean_radius_SpinBox->value();
     parameters.std_vessel_rad = blood_vessel_std_radius_SpinBox->value();
-    parameters.capillary_radius = blood_vessel_capillary_radius_SpinBox->value();
+    parameters.blood_vessel_gamma = blood_vessel_gamma_SpinBox->value();
     parameters.max_generations = blood_vessel_max_generations_SpinBox->value();
     parameters.glial_pop1_soma_icvf = glial_pop1_soma_icvf_SpinBox->value()/100.0;
     parameters.glial_pop1_processes_icvf = glial_pop1_processes_icvf_SpinBox->value()/100.0;
@@ -1564,6 +1599,8 @@ void Window::onSaveButtonClicked()
     parameters.epsilon = epsilon_SpinBox->value();
     parameters.alpha = alpha_SpinBox->value();
     parameters.beta = beta_SpinBox->value();
+    parameters.alpha_myelin = alpha_myelin_SpinBox->value();
+    parameters.beta_myelin = beta_myelin_SpinBox->value();
 
     parameters.glial_pop1_radius_mean = glial_pop1_radius_mean_SpinBox->value();
     parameters.glial_pop1_radius_std = glial_pop1_radius_std_SpinBox->value();

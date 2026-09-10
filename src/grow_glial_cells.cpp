@@ -36,11 +36,11 @@ GlialCellGrowth::GlialCellGrowth(const GlialCellGrowth &other)
 
 
 void GlialCellGrowth::add_spheres(Sphere &sph, const Sphere &last_sphere, const bool &check_collision_with_branches, const int &factor, const int &index_ram_spheres){
-    
+
     // nbr of spheres to add in between
     int nbr_spheres = factor - 1;
     if (factor > 1){
-        
+
         // distance between two consecutive spheres
         double distance = (sph.center - last_sphere.center).norm();
         Eigen::Vector3d vector = (sph.center - last_sphere.center).normalized();

@@ -107,7 +107,7 @@ public:
     double epsilon_blood_vessels;
     double mean_vessel_rad;
     double std_vessel_rad;
-    double capillary_radius;     /*!< Fixed radius for every capillary sphere (no decay) */
+    double blood_vessel_gamma;   /*!< Murray's law generation exponent: r(g) = r0 * 2^(-g/gamma), r0 = a vessel's own arteriole trunk radius, g = branching generation */
     int max_generations;         /*!< Deepest allowed capillary branching depth from the arteriole */
 
     double target_blood_vessels_processes_icvf;  /*!< Target Intracellular Compartment Volume Fraction of capillaries -- interpreted relative to the (padded) blood-vessel voxel */
@@ -117,11 +117,19 @@ public:
     double swelling_factor;
 
     int spheres_overlap_factor;                         /*!< Factor to divide the radii by */
+    // Per-sphere swelling ceiling, as a multiple of an axon's true
+    // target_radius -- shared between SwellAxons (which enforces it) and
+    // the inner_radius_lut range built before growth (which must cover
+    // every radius swelling can produce, since InterpolateAllAxons calls
+    // findInnerRadius after swelling has already run).
+    static constexpr double kMaxRadiusFactor = 2.0;
     bool axon_can_shrink;               /*!< If true, the axons can shrink to allow passage between them */
     double cosPhiSquared;              /*!< Cosine of the angle between the axon and the plane squared */
 
-    double alpha;                       /*!< Alpha coefficient of the Gamma distribution of the radii */
-    double beta;                        /*!< Beta coefficient of the gamma distribution of the radii */
+    double alpha_nomyelin;              /*!< Alpha coefficient of non-myelinated axons' own Gamma distribution of radii */
+    double beta_nomyelin;               /*!< Beta coefficient of non-myelinated axons' own Gamma distribution of radii */
+    double alpha_myelin;                /*!< Alpha coefficient of myelinated axons' own, independent Gamma distribution of radii */
+    double beta_myelin;                 /*!< Beta coefficient of myelinated axons' own, independent Gamma distribution of radii */
 
     int regrow_count = 0;               /*!< Number of axons to regrow */
     int regrow_thr;                     /*!< Number of regrowth batches allowed */
@@ -301,6 +309,23 @@ public:
      *         AddOneSphere's own wall checks, but always against the true max_limits.
      */
     bool hasReachedTrueWall(const Axon& ax) const;
+    void reportChainBreaks(const char *stage);
+
+    /*!
+     *  \param idx Index into axons of the (permanently, in-place) stuck axon to relocate
+     *  \return True if a free spot was found and the axon was reset to a single fresh
+     *          seed sphere there; false if no free spot turned up within the search
+     *          budget, in which case the axon is left empty (nothing left to grow).
+     *  \brief Wipes the axon's current growth (removing every already-committed
+     *         sphere from sphere_grid) and re-seeds it at a brand-new random
+     *         position, checked against the grid's *current* occupancy -- unlike
+     *         in-place retries (jostling/shrinking at the same spot), this can
+     *         actually escape a neighborhood that's become genuinely congested
+     *         since this axon was first seeded. Ported from the pre-layered
+     *         growth algorithm's ModifyAxonsStartingPoint; see growAxonsLayered's
+     *         regrow loop for the retry budget (regrow_thr).
+     */
+    bool relocateAxon(int idx);
 
     /*!
      *  \param pos Position
@@ -380,10 +405,24 @@ public:
     void SwellAllAxons();
 
     /*!
+     *  \brief Fills in the gap-plugging spheres between every axon's
+     *         backbone spheres, once, after both growth and swelling are
+     *         fully done for every axon -- growth itself only ever adds
+     *         backbone spheres now (see AddOneSphere in grow_axons.cpp).
+     *         Same lerp-position/lerp-radius interpolation as the old
+     *         growth-time add_spheres, bisection-shrunk on collision, but
+     *         checked against everyone's *final* geometry instead of a
+     *         mid-growth snapshot. Run after SwellAllAxons and before
+     *         add_Myelin, so inner_spheres' outer_spheres copy picks up the
+     *         interpolated spheres too.
+     */
+    void InterpolateAllAxons();
+
+    /*!
      *  \brief Gradually, non-uniformly swells every axon's spheres back
-     *         toward their own true target radius (cap = radius/swelling_factor,
-     *         or itself for the seed sphere), each as far as its own local
-     *         room allows, and updates the ICVF.
+     *         toward their own true target radius, each sphere hard-capped
+     *         at 1.2x that axon's target_radius, each as far as its own
+     *         local room allows, and updates the ICVF.
     */
 
     void SwellAxons();
@@ -531,7 +570,29 @@ public:
      */
     void PlaceSmallVoxel();
 
-    void ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos, const std::vector<Glial> &glial_pop3, const std::vector<Blood_Vessel> &blood_vessels);
+    /*!
+     *  \param axons_changed Recompute axon/myelin contributions -- skip (keep the
+     *         member fields' current values) when only glial cells or blood
+     *         vessels changed since the last call.
+     *  \param glial_pop1_changed, glial_pop2_changed, glial_pop3_changed
+     *         Recompute that population's contributions -- soma ICVF in
+     *         particular calls sphereBoxIntersectionVolume per soma, which for
+     *         boundary-straddling somas isn't O(1), so skipping a population
+     *         known static (e.g. populations 2 and 3 while SwellGlialSomas(1)
+     *         is the only one actually changing anything this round) avoids
+     *         redoing that work for values that haven't moved. Split per
+     *         population rather than one combined flag specifically because
+     *         SwellGlialSomas processes populations one at a time.
+     *  \param blood_vessels_changed Recompute blood vessel contributions -- skip
+     *         when only axons or glial cells changed.
+     *  \brief Recomputes ICVF member fields from the given populations' current
+     *         volumes. All flags default to true (recompute everything),
+     *         matching every pre-existing call site; pass false for whichever
+     *         population(s) are known unchanged since the last call to skip
+     *         their O(population size) re-summation.
+     */
+    void ICVF(const std::vector<Axon> &axs, const std::vector<Glial> &glial_pop1, const std::vector<Glial> &oligos, const std::vector<Glial> &glial_pop3, const std::vector<Blood_Vessel> &blood_vessels,
+              bool axons_changed = true, bool glial_pop1_changed = true, bool glial_pop2_changed = true, bool glial_pop3_changed = true, bool blood_vessels_changed = true);
     
     double c2toKappa(double c2_target, double c2_tol, double kappa_max);
     std::vector<double> generate_angles(const int &num_samples);

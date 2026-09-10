@@ -1352,7 +1352,7 @@ def plot_radii_with_length(file_path, axon_id, z_step=0.005):
 
 if __name__ == "__main__":
 
-    file_path = "/home/localadmin/Documents/CATERPillar/tests/run_75pct_eps03_uf5_4thread_100um_swf100_rerun.csv"
+    file_path = "/home/localadmin/Documents/CATERPillar/tests/test_myelin80_small.csv"
 
     create_subplots(file_path)
 

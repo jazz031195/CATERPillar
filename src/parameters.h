@@ -39,8 +39,10 @@ public:
     double axons_w_myelin_icvf = 0.1;
     double blood_vessels_icvf = 0.0;
     bool tortuous = true;
-    double alpha = 4.0;
-    double beta = 0.25;
+    double alpha = 4.0;         // non-myelinated axons' Gamma(alpha,beta) shape parameter
+    double beta = 0.25;         // non-myelinated axons' Gamma(alpha,beta) scale parameter
+    double alpha_myelin = 2.0;  // myelinated axons' own, independent Gamma(alpha,beta) shape parameter
+    double beta_myelin = 0.25;  // myelinated axons' own, independent Gamma(alpha,beta) scale parameter
     int regrow_thr = 10;
     double min_rad = 0.15;
     double epsilon = 0.01;
@@ -53,7 +55,7 @@ public:
     double std_vessel_rad = 1;
 
     double blood_vessels_processes_icvf = 0.0;
-    double capillary_radius = 1.0; // fixed radius for every capillary sphere (no decay)
+    double blood_vessel_gamma = 3.0; // Murray's law generation exponent: r(g) = r0 * 2^(-g/gamma), r0 = this vessel's own arteriole trunk radius, g = branching generation
     int max_generations = 7; // deepest allowed capillary branching depth from the arteriole
     double blood_vessels_voxel_size = 0.0; // 0 (or <= voxel_size) means "no padding, same box as voxel_size"
 

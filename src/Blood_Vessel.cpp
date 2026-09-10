@@ -187,32 +187,38 @@ void Blood_Vessel::enforceMurraysLaw() {
         }
         std::sort(children_by_position.begin(), children_by_position.end());
 
-        // Capillaries (any branch whose parent isn't the arteriole, branch 0) hold a
-        // fixed radius and never obey Murray's law at all -- only junctions directly
-        // off the arteriole thin the arteriole's own downstream continuation to make
-        // room for the (always unchanged) capillary. Children are still queued above
-        // so deeper structure is visited, just never rescaled here.
-        if (parent_branch != 0) {
-            continue;
-        }
-
+        // Every branch's own (fixed, no-decay-along-its-length) radius is set once
+        // at growth time from its generation (see BloodVesselGrowth::growBranch,
+        // r(g) = r0 * 2^(-g/gamma)) and never touched here directly -- what IS
+        // corrected here, for every parent branch (the arteriole and every
+        // capillary alike, not just branch 0), is that parent's own downstream
+        // continuation past each of its children's attachment points, so the tree
+        // conserves cross-section (R_parent^3 = r_continuation^3 + r_child^3) at
+        // every junction, not only where a capillary happens to attach directly to
+        // the arteriole. Applying this uniformly is what makes the generation
+        // formula physically consistent throughout -- a symmetric split at any
+        // depth (not just the root) already satisfies the cube law exactly for
+        // gamma=3, so this doesn't fight the generation formula, it completes it.
         for (const auto &entry : children_by_position) {
             int parent_index = entry.first;
             int child_branch = entry.second;
 
             double R_parent = ramification_spheres[parent_branch][parent_index].radius;
 
-            // r2: the capillary's fixed radius, read but never rescaled. r1: the
-            // arteriole's own continuation just downstream of the junction, which by
-            // default starts out equal to R_parent.
+            // r2: the child's own generation-derived radius, read but never
+            // rescaled. r1: the parent's own continuation just downstream of the
+            // junction, which by default starts out equal to R_parent.
             double r2 = ramification_spheres[child_branch][0].radius;
             bool has_continuation = parent_index + 1 < static_cast<int>(ramification_spheres[parent_branch].size());
             double r1 = has_continuation ? ramification_spheres[parent_branch][parent_index + 1].radius : R_parent;
 
-            // Only the arteriole side is solved for: r1_new^3 = R_parent^3 - r2^3
-            // (capillary radius is fixed, so it's the arteriole that thins to make
-            // Murray's law hold). If the capillary alone would need more cross-section
-            // than the arteriole has here, there's nothing left to give it.
+            // Only the parent's continuation is solved for: r1_new^3 = R_parent^3 - r2^3
+            // (the child's radius is fixed, so it's the parent that thins to make
+            // Murray's law hold). If the child alone would need more cross-section
+            // than the parent has here, there's nothing left to give it -- this is
+            // also what naturally prunes a parent's later siblings (or deeper
+            // generations) once its own local cross-section budget runs out,
+            // exactly as it already did for the arteriole.
             double r1_new_cubed = R_parent * R_parent * R_parent - r2 * r2 * r2;
             if (r1_new_cubed <= 0.0) {
                 deleteSubtree(child_branch);
@@ -221,15 +227,15 @@ void Blood_Vessel::enforceMurraysLaw() {
             double r1_new = std::cbrt(r1_new_cubed);
             double scale = (r1 > 0.0) ? (r1_new / r1) : 0.0;
 
-            // Symmetrically to before, check the arteriole's own continuation before
+            // Symmetrically to before, check the parent's own continuation before
             // committing: it isn't a strictly monotonic decay (it can "bead" --
             // oscillate around a baseline), so its weakest point downstream of this
             // junction isn't necessarily its very last sphere -- scan the whole
-            // affected range for the true minimum. An arteriole that has already
+            // affected range for the true minimum. A parent that has already
             // received several upstream splits can be pushed below minimum_radius
             // here even when this specific split looks reasonable in isolation -- in
             // which case this split would only get truncated downstream anyway, so
-            // reject it the same way: discard the capillary, leave the arteriole as-is.
+            // reject it the same way: discard the child, leave the parent as-is.
             double predicted_parent_tail_radius = r1_new;
             if (has_continuation) {
                 double min_parent_tail_radius = std::numeric_limits<double>::max();
@@ -249,8 +255,8 @@ void Blood_Vessel::enforceMurraysLaw() {
                     ramification_spheres[parent_branch][i].radius *= scale;
                 }
             }
-            // The capillary (child_branch) keeps its fixed radius -- intentionally
-            // never rescaled.
+            // The child (child_branch) keeps its own fixed, generation-derived
+            // radius -- intentionally never rescaled.
         }
     }
 }

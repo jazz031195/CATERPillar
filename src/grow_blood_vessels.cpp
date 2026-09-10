@@ -1,6 +1,7 @@
 #include "CaterpillarGrowth.h"
 #include "grow_blood_vessels.h"
 #include <algorithm> // std::sort
+#include <cmath> // std::pow
 #include <random>
 #include <chrono>
 #include <future>
@@ -23,21 +24,21 @@ BloodVesselGrowth::BloodVesselGrowth(Blood_Vessel &bv_to_grow_,
                        const Eigen::Vector3d &max_limits_,
                        const double &epsilon_,
                        const double &min_radius_,
-                       const double &capillary_radius_,
+                       const double &gamma_,
                        const int &max_generations_)
     : CellGrowth(sphere_grid_,
                  extended_min_limits_, extended_max_limits_,
                  min_limits_, max_limits_,
                  epsilon_, min_radius_),
       bv_to_grow(bv_to_grow_),
-      capillary_radius(capillary_radius_),
+      gamma(gamma_),
       max_generations(max_generations_)
 {}
 
 BloodVesselGrowth::BloodVesselGrowth(const BloodVesselGrowth &other)
     : CellGrowth(other), // call base copy constructor
       bv_to_grow(other.bv_to_grow),
-      capillary_radius(other.capillary_radius),
+      gamma(other.gamma),
       max_generations(other.max_generations) {}
 
 
@@ -244,32 +245,38 @@ Eigen::Vector3d BloodVesselGrowth::find_next_center(const double dist_,
         generate_random_point_on_sphere(epsilon), target_direction
     );
 
+    // phi: angle between the sampled growth direction and the direction
+    // toward the attractor. Capped at 90 degrees -- a direction with phi > 90
+    // has a NEGATIVE component toward the target, i.e. it's actively heading
+    // away from/backward relative to where the vessel is going. Left
+    // unchecked (the previous version of this check only limited how sharply
+    // a step could turn relative to the PREVIOUS step, not relative to the
+    // target), enough consecutive such steps -- each individually only a
+    // modest turn from the last one -- can accumulate into the vessel
+    // curving back around and looping through its own earlier path, which
+    // nothing else in the growth/collision logic catches (self-collision is
+    // excluded for an entire branch, not just its nearby-in-chain spheres).
+    // Redraw whenever phi exceeds the limit, and fall back to heading
+    // straight at the target (phi = 0, always compliant) if resampling
+    // repeatedly can't find one.
+    double cos_phi = target_direction.dot(biased_random_vector.normalized());
+    cos_phi = std::max(-1.0, std::min(1.0, cos_phi)); // clamp to [-1, 1]
+    double phi = acos(cos_phi);
+    int nbr_tries = 0;
+    const double phi_limit = M_PI / 2;
 
-    if (spheres.size() > 2) {
-        Eigen::Vector3d previous_vector = (last_center - spheres[spheres.size() - 2].center).normalized();
-        double cos_angle = previous_vector.dot(biased_random_vector.normalized());
-        cos_angle = std::max(-1.0, std::min(1.0, cos_angle)); // clamp to [-1, 1]
+    while (phi > phi_limit && nbr_tries < 10) {
+        biased_random_vector = apply_bias_toward_target(
+            generate_random_point_on_sphere(epsilon), target_direction
+        );
+        cos_phi = target_direction.dot(biased_random_vector.normalized());
+        cos_phi = std::max(-1.0, std::min(1.0, cos_phi));
+        phi = acos(cos_phi);
+        nbr_tries += 1;
+    }
 
-        double angle = acos(cos_angle);
-        int nbr_tries = 0;
-        double angle_limit = M_PI / 2;
-
-        while(angle > angle_limit && nbr_tries < 10) {
-            biased_random_vector = apply_bias_toward_target(
-                generate_random_point_on_sphere(epsilon), target_direction
-            );
-
-            cos_angle = previous_vector.dot(biased_random_vector.normalized());
-            cos_angle = std::max(-1.0, std::min(1.0, cos_angle)); // clamp to [-1, 1]
-            angle = acos(cos_angle);
-            nbr_tries += 1;
-
-        }
-
-        if (angle > angle_limit) {
-            biased_random_vector = previous_vector;
-        }
-
+    if (phi > phi_limit) {
+        biased_random_vector = target_direction;
     }
 
     return last_center + dist_ * biased_random_vector;
@@ -560,6 +567,28 @@ void BloodVesselGrowth::find_next_center(Sphere &s, double dist_, const std::vec
     double std_ = epsilon;
     Eigen::Vector3d vector = generate_random_point_on_sphere(std_);
     vector = apply_bias_toward_target(vector, vector_to_target);
+
+    // Same phi <= 90 degree cap as the trunk's own find_next_center (see its
+    // comment there) -- capillaries otherwise have no angle constraint at
+    // all, making them even more prone to looping back on themselves.
+    double cos_phi = vector_to_target.dot(vector.normalized());
+    cos_phi = std::max(-1.0, std::min(1.0, cos_phi));
+    double phi = acos(cos_phi);
+    int nbr_tries = 0;
+    const double phi_limit = M_PI / 2;
+
+    while (phi > phi_limit && nbr_tries < 10) {
+        vector = apply_bias_toward_target(generate_random_point_on_sphere(std_), vector_to_target);
+        cos_phi = vector_to_target.dot(vector.normalized());
+        cos_phi = std::max(-1.0, std::min(1.0, cos_phi));
+        phi = acos(cos_phi);
+        nbr_tries += 1;
+    }
+
+    if (phi > phi_limit) {
+        vector = vector_to_target;
+    }
+
     Eigen::Vector3d position = spheres[spheres.size() - 1].center + dist_ * vector.normalized();
     s.center = position;
 }
@@ -701,6 +730,11 @@ bool BloodVesselGrowth::growBranch(int &nbr_spheres, const int &factor) {
         random_branch = 0;
     }
 
+    // The new branch's own generation -- needed below (before it's actually
+    // stored into branch_generation[current_branch] further down) to compute
+    // its radius via r(g) = r0 * 2^(-g/gamma).
+    int new_generation = bv_to_grow.branch_generation[random_branch] + 1;
+
     int size = bv_to_grow.ramification_spheres[random_branch].size();
     int random_sphere_ind = 1 + rand() % (size - 1);
     Sphere random_sphere = bv_to_grow.ramification_spheres[random_branch][random_sphere_ind];
@@ -729,11 +763,17 @@ bool BloodVesselGrowth::growBranch(int &nbr_spheres, const int &factor) {
     Eigen::Vector3d vector_to_prev_sphere = (random_sphere.center - bv_to_grow.ramification_spheres[random_branch][random_sphere_ind - 1].center).normalized();
     Sphere first_sphere;
     Eigen::Vector3d attractor = Eigen::Vector3d(0, 0, 0);
-    // Capillaries hold one fixed radius for their entire length, unrelated to the
-    // parent (arteriole/capillary) sphere's own local radius at the attachment
-    // point -- no decay, and never rescaled by Murray's law (see
-    // Blood_Vessel::enforceMurraysLaw, which only ever thins the arteriole side).
-    double initial_radius = capillary_radius;
+    // Every branch holds one fixed radius for its entire length (no decay),
+    // derived from its own generation: r(g) = r0 * 2^(-g/gamma), r0 = this
+    // vessel's own arteriole trunk radius (its branch-0, sphere-0 seed radius --
+    // never itself rescaled by enforceMurraysLaw, which only ever thins spheres
+    // strictly after a junction's attachment point). This branch's own radius
+    // (r2 at its future junctions) is never rescaled either; only its PARENT's
+    // downstream continuation is, by enforceMurraysLaw -- applied at every
+    // junction in the tree now, not just where a branch attaches directly to
+    // the arteriole, so cross-section is conserved throughout.
+    double r0 = bv_to_grow.ramification_spheres[0][0].radius;
+    double initial_radius = r0 * std::pow(2.0, -double(new_generation) / gamma);
     bool first_sphere_created = GenerateFirstSphereinProcess(first_sphere, attractor, initial_radius, random_sphere, vector_to_prev_sphere, nbr_spheres, nbr_spheres_between, bv_to_grow.id, nbr_branches);
 
     if (!first_sphere_created) {
@@ -741,12 +781,17 @@ bool BloodVesselGrowth::growBranch(int &nbr_spheres, const int &factor) {
     }
 
     auto compute_radius = [&](double t) {
-        return capillary_radius;
+        return initial_radius;
     };
 
+    // NOT deferred like the regular within-branch add_spheres: a sibling
+    // branch can sprout off this same parent and legally grow into this
+    // exact junction gap before ApplyMurraysLawToBloodVessels/
+    // bridgeJunctionGaps ever runs (both happen only after ALL branches for
+    // this vessel are done), so bridging it now, immediately, at creation
+    // time -- like before -- is what actually keeps the gap reserved.
     std::vector<Sphere> vector_first_spheres;
     if (factor > 1) {
-        // add spheres between the first and the last
         vector_first_spheres = addIntermediateSpheres(random_sphere, first_sphere, nbr_branches, nbr_spheres, nbr_spheres_between, compute_radius, 0.0, 0.0);
     } else {
         vector_first_spheres = {first_sphere};
@@ -763,7 +808,7 @@ bool BloodVesselGrowth::growBranch(int &nbr_spheres, const int &factor) {
     bv_to_grow.lengths_branches[current_branch] = std::vector<double>(vector_first_spheres.size(), old_length);
     bv_to_grow.attractors[current_branch] = attractor;
     bv_to_grow.children_branches[random_branch].push_back(current_branch);
-    bv_to_grow.branch_generation[current_branch] = bv_to_grow.branch_generation[random_branch] + 1;
+    bv_to_grow.branch_generation[current_branch] = new_generation;
 
     Eigen::Vector3d prev_pos = first_sphere.center;
     double distance = initial_radius;

@@ -153,7 +153,7 @@ private:
     QLabel *blood_vessel_voxel_size_qlabel;
     QLabel *blood_vessel_mean_radius_qlabel;
     QLabel *blood_vessel_std_radius_qlabel;
-    QLabel *blood_vessel_capillary_radius_qlabel;
+    QLabel *blood_vessel_gamma_qlabel;
     QLabel *blood_vessel_max_generations_qlabel;
     QLabel *voxel_size_qlabel;
     QLabel *minimum_radius_qlabel;
@@ -172,6 +172,8 @@ private:
     QLabel *beading_std_qlabel;
     QLabel *alpha_qlabel;
     QLabel *beta_qlabel;
+    QLabel *alpha_myelin_qlabel;
+    QLabel *beta_myelin_qlabel;
     QLabel *glial_pop1_radius_mean_qlabel;
     QLabel *glial_pop1_radius_std_qlabel;
     QLabel *glial_pop2_radius_mean_qlabel;
@@ -209,7 +211,7 @@ private:
     QDoubleSpinBox *blood_vessel_voxel_size_SpinBox;
     QDoubleSpinBox *blood_vessel_mean_radius_SpinBox;
     QDoubleSpinBox *blood_vessel_std_radius_SpinBox;
-    QDoubleSpinBox *blood_vessel_capillary_radius_SpinBox;
+    QDoubleSpinBox *blood_vessel_gamma_SpinBox;
     QDoubleSpinBox *blood_vessel_max_generations_SpinBox;
     QDoubleSpinBox *voxel_size_SpinBox;
     QDoubleSpinBox *minimum_radius_SpinBox;
@@ -228,6 +230,8 @@ private:
     QDoubleSpinBox *beading_std_SpinBox;
     QDoubleSpinBox *alpha_SpinBox;
     QDoubleSpinBox *beta_SpinBox;
+    QDoubleSpinBox *alpha_myelin_SpinBox;
+    QDoubleSpinBox *beta_myelin_SpinBox;
     QDoubleSpinBox *glial_pop1_radius_mean_SpinBox;
     QDoubleSpinBox *glial_pop1_radius_std_SpinBox;
     QDoubleSpinBox *glial_pop2_radius_mean_SpinBox;
