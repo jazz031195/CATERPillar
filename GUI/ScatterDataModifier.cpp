@@ -13,7 +13,6 @@
 #include <algorithm> // For std::max_element
 #include <cstdlib> // For std::rand and std::srand
 #include <random>
-#include <omp.h>
 #include <QApplication>
 
 

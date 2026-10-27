@@ -29,6 +29,11 @@ OpenGLWindow::OpenGLWindow(QWindow *parent)
     // We must request a depth buffer before the underlying native window
     // is created.
     QSurfaceFormat format;
+    // The shaders are #version 330 core. Without an explicit request, macOS
+    // hands out a legacy 2.1 context that cannot compile them (Linux drivers
+    // usually default to a newer compatibility context, which hid this).
+    format.setVersion(3, 3);
+    format.setProfile(QSurfaceFormat::CoreProfile);
     format.setDepthBufferSize(24);
     format.setStencilBufferSize(8);
     format.setSamples(4); // optional: anti-aliasing
@@ -37,7 +42,18 @@ OpenGLWindow::OpenGLWindow(QWindow *parent)
     connect(&timer, &QTimer::timeout, this, static_cast<void(QWindow::*)()>(&OpenGLWindow::update));
     timer.start(16); // Refresh every ~16 ms (60 FPS)
 }
-OpenGLWindow::~OpenGLWindow() {}
+OpenGLWindow::~OpenGLWindow()
+{
+    if (context()) {
+        makeCurrent();
+        vao.destroy();
+        vertexBuffer.destroy();
+        colorBuffer.destroy();
+        radiusBuffer.destroy();
+        lineBuffer.destroy();
+        doneCurrent();
+    }
+}
 
 template <typename T>
 constexpr const T& clamp(const T& v, const T& lo, const T& hi)
@@ -89,6 +105,7 @@ void OpenGLWindow::buildBatchedGeometry()
     }
     
     totalBatchedVertices = batchedVertices.size() / 3;
+    batchedBuffersDirty = true;
     geometryReady = true;
 }
 
@@ -318,6 +335,13 @@ void OpenGLWindow::initializeGL()
     lineShaderProgram->addShaderFromSourceCode(QOpenGLShader::Vertex, lineVertexShaderSource);
     lineShaderProgram->addShaderFromSourceCode(QOpenGLShader::Fragment, lineFragmentShaderSource);
     lineShaderProgram->link();
+
+    vao.create();
+    vertexBuffer.create();
+    colorBuffer.create();
+    radiusBuffer.create();
+    lineBuffer.create();
+    batchedBuffersDirty = true; // geometry may have been built before the context existed
 }
 
 void OpenGLWindow::resizeGL(int w, int h)
@@ -398,6 +422,19 @@ void OpenGLWindow::paintGL()
         return;
     }
 
+    QOpenGLVertexArrayObject::Binder vaoBinder(&vao);
+
+    if (batchedBuffersDirty) {
+        vertexBuffer.bind();
+        vertexBuffer.allocate(batchedVertices.data(), static_cast<int>(batchedVertices.size() * sizeof(GLfloat)));
+        colorBuffer.bind();
+        colorBuffer.allocate(batchedColors.data(), static_cast<int>(batchedColors.size() * sizeof(GLfloat)));
+        radiusBuffer.bind();
+        radiusBuffer.allocate(batchedRadii.data(), static_cast<int>(batchedRadii.size() * sizeof(GLfloat)));
+        radiusBuffer.release();
+        batchedBuffersDirty = false;
+    }
+
     shaderProgram->bind();
 
     // -- Set Uniforms (Global variables for this draw call) --
@@ -408,15 +445,19 @@ void OpenGLWindow::paintGL()
     // -- Set Attributes (Per-point data variables) --
     // Location 0: Positions (X, Y, Z)
     shaderProgram->enableAttributeArray(0);
-    shaderProgram->setAttributeArray(0, GL_FLOAT, batchedVertices.data(), 3);
+    vertexBuffer.bind();
+    shaderProgram->setAttributeBuffer(0, GL_FLOAT, 0, 3);
 
     // Location 1: Colors (R, G, B)
     shaderProgram->enableAttributeArray(1);
-    shaderProgram->setAttributeArray(1, GL_FLOAT, batchedColors.data(), 3);
+    colorBuffer.bind();
+    shaderProgram->setAttributeBuffer(1, GL_FLOAT, 0, 3);
 
     // Location 2: Radii (Float)
     shaderProgram->enableAttributeArray(2);
-    shaderProgram->setAttributeArray(2, GL_FLOAT, batchedRadii.data(), 1);
+    radiusBuffer.bind();
+    shaderProgram->setAttributeBuffer(2, GL_FLOAT, 0, 1);
+    radiusBuffer.release();
 
     // 6. Execute the Draw Call! (1 Vertex = 1 Sphere)
     glDrawArrays(GL_POINTS, 0, totalBatchedVertices);
@@ -477,7 +518,10 @@ void OpenGLWindow::drawVoxelWireframe()
     lineShaderProgram->setUniformValue("lineColor", QVector3D(1.0f, 1.0f, 0.0f)); // yellow
 
     lineShaderProgram->enableAttributeArray(0);
-    lineShaderProgram->setAttributeArray(0, GL_FLOAT, lineVertices.data(), 3);
+    lineBuffer.bind();
+    lineBuffer.allocate(lineVertices.data(), static_cast<int>(lineVertices.size() * sizeof(GLfloat)));
+    lineShaderProgram->setAttributeBuffer(0, GL_FLOAT, 0, 3);
+    lineBuffer.release();
 
     glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(lineVertices.size() / 3));
 

@@ -3,6 +3,8 @@
 
 #include <QOpenGLWindow>
 #include <QOpenGLFunctions>
+#include <QOpenGLBuffer>
+#include <QOpenGLVertexArrayObject>
 #include <QMatrix4x4>
 #include <QVector3D>
 #include <QTimer>
@@ -59,6 +61,15 @@ private:
     std::vector<GLfloat> batchedVertices;
     std::vector<GLfloat> batchedColors;
     size_t totalBatchedVertices = 0;
+    // A 3.3 core context (required on macOS for the #version 330 shaders) has
+    // no client-side vertex arrays and needs a bound VAO, so the batched data
+    // above is uploaded into these buffers before drawing.
+    QOpenGLVertexArrayObject vao;
+    QOpenGLBuffer vertexBuffer;
+    QOpenGLBuffer colorBuffer;
+    QOpenGLBuffer radiusBuffer;
+    QOpenGLBuffer lineBuffer;
+    bool batchedBuffersDirty = false;  // Set by buildBatchedGeometry(), cleared once uploaded in paintGL()
     std::vector<QVector3D> spherePositions;
     std::vector<double> sphereRadii;
     std::vector<QColor> axonColors;  // Store colors for each axon

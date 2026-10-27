@@ -668,6 +668,8 @@ void Window::PlotCells(const bool& axons_plot,
         this->openglWindow = new OpenGLWindow();
 
         QSurfaceFormat format;
+        format.setVersion(3, 3); // shaders are #version 330 core; see OpenGLWindow's constructor
+        format.setProfile(QSurfaceFormat::CoreProfile);
         format.setDepthBufferSize(24);
         this->openglWindow->setFormat(format);
         
