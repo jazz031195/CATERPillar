@@ -43,12 +43,12 @@ mkdir build
 cd build
 cmake .. -DBUILD_GUI=OFF
 make
+
 # macOS (Homebrew)
 mkdir build && cd build
 cmake .. -DBUILD_GUI=OFF
 make CATERPillar-cli -j$(sysctl -n hw.ncpu)
 ```
-
 
 This produces a single binary, `CATERPillar-cli`, and never searches for Qt/OpenGL at all.
 
@@ -76,7 +76,7 @@ sudo apt update
 sudo apt install cmake qtbase5-dev libqt5datavisualization5-dev libqt5charts5-dev
 
 # macOS (Homebrew)
-brew install cmake qt5
+brew install cmake qt@5
 ```
 
 **2. Build**
@@ -91,7 +91,7 @@ make
 # macOS (Homebrew)
 mkdir build && cd build
 cmake .. -DCMAKE_PREFIX_PATH="$(brew --prefix qt@5)"
-make CATERPillar -j$(sysctl -n hw.ncpu)
+make -j$(sysctl -n hw.ncpu)
 ```
 
 `BUILD_GUI` defaults to `ON`, so this produces both `CATERPillar` (the GUI) and `CATERPillar-cli` (headless).
